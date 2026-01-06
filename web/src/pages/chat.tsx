@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import axios from 'axios';
 import { marked } from 'marked';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
+import { chatApi } from '@/api/chat';
 
 interface Message {
   id: string;
@@ -52,15 +52,11 @@ export function ChatPage() {
   const loadHistory = async (id: string) => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/chat/messages', {
-        params: { conversation_id: id },
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await chatApi.getMessages(id);
       
       const formattedMessages: Message[] = [];
        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-       response.data.data.forEach((item: any) => {
+       response.data.forEach((item: any) => {
          formattedMessages.push({
            id: item.id + '_user',
            originalId: item.id,
@@ -124,11 +120,7 @@ export function ChatPage() {
       // Wait, the state update is async. Let's recalculate based on current state before update.
       const newRating = currentRating === rating ? null : rating;
 
-      await axios.post(`/api/chat/messages/${originalId}/feedbacks`, {
-        rating: newRating
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await chatApi.sendFeedback(originalId, newRating);
     } catch (error) {
       console.error('Feedback failed:', error);
       // Revert on error (could implement more robust rollback)
@@ -146,10 +138,7 @@ export function ChatPage() {
         abortControllerRef.current = null;
       }
 
-      const token = localStorage.getItem('token');
-      await axios.post(`/api/chat/messages/${currentTaskId}/stop`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await chatApi.stopGeneration(currentTaskId);
     } catch (error) {
       console.error('Failed to stop generation:', error);
     } finally {
@@ -191,20 +180,12 @@ export function ChatPage() {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('/api/chat/upload', formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await chatApi.uploadFile(file);
       
       setUploadedFiles(prev => [...prev, {
-        id: response.data.id,
+        id: response.id,
         name: file.name,
         type: getFileType(file)
       }]);
@@ -247,7 +228,7 @@ export function ChatPage() {
 
     try {
       abortControllerRef.current = new AbortController();
-      await fetchEventSource('/api/chat/message', {
+      await fetchEventSource(chatApi.messageEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

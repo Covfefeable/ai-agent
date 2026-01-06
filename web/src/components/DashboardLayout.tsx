@@ -4,7 +4,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import axios from 'axios';
+import { chatApi } from '@/api/chat';
 
 interface Conversation {
   id: string;
@@ -27,10 +27,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (!deleteId) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/chat/conversations/${deleteId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await chatApi.deleteConversation(deleteId);
       setConversations(prev => prev.filter(c => c.id !== deleteId));
       if (location.pathname === `/chat/${deleteId}`) {
         navigate('/');
@@ -50,11 +47,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const fetchConversations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/chat/conversations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setConversations(response.data.data);
+      const response = await chatApi.getConversations();
+      setConversations(response.data);
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
     }

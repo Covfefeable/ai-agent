@@ -9,6 +9,7 @@ const fastify = Fastify({
 
 import { authRoutes } from './routes/auth';
 import { chatRoutes } from './routes/chat';
+import { knowledgeRoutes } from './routes/knowledge';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
@@ -47,6 +48,7 @@ fastify.register(async (instance) => {
     await (instance as any).authenticate(req, reply);
   });
   instance.register(chatRoutes, { prefix: '/chat' });
+  instance.register(knowledgeRoutes, { prefix: '/knowledge' });
 });
 
 // Health check

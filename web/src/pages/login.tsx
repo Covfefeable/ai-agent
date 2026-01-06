@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { AlertCircle } from 'lucide-react';
+import { authApi } from '@/api/auth';
 
 const loginSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
@@ -34,9 +34,9 @@ export function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.post('/api/auth/login', data);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const response = await authApi.login(data);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || '登录失败，请稍后重试');
