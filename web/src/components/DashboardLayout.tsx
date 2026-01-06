@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2 } from 'lucide-react';
+import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 
@@ -80,6 +80,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const menuItems = [
     { id: 'chat', label: 'Super Agent 聊天', icon: MessageSquare, path: '/' },
+    { id: 'knowledge', label: '知识库', icon: Database, path: '/knowledge' },
   ];
 
   return (

@@ -3,12 +3,21 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
 import { ChatPage } from './pages/chat';
+import { KnowledgePage } from './pages/knowledge';
 import { DashboardLayout } from './components/DashboardLayout';
 
 function Dashboard() {
   return (
     <DashboardLayout>
       <ChatPage />
+    </DashboardLayout>
+  );
+}
+
+function KnowledgeDashboard() {
+  return (
+    <DashboardLayout>
+      <KnowledgePage />
     </DashboardLayout>
   );
 }
@@ -32,6 +41,14 @@ function App() {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/knowledge"
+          element={
+            <PrivateRoute>
+              <KnowledgeDashboard />
             </PrivateRoute>
           }
         />
