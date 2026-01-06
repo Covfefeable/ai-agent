@@ -156,6 +156,24 @@ export function ChatPage() {
     }
   };
 
+  const getFileType = (file: File): string => {
+    const type = file.type;
+    const name = file.name.toLowerCase();
+
+    if (type.startsWith('image/')) return 'image';
+    if (type.startsWith('audio/')) return 'audio';
+    if (type.startsWith('video/')) return 'video';
+    
+    if (type === 'application/pdf') return 'document'; // PDF
+    if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.markdown')) return 'document'; // Text/Markdown
+    if (name.endsWith('.doc') || name.endsWith('.docx')) return 'document'; // Word
+    if (name.endsWith('.xls') || name.endsWith('.xlsx') || name.endsWith('.csv')) return 'document'; // Excel/CSV
+    if (name.endsWith('.ppt') || name.endsWith('.pptx')) return 'document'; // PowerPoint
+    if (name.endsWith('.xml') || name.endsWith('.epub') || name.endsWith('.html') || name.endsWith('.htm')) return 'document'; // Others
+
+    return 'custom'; // Fallback
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,7 +194,7 @@ export function ChatPage() {
       setUploadedFiles(prev => [...prev, {
         id: response.data.id,
         name: file.name,
-        type: 'image'
+        type: getFileType(file)
       }]);
     } catch (error) {
       console.error('Upload failed:', error);
@@ -273,6 +291,10 @@ export function ChatPage() {
       setIsLoading(false);
       setCurrentTaskId(null);
       abortControllerRef.current = null;
+      // Refresh conversations list after generation
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('refreshConversations'));
+      }, 3000);
     }
   };
 

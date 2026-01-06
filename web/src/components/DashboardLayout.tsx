@@ -36,6 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         navigate('/');
       }
       setDeleteId(null);
+      fetchConversations();
     } catch (error) {
       console.error('Failed to delete conversation:', error);
     }
@@ -47,20 +48,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     setDeleteId(id);
   };
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('/api/chat/conversations', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setConversations(response.data.data);
-      } catch (error) {
-        console.error('Failed to fetch conversations:', error);
-      }
-    };
+  const fetchConversations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/chat/conversations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchConversations();
+    // Listen for custom event to refresh conversations
+    const handleRefresh = () => {
+      fetchConversations();
+    };
+    window.addEventListener('refreshConversations', handleRefresh);
+    return () => {
+      window.removeEventListener('refreshConversations', handleRefresh);
+    };
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -70,7 +79,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   const menuItems = [
-    { id: 'chat', label: '通用 Agent 聊天', icon: MessageSquare, path: '/' },
+    { id: 'chat', label: 'Super Agent 聊天', icon: MessageSquare, path: '/' },
   ];
 
   return (

@@ -15,7 +15,11 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 // Register Multipart
-fastify.register(multipart);
+fastify.register(multipart, {
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 10MB
+  }
+});
 
 // Register CORS
 fastify.register(cors, {
