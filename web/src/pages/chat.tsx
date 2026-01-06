@@ -112,7 +112,6 @@ export function ChatPage() {
         return msg;
       }));
 
-      const token = localStorage.getItem('token');
       const msg = messages.find(m => m.id === messageId);
       const currentRating = msg?.feedback?.rating;
       // If we're toggling off (clicking same button), we send null to clear it

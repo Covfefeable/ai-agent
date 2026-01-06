@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Database, Plus, Loader2, X, Calendar, FileText, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Database, Plus, Loader2, X, Calendar, FileText, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +18,11 @@ interface KnowledgeBase {
 }
 
 export function KnowledgePage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,22 +44,43 @@ export function KnowledgePage() {
     fetchKnowledgeBases();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setModalMode('create');
+    setFormData({ name: '', description: '' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (kb: KnowledgeBase) => {
+    setModalMode('edit');
+    setCurrentId(kb.id);
+    setFormData({ name: kb.name, description: kb.description || '' });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
     try {
-      setIsCreating(true);
-      await knowledgeApi.createDataset(formData);
+      setIsSubmitting(true);
       
-      setIsCreateModalOpen(false);
+      if (modalMode === 'create') {
+        await knowledgeApi.createDataset(formData);
+        toast.success('知识库创建成功');
+      } else {
+        if (currentId) {
+          await knowledgeApi.updateDataset(currentId, formData);
+          toast.success('知识库更新成功');
+        }
+      }
+      
+      setIsModalOpen(false);
       setFormData({ name: '', description: '' });
-      toast.success('知识库创建成功');
       fetchKnowledgeBases();
     } catch (error: any) {
-      console.error('Failed to create knowledge base:', error);
+      console.error(`Failed to ${modalMode} knowledge base:`, error);
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -78,7 +103,7 @@ export function KnowledgePage() {
       <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
         <h2 className="text-lg font-bold text-slate-800">知识库</h2>
         <Button 
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={openCreateModal}
           className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
         >
           <Plus className="h-4 w-4" />
@@ -97,23 +122,36 @@ export function KnowledgePage() {
             {knowledgeBases.map((kb) => (
               <div 
                 key={kb.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
+                onClick={() => navigate(`/knowledge/${kb.id}`)}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md cursor-pointer"
               >
                 <div>
-                  <div className="mb-4 flex items-start justify-between">
+                  <div className="mb-4 flex items-center justify-between">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                       <Database className="h-5 w-5" />
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(kb.id);
-                      }}
-                      className="rounded-lg p-1.5 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 transition-opacity group-hover:opacity-100"
-                      title="删除知识库"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(kb);
+                        }}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                        title="编辑知识库"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(kb.id);
+                        }}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        title="删除知识库"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-slate-900 line-clamp-1" title={kb.name}>
                     {kb.name}
@@ -150,65 +188,68 @@ export function KnowledgePage() {
       </div>
 
       {/* Create Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div 
-            className="fixed inset-0" 
-            onClick={() => setIsCreateModalOpen(false)}
-          />
-          <div 
-            className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-slate-900">新建知识库</h3>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                {modalMode === 'create' ? '新建知识库' : '编辑知识库'}
+              </h3>
               <button 
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => setIsModalOpen(false)}
                 className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">名称</Label>
-                <Input
-                  id="name"
-                  placeholder="给知识库起个名字"
-                  value={formData.name}
-                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  disabled={isCreating}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">描述 (可选)</Label>
-                <Input
-                  id="description"
-                  placeholder="描述这个知识库的内容"
-                  value={formData.description}
-                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  disabled={isCreating}
-                />
+
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">名称</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="请输入知识库名称"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">描述</Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="请输入知识库描述"
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8">
+              <div className="mt-6 flex justify-end gap-3">
                 <Button
                   type="button"
-                  variant="ghost"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  disabled={isCreating}
-                  className="text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
                 >
                   取消
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isCreating || !formData.name.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[80px]"
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={isSubmitting}
                 >
-                  {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : '创建'}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {modalMode === 'create' ? '创建中...' : '保存中...'}
+                    </>
+                  ) : (
+                    modalMode === 'create' ? '立即创建' : '保存修改'
+                  )}
                 </Button>
               </div>
             </form>

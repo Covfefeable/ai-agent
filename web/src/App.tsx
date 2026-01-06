@@ -5,6 +5,7 @@ import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
 import { ChatPage } from './pages/chat';
 import { KnowledgePage } from './pages/knowledge';
+import { KnowledgeDetailPage } from './pages/knowledge-detail';
 import { DashboardLayout } from './components/DashboardLayout';
 
 function Dashboard() {
@@ -19,6 +20,14 @@ function KnowledgeDashboard() {
   return (
     <DashboardLayout>
       <KnowledgePage />
+    </DashboardLayout>
+  );
+}
+
+function KnowledgeDetailDashboard() {
+  return (
+    <DashboardLayout>
+      <KnowledgeDetailPage />
     </DashboardLayout>
   );
 }
@@ -51,6 +60,14 @@ function App() {
           element={
             <PrivateRoute>
               <KnowledgeDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/knowledge/:id"
+          element={
+            <PrivateRoute>
+              <KnowledgeDetailDashboard />
             </PrivateRoute>
           }
         />

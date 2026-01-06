@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import axios from 'axios';
+import FormData from 'form-data';
 import { z } from 'zod';
 import { db } from '../db';
 import { datasets } from '../db/schema';
@@ -22,7 +23,17 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       const body = createDatasetSchema.parse(request.body);
       const userId = request.user.id; // user object is attached by auth middleware
       
-      const response = await axios.post(`${process.env.DIFY_BASE_URL}/datasets`, body, {
+      const payload = {
+        ...body,
+        retrieval_model: {
+          search_method: 'hybrid_search',
+          reranking_enable: true,
+          top_k: 5,
+          score_threshold_enabled: false,
+        },
+      };
+
+      const response = await axios.post(`${process.env.DIFY_BASE_URL}/datasets`, payload, {
         headers: {
           'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`,
           'Content-Type': 'application/json'
@@ -116,6 +127,215 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Delete Dataset Error:', error);
       reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
+  // Update dataset
+  fastify.patch('/datasets/:id', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user.id;
+      const { name, description } = request.body;
+
+      if (!name) {
+        return reply.status(400).send({ message: 'Name is required' });
+      }
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      // Update Dify
+      try {
+        await axios.patch(`${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}`, {
+          name,
+          description,
+        }, {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (difyError: any) {
+        console.error('Dify Update Error:', difyError.response?.data || difyError.message);
+        throw difyError;
+      }
+
+      // Update local db
+      const [updatedDataset] = await db.update(datasets)
+        .set({ name, description })
+        .where(eq(datasets.id, id))
+        .returning();
+
+      return updatedDataset;
+    } catch (error: any) {
+      console.error('Update Dataset Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Get dataset documents
+  fastify.get('/datasets/:id/documents', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user.id;
+      const { page = 1, limit = 20 } = request.query;
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      // Get documents from Dify
+      const response = await axios.get(`${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents`, {
+        params: { page, limit },
+        headers: {
+          'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Documents Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Upload document
+  fastify.post('/datasets/:id/documents/upload', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user.id;
+      
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      const parts = request.parts();
+      let fileBuffer: Buffer | null = null;
+      let filename = '';
+      let mimetype = '';
+      let separator = '\n\n\n';
+      let max_tokens = 500;
+
+      for await (const part of parts) {
+        if (part.type === 'file') {
+          fileBuffer = await part.toBuffer();
+          filename = part.filename;
+          mimetype = part.mimetype;
+        } else {
+          if (part.fieldname === 'separator') {
+            separator = part.value as string;
+          } else if (part.fieldname === 'max_tokens') {
+            const val = part.value as string;
+            max_tokens = parseInt(val) || 500;
+          }
+        }
+      }
+
+      if (!fileBuffer) {
+        return reply.status(400).send({ message: 'File is required' });
+      }
+
+      const form = new FormData();
+      const dataPayload = {
+        indexing_technique: "high_quality",
+        process_rule: {
+          mode: "custom",
+          rules: {
+            pre_processing_rules: [
+              {
+                id: "remove_extra_spaces",
+                enabled: true
+              },
+              {
+                id: "remove_urls_emails",
+                enabled: true
+              }
+            ],
+            segmentation: {
+              separator: separator,
+              max_tokens: max_tokens
+            }
+          }
+        }
+      };
+
+      form.append('data', JSON.stringify(dataPayload));
+      form.append('file', fileBuffer, { filename, contentType: mimetype });
+
+      const response = await axios.post(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/document/create-by-file`,
+        form,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`,
+            ...form.getHeaders()
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Upload Document Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Delete document
+  fastify.delete('/datasets/:id/documents/:documentId', async (request: any, reply) => {
+    try {
+      const { id, documentId } = request.params;
+      const userId = request.user.id;
+      
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      const response = await axios.delete(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete Document Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
     }
   });
 }
