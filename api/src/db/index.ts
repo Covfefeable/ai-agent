@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/ai_agent';
+const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgrespassword@localhost:5432/ai_agent';
 
 // Disable prefetch as it is not supported for "Transaction" pool mode
 export const client = postgres(connectionString, { prepare: false });

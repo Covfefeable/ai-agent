@@ -1,15 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import axios from 'axios';
-import { db } from '../db';
-import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
-import { Readable } from 'stream';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
 
 const chatSchema = z.object({
+  inputs: z.any().optional(),
   query: z.string(),
   conversation_id: z.string().optional(),
   files: z.array(z.object({
@@ -26,12 +23,14 @@ export async function chatRoutes(fastify: FastifyInstance) {
       // Get current user from token (middleware should have populated this, but for now we trust auth middleware)
       const user = request.user as any; 
       
-      const { query, conversation_id, files } = chatSchema.parse(request.body);
+      console.log('Chat Request Body:', request.body); // Debug Log
+
+      const { query, conversation_id, files, inputs } = chatSchema.parse(request.body);
 
       const response = await axios.post(
         `${DIFY_BASE_URL}/chat-messages`,
         {
-          inputs: {},
+          inputs: inputs || {},
           query,
           response_mode: 'streaming',
           conversation_id,

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import axios from 'axios';
@@ -32,7 +32,9 @@ export function ChatPage() {
   const [conversationId, setConversationId] = useState(urlConversationId || '');
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{id: string, name: string, type: string}>>([]);
+  const [webSearch, setWebSearch] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -156,6 +158,16 @@ export function ChatPage() {
     }
   };
 
+  const handleCopy = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
+
   const getFileType = (file: File): string => {
     const type = file.type;
     const name = file.name.toLowerCase();
@@ -242,6 +254,9 @@ export function ChatPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
+          inputs: {
+            web_search: webSearch
+          },
           query: userMessage.content,
           conversation_id: conversationId, 
           files: userMessage.files?.map(f => ({
@@ -351,13 +366,21 @@ export function ChatPage() {
                       ? "bg-slate-900 text-white rounded-tr-none" 
                       : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
                   )}>
-                    <div 
-                      className={cn(
-                        "prose prose-sm break-words max-w-none",
-                        msg.role === 'user' ? "prose-invert" : "prose-slate"
-                      )}
-                      dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
-                    />
+                    {msg.content ? (
+                      <div 
+                        className={cn(
+                          "prose prose-sm break-words max-w-none",
+                          msg.role === 'user' ? "prose-invert" : "prose-slate"
+                        )}
+                        dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-1 h-5">
+                        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+                      </div>
+                    )}
                   </div>
                   {msg.role === 'assistant' && msg.originalId && (
                     <div className={cn(
@@ -384,6 +407,17 @@ export function ChatPage() {
                         title="Dislike"
                       >
                         <ThumbsDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleCopy(msg.content, msg.id)}
+                        className="flex items-center gap-1 rounded p-1 text-xs text-slate-400 transition-colors hover:bg-slate-100"
+                        title="Copy"
+                      >
+                        {copiedMessageId === msg.id ? (
+                          <Check className="h-3.5 w-3.5 text-green-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </div>
                   )}
@@ -441,23 +475,40 @@ export function ChatPage() {
             {/* Bottom Toolbar */}
             <div className="mt-3 flex items-center justify-between">
               {/* Left Tools */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || isLoading}
-                  title="上传附件"
-                >
-                  {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
-                </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || isLoading}
+                    title="上传附件"
+                  >
+                    {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                  </Button>
+                </div>
+                
+                <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+                  <button
+                    onClick={() => setWebSearch(!webSearch)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                      webSearch 
+                        ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    )}
+                  >
+                    <Globe className={cn("h-3.5 w-3.5", webSearch ? "text-blue-600" : "text-slate-400")} />
+                    联网搜索
+                  </button>
+                </div>
               </div>
 
               {/* Right Send/Stop Button */}
