@@ -7,10 +7,15 @@ const fastify = Fastify({
   logger: true
 });
 
+import { authRoutes } from './routes/auth';
+
 // Register CORS
 fastify.register(cors, {
   origin: true // Allow all origins for dev
 });
+
+// Register Routes
+fastify.register(authRoutes, { prefix: '/auth' });
 
 // Health check
 fastify.get('/health', async () => {
