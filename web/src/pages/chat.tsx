@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { marked } from 'marked';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import { chatApi } from '@/api/chat';
+import { knowledgeApi } from '@/api/knowledge';
 
 interface Message {
   id: string;
@@ -35,6 +36,9 @@ export function ChatPage() {
   const [webSearch, setWebSearch] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [knowledgeBases, setKnowledgeBases] = useState<any[]>([]);
+  const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
+  const [showKbSelector, setShowKbSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -48,6 +52,18 @@ export function ChatPage() {
       setMessages([]);
     }
   }, [urlConversationId]);
+
+  useEffect(() => {
+    const fetchKbs = async () => {
+      try {
+        const res = await knowledgeApi.getDatasets();
+        setKnowledgeBases(res.data);
+      } catch (error) {
+        console.error('Failed to fetch knowledge bases:', error);
+      }
+    };
+    fetchKbs();
+  }, []);
 
   const loadHistory = async (id: string) => {
     try {
@@ -203,11 +219,14 @@ export function ChatPage() {
   const handleSend = async () => {
     if ((!inputValue.trim() && uploadedFiles.length === 0) || isLoading) return;
 
+    const queryText = inputValue;
+    const currentFiles = [...uploadedFiles];
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue,
-      files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined
+      content: queryText,
+      files: currentFiles.length > 0 ? currentFiles : undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -225,28 +244,37 @@ export function ChatPage() {
       content: ''
     }]);
 
+    abortControllerRef.current = new AbortController();
+
     try {
-      abortControllerRef.current = new AbortController();
-      await fetchEventSource(chatApi.messageEndpoint, {
+      await fetchEventSource('/api/chat/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          inputs: {
-            web_search: webSearch
-          },
-          query: userMessage.content,
-          conversation_id: conversationId, 
-          files: userMessage.files?.map(f => ({
-            type: f.type,
+          query: queryText,
+          conversation_id: conversationId,
+          files: currentFiles.map(f => ({
+            type: 'image', // TODO: Dynamic type support if needed
             transfer_method: 'local_file',
             upload_file_id: f.id
-          }))
+          })),
+          inputs: {
+            knowledge_base_ids: Array.from(selectedKbIds),
+            web_search: webSearch
+          }
         }),
         signal: abortControllerRef.current.signal,
-        onmessage(msg) {
+        onopen: async (response) => {
+          if (response.ok) {
+            return;
+          } else {
+            throw new Error(`Failed to send message: ${response.statusText}`);
+          }
+        },
+        onmessage: (msg) => {
           try {
             const data = JSON.parse(msg.data);
             if (data.event === 'message') {
@@ -475,7 +503,7 @@ export function ChatPage() {
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+                <div className="flex items-center gap-2 border-l border-slate-200 pl-4 relative">
                   <button
                     onClick={() => setWebSearch(!webSearch)}
                     className={cn(
@@ -488,6 +516,67 @@ export function ChatPage() {
                     <Globe className={cn("h-3.5 w-3.5", webSearch ? "text-blue-600" : "text-slate-400")} />
                     联网搜索
                   </button>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowKbSelector(!showKbSelector)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                        selectedKbIds.size > 0
+                          ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
+                          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                      )}
+                    >
+                      <Database className={cn("h-3.5 w-3.5", selectedKbIds.size > 0 ? "text-blue-600" : "text-slate-400")} />
+                      知识库
+                      {selectedKbIds.size > 0 && (
+                        <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">
+                          {selectedKbIds.size}
+                        </span>
+                      )}
+                    </button>
+
+                    {showKbSelector && (
+                      <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-lg z-10">
+                         <div className="mb-2 flex items-center justify-between px-2 pb-2 border-b border-slate-50">
+                            <span className="text-xs font-medium text-slate-500">需要引用的知识库</span>
+                            <button onClick={() => setShowKbSelector(false)} className="text-slate-400 hover:text-slate-600">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                         </div>
+                         <div className="max-h-48 overflow-y-auto space-y-1">
+                           {knowledgeBases.map(kb => (
+                             <div 
+                               key={kb.id}
+                               className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 cursor-pointer"
+                               onClick={() => {
+                                 const newSet = new Set(selectedKbIds);
+                                 if (newSet.has(kb.id)) {
+                                   newSet.delete(kb.id);
+                                 } else {
+                                   newSet.add(kb.id);
+                                 }
+                                 setSelectedKbIds(newSet);
+                               }}
+                             >
+                               <div className={cn(
+                                 "flex h-4 w-4 items-center justify-center rounded border transition-all",
+                                 selectedKbIds.has(kb.id) ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white"
+                               )}>
+                                 {selectedKbIds.has(kb.id) && <Check className="h-3 w-3" />}
+                               </div>
+                               <span className="text-xs text-slate-700 truncate">{kb.name}</span>
+                             </div>
+                           ))}
+                           {knowledgeBases.length === 0 && (
+                             <div className="px-2 py-4 text-center text-xs text-slate-400">
+                               暂无知识库
+                             </div>
+                           )}
+                         </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

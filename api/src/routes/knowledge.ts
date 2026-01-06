@@ -338,4 +338,42 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       reply.status(status).send({ message });
     }
   });
+
+  // Retrieve from dataset
+  fastify.post('/datasets/:id/retrieve', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user.id;
+      const { query } = request.body;
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      const response = await axios.post(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/retrieve`,
+        {
+          query
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Retrieve Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
 }

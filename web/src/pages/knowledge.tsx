@@ -166,10 +166,6 @@ export function KnowledgePage() {
                     <Calendar className="h-3.5 w-3.5" />
                     <span>{format(new Date(kb.createdAt), 'yyyy-MM-dd')}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>0 文档</span>
-                  </div>
                 </div>
               </div>
             ))}

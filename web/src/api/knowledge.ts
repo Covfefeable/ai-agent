@@ -83,4 +83,11 @@ export const knowledgeApi = {
   deleteDocument: (datasetId: string, documentId: string) => {
     return http.delete(`/knowledge/datasets/${datasetId}/documents/${documentId}`);
   },
+
+  retrieve: (id: string, query: string, retrieval_model?: any) => {
+    return http.post<any, { query: { content: string }, records: any[] }>(`/knowledge/datasets/${id}/retrieve`, {
+      query,
+      retrieval_model
+    });
+  },
 };

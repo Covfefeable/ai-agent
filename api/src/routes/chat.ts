@@ -1,9 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import axios from 'axios';
+import { db } from '../db';
+import { datasets } from '../db/schema';
+import { inArray, eq, and } from 'drizzle-orm';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
+const DIFY_KNOWLEDGE_API_KEY = process.env.DIFY_KNOWLEDGE_API_KEY;
 
 const chatSchema = z.object({
   inputs: z.any().optional(),
@@ -26,6 +30,45 @@ export async function chatRoutes(fastify: FastifyInstance) {
       console.log('Chat Request Body:', request.body); // Debug Log
 
       const { query, conversation_id, files, inputs } = chatSchema.parse(request.body);
+
+      // Handle Knowledge Base Retrieval
+      if (inputs && inputs.knowledge_base_ids && Array.isArray(inputs.knowledge_base_ids) && inputs.knowledge_base_ids.length > 0) {
+        try {
+          const kbIds = inputs.knowledge_base_ids as string[];
+          
+          // Verify ownership and get Dify IDs
+          const userDatasets = await db.select()
+            .from(datasets)
+            .where(and(
+              inArray(datasets.id, kbIds),
+              eq(datasets.userId, user.id)
+            ));
+
+          if (userDatasets.length > 0) {
+             const retrievalPromises = userDatasets.map(ds => 
+               axios.post(
+                 `${DIFY_BASE_URL}/datasets/${ds.difyId}/retrieve`,
+                 { query },
+                 { headers: { 'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}` } }
+               ).then(res => res.data)
+             );
+
+             const results = await Promise.all(retrievalPromises);
+             
+             // Merge results
+             const allSegments = results.flatMap((r: any) => r.records.map((rec: any) => rec.segment.content));
+             const uniqueSegments = Array.from(new Set(allSegments));
+             const knowledgeContext = uniqueSegments.join('\n\n');
+             
+             inputs.knowledge = knowledgeContext;
+          }
+        } catch (error) {
+           console.error('Server-side retrieval failed:', error);
+        }
+        
+        // Clean up inputs to avoid sending internal fields to Dify
+        delete inputs.knowledge_base_ids;
+      }
 
       const response = await axios.post(
         `${DIFY_BASE_URL}/chat-messages`,
