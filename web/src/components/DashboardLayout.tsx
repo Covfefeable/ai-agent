@@ -1,14 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Plus, MessageSquare, ChevronUp, User } from 'lucide-react';
+import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import axios from 'axios';
+
+interface Conversation {
+  id: string;
+  name: string;
+  inputs: unknown;
+  status: string;
+  created_at: number;
+}
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/chat/conversations/${deleteId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(prev => prev.filter(c => c.id !== deleteId));
+      if (location.pathname === `/chat/${deleteId}`) {
+        navigate('/');
+      }
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  const deleteConversation = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteId(id);
+  };
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/chat/conversations', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setConversations(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch conversations:', error);
+      }
+    };
+
+    fetchConversations();
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -28,14 +81,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <Button 
             className="w-full justify-center gap-2 rounded-xl bg-slate-900 py-6 text-base font-semibold transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-slate-200" 
             variant="default"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              navigate('/');
+              window.location.reload(); // Force reload to clear state
+            }}
           >
             <Plus className="h-5 w-5" />
             新建对话
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 px-4 py-2">
+        <nav className="flex-1 space-y-1 px-4 py-2 overflow-y-auto">
           <div className="mb-4 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
             功能列表
           </div>
@@ -45,18 +101,54 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               to={item.path}
               className={cn(
                 "group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                location.pathname === item.path
+                location.pathname === item.path && !location.search
                   ? "bg-slate-100 text-slate-900 shadow-sm"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
               <item.icon className={cn(
                 "h-5 w-5 transition-colors",
-                location.pathname === item.path ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
+                location.pathname === item.path && !location.search ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
               )} />
               {item.label}
             </Link>
           ))}
+
+          {conversations.length > 0 && (
+            <>
+              <div className="mb-2 mt-6 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                历史会话
+              </div>
+              <div className="space-y-1">
+                {conversations.map((conv) => (
+                  <Link
+                    key={conv.id}
+                    to={`/?conversation_id=${conv.id}`}
+                    className={cn(
+                      "group flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                      location.search.includes(conv.id)
+                        ? "bg-slate-100 text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      {/* <MessageSquare className={cn(
+                        "h-4 w-4 shrink-0 transition-colors",
+                        location.search.includes(conv.id) ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
+                      )} /> */}
+                      <span className="truncate">{conv.name || 'New Chat'}</span>
+                    </div>
+                    <button
+                      onClick={(e) => deleteConversation(e, conv.id)}
+                      className="hidden text-slate-400 hover:text-red-600 group-hover:block"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-slate-100 p-4">
@@ -100,6 +192,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-hidden">
         {children}
       </main>
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="删除会话"
+        description="确定要删除这个会话吗？此操作无法撤销。"
+        confirmText="删除"
+        variant="destructive"
+      />
     </div>
   );
 }

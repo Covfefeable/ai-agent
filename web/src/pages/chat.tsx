@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import axios from 'axios';
 import { marked } from 'marked';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
 
 interface Message {
   id: string;
+  originalId?: string;
   role: 'user' | 'assistant';
   content: string;
+  taskId?: string;
+  feedback?: {
+    rating: 'like' | 'dislike' | null;
+  };
   files?: Array<{
     id: string;
     name: string;
@@ -18,14 +24,69 @@ interface Message {
 }
 
 export function ChatPage() {
+  const [searchParams] = useSearchParams();
+  const urlConversationId = searchParams.get('conversation_id');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState('');
+  const [conversationId, setConversationId] = useState(urlConversationId || '');
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{id: string, name: string, type: string}>>([]);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (urlConversationId) {
+      setConversationId(urlConversationId);
+      loadHistory(urlConversationId);
+    } else {
+      setConversationId('');
+      setMessages([]);
+    }
+  }, [urlConversationId]);
+
+  const loadHistory = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/chat/messages', {
+        params: { conversation_id: id },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const formattedMessages: Message[] = [];
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       response.data.data.forEach((item: any) => {
+         formattedMessages.push({
+           id: item.id + '_user',
+           originalId: item.id,
+           role: 'user',
+           content: item.query,
+           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           files: item.message_files?.filter((f:any) => f.belongs_to === 'user').map((f:any) => ({ id: f.id, name: f.name, type: f.type }))
+         });
+         if (item.answer) {
+           formattedMessages.push({
+             id: item.id + '_assistant',
+             originalId: item.id,
+             role: 'assistant',
+             content: item.answer,
+             feedback: item.feedback,
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             files: item.message_files?.filter((f:any) => f.belongs_to === 'assistant').map((f:any) => ({ id: f.id, name: f.name, type: f.type }))
+           });
+         }
+       });
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,6 +95,66 @@ export function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleFeedback = async (messageId: string, originalId: string | undefined, rating: 'like' | 'dislike') => {
+    if (!originalId) return;
+
+    try {
+      // Optimistic update
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === messageId) {
+          const currentRating = msg.feedback?.rating;
+          // Toggle logic: if clicking same rating, remove it (set to null)
+          const newRating = currentRating === rating ? null : rating;
+          return {
+            ...msg,
+            feedback: { ...msg.feedback, rating: newRating }
+          };
+        }
+        return msg;
+      }));
+
+      const token = localStorage.getItem('token');
+      const msg = messages.find(m => m.id === messageId);
+      const currentRating = msg?.feedback?.rating;
+      // If we're toggling off (clicking same button), we send null to clear it
+      // But if we optimistically updated above, we need to check what the *new* state is.
+      // Wait, the state update is async. Let's recalculate based on current state before update.
+      const newRating = currentRating === rating ? null : rating;
+
+      await axios.post(`/api/chat/messages/${originalId}/feedbacks`, {
+        rating: newRating
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Feedback failed:', error);
+      // Revert on error (could implement more robust rollback)
+      loadHistory(conversationId);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!currentTaskId) return;
+
+    try {
+      // Abort the fetch connection immediately
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+
+      const token = localStorage.getItem('token');
+      await axios.post(`/api/chat/messages/${currentTaskId}/stop`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Failed to stop generation:', error);
+    } finally {
+      setIsLoading(false);
+      setCurrentTaskId(null);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,6 +216,7 @@ export function ChatPage() {
     }]);
 
     try {
+      abortControllerRef.current = new AbortController();
       await fetchEventSource('/api/chat/message', {
         method: 'POST',
         headers: {
@@ -110,17 +232,21 @@ export function ChatPage() {
             upload_file_id: f.id
           }))
         }),
+        signal: abortControllerRef.current.signal,
         onmessage(msg) {
           try {
             const data = JSON.parse(msg.data);
             if (data.event === 'message') {
+              if (data.task_id && !currentTaskId) {
+                setCurrentTaskId(data.task_id);
+              }
               if (data.conversation_id && !conversationId) {
                 setConversationId(data.conversation_id);
               }
               currentResponse += data.answer;
               setMessages(prev => prev.map(m => 
                 m.id === assistantMessageId 
-                  ? { ...m, content: currentResponse }
+                  ? { ...m, content: currentResponse, originalId: data.message_id || data.id, taskId: data.task_id }
                   : m
               ));
             }
@@ -133,14 +259,20 @@ export function ChatPage() {
         }
       });
     } catch (error) {
-      console.error('Error in fetchEventSource:', error);
-      setMessages(prev => prev.map(m => 
-        m.id === assistantMessageId 
-          ? { ...m, content: m.content + '\n\n**[消息发送失败，请检查网络设置]**' }
-          : m
-      ));
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('Generation stopped by user');
+      } else {
+        console.error('Error in fetchEventSource:', error);
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMessageId 
+            ? { ...m, content: m.content + '\n\n**[消息发送失败，请检查网络设置]**' }
+            : m
+        ));
+      }
     } finally {
       setIsLoading(false);
+      setCurrentTaskId(null);
+      abortControllerRef.current = null;
     }
   };
 
@@ -148,7 +280,7 @@ export function ChatPage() {
     <div className="flex h-full flex-col bg-white">
       {/* Header */}
       <header className="flex h-16 items-center border-b border-slate-100 px-8">
-        <h2 className="text-lg font-bold text-slate-800">通用 Agent 聊天</h2>
+        <h2 className="text-lg font-bold text-slate-800">Super Agent 聊天</h2>
       </header>
 
       {/* Messages Area */}
@@ -178,7 +310,7 @@ export function ChatPage() {
                   {msg.role === 'user' ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                 </div>
                 <div className={cn(
-                  "flex max-w-[85%] flex-col gap-3",
+                  "flex max-w-[85%] flex-col gap-3 group/msg",
                   msg.role === 'user' ? "items-end" : "items-start"
                 )}>
                   {msg.files && msg.files.length > 0 && (
@@ -205,6 +337,34 @@ export function ChatPage() {
                       dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
                     />
                   </div>
+                  {msg.role === 'assistant' && msg.originalId && (
+                    <div className={cn(
+                      "flex items-center gap-2 px-2 transition-opacity duration-200",
+                      // Show if hovered OR if there is already a rating
+                      msg.feedback?.rating ? "opacity-100" : "opacity-0 group-hover/msg:opacity-100"
+                    )}>
+                      <button
+                        onClick={() => handleFeedback(msg.id, msg.originalId, 'like')}
+                        className={cn(
+                          "flex items-center gap-1 rounded p-1 text-xs transition-colors hover:bg-slate-100",
+                          msg.feedback?.rating === 'like' ? "text-green-600" : "text-slate-400"
+                        )}
+                        title="Like"
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(msg.id, msg.originalId, 'dislike')}
+                        className={cn(
+                          "flex items-center gap-1 rounded p-1 text-xs transition-colors hover:bg-slate-100",
+                          msg.feedback?.rating === 'dislike' ? "text-red-600" : "text-slate-400"
+                        )}
+                        title="Dislike"
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -246,7 +406,7 @@ export function ChatPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   handleSend();
                 }
@@ -278,23 +438,33 @@ export function ChatPage() {
                 </Button>
               </div>
 
-              {/* Right Send Button */}
-              <Button 
-                onClick={handleSend} 
-                disabled={isLoading || (!inputValue.trim() && uploadedFiles.length === 0)}
-                className={cn(
-                  "h-9 w-9 rounded-full p-0 transition-all",
-                  isLoading || (!inputValue.trim() && uploadedFiles.length === 0)
-                    ? "bg-slate-200 text-slate-400"
-                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95"
-                )}
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-5 w-5" />}
-              </Button>
+              {/* Right Send/Stop Button */}
+              {isLoading ? (
+                <Button 
+                  onClick={handleStop}
+                  className="h-9 w-9 rounded-full bg-red-600 p-0 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:scale-95"
+                  title="停止生成"
+                >
+                  <Square className="h-4 w-4 fill-current" />
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleSend} 
+                  disabled={!inputValue.trim() && uploadedFiles.length === 0}
+                  className={cn(
+                    "h-9 w-9 rounded-full p-0 transition-all",
+                    !inputValue.trim() && uploadedFiles.length === 0
+                      ? "bg-slate-200 text-slate-400"
+                      : "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95"
+                  )}
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
           <p className="mt-4 text-center text-xs text-slate-400">
-            由 Dify 提供强力驱动，可能会产生错误信息，请仔细甄别。
+            AI 也可能会产生错误信息，请仔细甄别。
           </p>
         </div>
       </div>

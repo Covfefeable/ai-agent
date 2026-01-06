@@ -56,7 +56,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: error.errors });
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
       }
       fastify.log.error(error);
       return reply.status(500).send({ message: 'Internal server error' });
@@ -98,6 +98,132 @@ export async function chatRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ message: 'Upload failed' });
+    }
+  });
+
+  // Get Conversations List
+  fastify.get('/conversations', async (request, reply) => {
+    try {
+      const user = request.user as any;
+      const { last_id, limit = 20 } = request.query as { last_id?: string; limit?: number };
+
+      const response = await axios.get(`${DIFY_BASE_URL}/conversations`, {
+        params: {
+          user: user.id.toString(),
+          last_id,
+          limit
+        },
+        headers: {
+          'Authorization': `Bearer ${DIFY_API_KEY}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ message: 'Failed to fetch conversations' });
+    }
+  });
+
+  // Delete Conversation
+  fastify.delete('/conversations/:id', async (request, reply) => {
+    try {
+      const user = request.user as any;
+      const { id } = request.params as { id: string };
+
+      const response = await axios.delete(`${DIFY_BASE_URL}/conversations/${id}`, {
+        data: {
+          user: user.id.toString()
+        },
+        headers: {
+          'Authorization': `Bearer ${DIFY_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ message: 'Failed to delete conversation' });
+    }
+  });
+
+  // Get Messages History
+  fastify.get('/messages', async (request, reply) => {
+    try {
+      const user = request.user as any;
+      const { conversation_id, first_id, limit = 20 } = request.query as { conversation_id: string; first_id?: string; limit?: number };
+
+      const response = await axios.get(`${DIFY_BASE_URL}/messages`, {
+        params: {
+          user: user.id.toString(),
+          conversation_id,
+          first_id,
+          limit
+        },
+        headers: {
+          'Authorization': `Bearer ${DIFY_API_KEY}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ message: 'Failed to fetch messages' });
+    }
+  });
+
+  // Message Feedback
+  fastify.post('/messages/:message_id/feedbacks', async (request, reply) => {
+    try {
+      const user = request.user as any;
+      const { message_id } = request.params as { message_id: string };
+      const { rating } = request.body as { rating: 'like' | 'dislike' | null };
+
+      const response = await axios.post(
+        `${DIFY_BASE_URL}/messages/${message_id}/feedbacks`,
+        {
+          rating,
+          user: user.id.toString()
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${DIFY_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ message: 'Failed to submit feedback' });
+    }
+  });
+
+  // Stop Generation
+  fastify.post('/messages/:task_id/stop', async (request, reply) => {
+    try {
+      const user = request.user as any;
+      const { task_id } = request.params as { task_id: string };
+
+      const response = await axios.post(
+        `${DIFY_BASE_URL}/chat-messages/${task_id}/stop`,
+        {
+          user: user.id.toString()
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${DIFY_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ message: 'Failed to stop generation' });
     }
   });
 }

@@ -46,7 +46,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return { user: newUser, token };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: error.errors });
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
       }
       fastify.log.error(error);
       return reply.status(500).send({ message: 'Internal server error' });
@@ -78,7 +78,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: error.errors });
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
       }
       fastify.log.error(error);
       return reply.status(500).send({ message: 'Internal server error' });
