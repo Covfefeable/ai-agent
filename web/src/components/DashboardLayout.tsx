@@ -55,6 +55,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Update document title based on route
+    if (location.pathname === '/' || location.pathname.startsWith('/chat/')) {
+      document.title = 'Super Agent - 对话';
+    } else if (location.pathname === '/knowledge') {
+      document.title = 'Super Agent - 知识库';
+    } else if (location.pathname.startsWith('/knowledge/')) {
+      document.title = 'Super Agent - 知识库详情';
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
     fetchConversations();
     // Listen for custom event to refresh conversations
     const handleRefresh = () => {
