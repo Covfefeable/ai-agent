@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
@@ -33,15 +33,21 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Check if any users exist to assign 'owner' role
+      const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const isFirstUser = Number(countResult.count) === 0;
+      const role = isFirstUser ? 'owner' : 'member';
+
       // Create user
       const [newUser] = await db.insert(users).values({
         name,
         email,
         password: hashedPassword,
-      }).returning({ id: users.id, name: users.name, email: users.email });
+        role,
+      }).returning({ id: users.id, name: users.name, email: users.email, role: users.role });
 
       // Generate token
-      const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
       return { user: newUser, token };
     } catch (error) {
@@ -70,10 +76,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Generate token
-      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
       return {
-        user: { id: user.id, name: user.name, email: user.email },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
         token
       };
     } catch (error) {

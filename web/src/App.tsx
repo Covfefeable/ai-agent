@@ -8,6 +8,7 @@ import { KnowledgePage } from './pages/knowledge';
 import { KnowledgeDetailPage } from './pages/knowledge-detail';
 import { DashboardLayout } from './components/DashboardLayout';
 import { DocumentDetailPage } from './pages/document-detail';
+import { UsersPage } from './pages/users';
 
 function Layout() {
   return (
@@ -47,6 +48,7 @@ function App() {
             path="/knowledge/:datasetId/document/:documentId"
             element={<DocumentDetailPage />}
           />
+          <Route path="/users" element={<UsersPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

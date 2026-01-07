@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2, Database } from 'lucide-react';
+import { LogOut, Plus, MessageSquare, ChevronUp, User, Trash2, Database, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatApi } from '@/api/chat';
 
@@ -170,6 +170,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="relative">
             {isMenuOpen && (
               <div className="absolute bottom-full left-0 mb-3 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                {(user?.role === 'owner' || user?.role === 'admin') && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/users');
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <Users className="h-4 w-4" />
+                      用户管理
+                    </button>
+                    <div className="h-px w-full bg-slate-100" />
+                  </>
+                )}
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"

@@ -5,6 +5,7 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(), // 添加密码字段
+  role: text('role').notNull().default('member'), // owner, admin, member
   createdAt: timestamp('created_at').defaultNow(),
 });
 
