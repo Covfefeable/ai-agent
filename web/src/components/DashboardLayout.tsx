@@ -62,6 +62,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       document.title = 'Super Agent - 知识库';
     } else if (location.pathname.startsWith('/knowledge/')) {
       document.title = 'Super Agent - 知识库详情';
+    } else if (location.pathname === '/agents-square') {
+      document.title = 'Super Agent - 智能体广场';
     }
   }, [location.pathname]);
 
@@ -86,6 +88,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { id: 'chat', label: 'Super Agent 聊天', icon: MessageSquare, path: '/' },
     { id: 'knowledge', label: '知识库', icon: Database, path: '/knowledge' },
+    { id: 'agents-square', label: '智能体广场', icon: Users, path: '/agents-square' },
   ];
 
   return (

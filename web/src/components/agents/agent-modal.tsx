@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import type { AgentCategory } from '@/api/agentCategories';
 import { agentsApi } from '@/api/agents';
@@ -102,18 +103,14 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
 
             <div className="space-y-2">
               <Label htmlFor="category">分类</Label>
-              <select
-                id="category"
+              <Select
+                options={[{ label: '未分类', value: '' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
                 value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                onChange={(val) => setFormData({ ...formData, categoryId: val })}
+                placeholder="选择分类"
                 disabled={isSubmitting}
-              >
-                <option value="">未分类</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                className="mt-1 w-full"
+              />
               <div className="mt-2">
                 <button
                   type="button"

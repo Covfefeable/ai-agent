@@ -35,6 +35,33 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get('/public', async (request: any, reply) => {
+    try {
+      const { keyword, categoryId } = request.query as { keyword?: string; categoryId?: string };
+      let baseQuery = db.select({
+        id: agents.id,
+        title: agents.title,
+        description: agents.description,
+        iconUrl: agents.iconUrl,
+        isPublic: agents.isPublic,
+        categoryId: agents.categoryId,
+        createdAt: agents.createdAt,
+      }).from(agents).where(eq(agents.isPublic, true)).$dynamic();
+      if (keyword) {
+        const k = `%${keyword}%`;
+        baseQuery = baseQuery.where(or(ilike(agents.title, k), ilike(agents.description, k)));
+      }
+      if (categoryId) {
+        baseQuery = baseQuery.where(eq(agents.categoryId, categoryId));
+      }
+      const list = await baseQuery.orderBy(desc(agents.createdAt));
+      return { data: list };
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Get public agents error');
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
   fastify.post('/', async (request: any, reply) => {
     try {
       const userRole = request.user.role;

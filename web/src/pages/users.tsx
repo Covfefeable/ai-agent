@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usersApi, type User } from '@/api/users';
 import { toast } from 'sonner';
 import { Loader2, Shield, User as UserIcon, ShieldAlert, Search } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 import { format } from 'date-fns';
 
 export function UsersPage() {
@@ -22,8 +23,9 @@ export function UsersPage() {
       setIsLoading(true);
       const response = await usersApi.getUsers(searchKeyword);
       setUsers(response.data);
-    } catch (error: any) {
-      console.error('Failed to fetch users:', error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to fetch users:', msg);
       toast.error('获取用户列表失败');
     } finally {
       setIsLoading(false);
@@ -35,9 +37,10 @@ export function UsersPage() {
       await usersApi.updateRole(userId, newRole);
       toast.success('角色更新成功');
       fetchUsers();
-    } catch (error: any) {
-      console.error('Update role failed:', error);
-      toast.error(error.response?.data?.message || '角色更新失败');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Update role failed:', msg);
+      toast.error('角色更新失败');
     }
   };
 
@@ -111,14 +114,17 @@ export function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {user.role !== 'owner' && (
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'member')}
-                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="member">设为普通用户</option>
-                          <option value="admin">设为管理员</option>
-                        </select>
+                        <div className="inline-block w-40">
+                          <Select
+                            options={[
+                              { label: '设为普通用户', value: 'member' },
+                              { label: '设为管理员', value: 'admin' },
+                            ]}
+                            value={user.role}
+                            onChange={(val: string) => handleRoleChange(user.id, val as 'admin' | 'member')}
+                            className="w-full"
+                          />
+                        </div>
                       )}
                     </td>
                   </tr>

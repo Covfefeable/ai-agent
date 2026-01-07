@@ -16,6 +16,11 @@ export const agentsApi = {
       params: { keyword }
     });
   },
+  publicList: (keyword?: string, categoryId?: string) => {
+    return http.get<unknown, { data: Agent[] }>('/agents/public', {
+      params: { keyword, categoryId }
+    });
+  },
   get: (id: string) => {
     return http.get<unknown, { data: Agent & { apiKey: string } }>(`/agents/${id}`);
   },
