@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Plus, Loader2, X, Calendar, FileText, Trash2, Pencil } from 'lucide-react';
+import { Database, Plus, Loader2, Calendar, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { KnowledgeBaseModal } from '@/components/knowledge/KnowledgeBaseModal';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { knowledgeApi } from '@/api/knowledge';
@@ -21,9 +20,7 @@ export function KnowledgePage() {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [currentKb, setCurrentKb] = useState<KnowledgeBase | undefined>(undefined);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -46,42 +43,14 @@ export function KnowledgePage() {
 
   const openCreateModal = () => {
     setModalMode('create');
-    setFormData({ name: '', description: '' });
+    setCurrentKb(undefined);
     setIsModalOpen(true);
   };
 
   const openEditModal = (kb: KnowledgeBase) => {
     setModalMode('edit');
-    setCurrentId(kb.id);
-    setFormData({ name: kb.name, description: kb.description || '' });
+    setCurrentKb(kb);
     setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
-    try {
-      setIsSubmitting(true);
-      
-      if (modalMode === 'create') {
-        await knowledgeApi.createDataset(formData);
-        toast.success('知识库创建成功');
-      } else {
-        if (currentId) {
-          await knowledgeApi.updateDataset(currentId, formData);
-          toast.success('知识库更新成功');
-        }
-      }
-      
-      setIsModalOpen(false);
-      setFormData({ name: '', description: '' });
-      fetchKnowledgeBases();
-    } catch (error: any) {
-      console.error(`Failed to ${modalMode} knowledge base:`, error);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDelete = async () => {
@@ -183,75 +152,13 @@ export function KnowledgePage() {
         )}
       </div>
 
-      {/* Create Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">
-                {modalMode === 'create' ? '新建知识库' : '编辑知识库'}
-              </h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">名称</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="请输入知识库名称"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">描述</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="请输入知识库描述"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModalOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  取消
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {modalMode === 'create' ? '创建中...' : '保存中...'}
-                    </>
-                  ) : (
-                    modalMode === 'create' ? '立即创建' : '保存修改'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <KnowledgeBaseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchKnowledgeBases}
+        mode={modalMode}
+        initialData={currentKb}
+      />
 
       <ConfirmDialog
         isOpen={!!deleteId}

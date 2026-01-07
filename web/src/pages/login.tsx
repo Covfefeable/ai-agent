@@ -149,12 +149,12 @@ export function LoginPage() {
           </div>
           
           <h2 className="mb-8 text-4xl font-bold leading-relaxed tracking-tight lg:text-5xl">
-            构建您的<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400">专属智能体</span>
+            打造您的<br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400">专属 AI 助手</span>
           </h2>
           
           <p className="mb-10 text-lg text-slate-400 leading-relaxed">
-            Super Agent 能够基于您的私有数据构建强大的 AI 助手。深度连接知识库，灵活切换模型，释放数据的无限潜能。
+            Super Agent 能够基于您的偏好构建强大的 AI 助手。深度连接知识库，灵活切换模型，释放数据的无限潜能。
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">

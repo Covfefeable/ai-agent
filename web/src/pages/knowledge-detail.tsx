@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Loader2, HardDrive, Plus, X, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { UploadDocumentModal } from '@/components/knowledge/UploadDocumentModal';
 import { toast } from 'sonner';
 
 export function KnowledgeDetailPage() {
@@ -16,10 +15,6 @@ export function KnowledgeDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [separator, setSeparator] = useState('\\n\\n\\n');
-  const [maxTokens, setMaxTokens] = useState(500);
-  const [isUploading, setIsUploading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,31 +33,6 @@ export function KnowledgeDetailPage() {
       toast.error('获取文档列表失败');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadFile || !id) return;
-
-    try {
-      setIsUploading(true);
-      const actualSeparator = separator.replace(/\\n/g, '\n');
-
-      await knowledgeApi.uploadDocument(id, uploadFile, {
-        separator: actualSeparator,
-        max_tokens: maxTokens,
-      });
-      
-      toast.success('文档上传成功');
-      setIsUploadModalOpen(false);
-      setUploadFile(null);
-      fetchDocuments();
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('上传失败');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -118,7 +88,11 @@ export function KnowledgeDetailPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-50/50">
+                    <tr 
+                      key={doc.id} 
+                      className="cursor-pointer hover:bg-slate-50/50"
+                      onClick={() => navigate(`/knowledge/${id}/document/${doc.id}`)}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -147,7 +121,10 @@ export function KnowledgeDetailPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => setDeleteId(doc.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(doc.id);
+                          }}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                           title="删除文档"
                         >
@@ -178,92 +155,12 @@ export function KnowledgeDetailPage() {
         description="确定要删除这个文档吗？此操作无法撤销。"
       />
 
-      {/* Upload Modal */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">上传文档</h3>
-              <button 
-                onClick={() => setIsUploadModalOpen(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpload}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="file">选择文件</Label>
-                  <div className="flex items-center justify-center w-full">
-                    <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-4 text-slate-500" />
-                        <p className="mb-2 text-sm text-slate-500">
-                          {uploadFile ? uploadFile.name : '点击选择文件'}
-                        </p>
-                      </div>
-                      <input 
-                        id="file-upload" 
-                        type="file" 
-                        className="hidden" 
-                        onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="separator">分段标识符</Label>
-                    <Input
-                      id="separator"
-                      value={separator}
-                      onChange={(e) => setSeparator(e.target.value)}
-                      placeholder="\n\n\n"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="maxTokens">最大分段长度</Label>
-                    <Input
-                      id="maxTokens"
-                      type="number"
-                      value={maxTokens}
-                      onChange={(e) => setMaxTokens(parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsUploadModalOpen(false)}
-                  disabled={isUploading}
-                >
-                  取消
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={isUploading || !uploadFile}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      上传中...
-                    </>
-                  ) : (
-                    '开始上传'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UploadDocumentModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={fetchDocuments}
+        datasetId={id!}
+      />
     </div>
   );
 }

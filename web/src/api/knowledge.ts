@@ -49,6 +49,46 @@ export interface GetDocumentsResponse {
   page: number;
 }
 
+export interface Segment {
+  id: string;
+  position: number;
+  document_id: string;
+  content: string;
+  answer?: string;
+  word_count: number;
+  tokens: number;
+  keywords: string[];
+  index_node_id: string;
+  index_node_hash: string;
+  hit_count: number;
+  enabled: boolean;
+  disabled_at?: number;
+  disabled_by?: string;
+  status: string;
+  created_by: string;
+  created_at: number;
+  indexing_at: number;
+  completed_at: number;
+  error?: string;
+  stopped_at?: number;
+}
+
+export interface GetSegmentsResponse {
+  data: Segment[];
+  has_more: boolean;
+  limit: number;
+  total: number;
+  page: number;
+  doc_form: string;
+}
+
+export interface UpdateSegmentParams {
+  content: string;
+  answer?: string;
+  keywords?: string[];
+  enabled?: boolean;
+}
+
 export const knowledgeApi = {
   getDatasets: () => {
     return http.get<any, { data: Dataset[] }>('/knowledge/datasets');
@@ -70,6 +110,22 @@ export const knowledgeApi = {
     return http.get<any, GetDocumentsResponse>(`/knowledge/datasets/${id}/documents`, {
       params: { page, limit },
     });
+  },
+
+  getSegments: (datasetId: string, documentId: string, page = 1, limit = 20) => {
+    return http.get<any, GetSegmentsResponse>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments`, {
+      params: { page, limit },
+    });
+  },
+
+  updateSegment: (datasetId: string, documentId: string, segmentId: string, data: UpdateSegmentParams) => {
+    return http.post<any, { data: Segment }>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments/${segmentId}`, {
+      segment: data
+    });
+  },
+
+  deleteSegment: (datasetId: string, documentId: string, segmentId: string) => {
+    return http.delete(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments/${segmentId}`);
   },
 
   uploadDocument: (id: string, file: File, params: { separator: string, max_tokens: number }) => {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { datasets } from '../db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { randomBytes } from 'crypto';
 
 const createDatasetSchema = z.object({
   name: z.string(),
@@ -23,8 +24,13 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       const body = createDatasetSchema.parse(request.body);
       const userId = request.user.id; // user object is attached by auth middleware
       
+      // Append random suffix to name for Dify to ensure uniqueness
+      const suffix = randomBytes(3).toString('hex');
+      const difyName = `${body.name}_${suffix}`;
+
       const payload = {
         ...body,
+        name: difyName,
         retrieval_model: {
           search_method: 'hybrid_search',
           reranking_enable: true,
@@ -153,10 +159,13 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
 
       // Update Dify
       try {
-        await axios.patch(`${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}`, {
-          name,
-          description,
-        }, {
+        const difyUpdatePayload: any = { description };
+        if (name) {
+          const suffix = randomBytes(3).toString('hex');
+          difyUpdatePayload.name = `${name}_${suffix}`;
+        }
+
+        await axios.patch(`${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}`, difyUpdatePayload, {
           headers: {
             'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`,
             'Content-Type': 'application/json'
@@ -333,6 +342,115 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error: any) {
       console.error('Delete Document Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Get document segments
+  fastify.get('/datasets/:id/documents/:documentId/segments', async (request: any, reply) => {
+    try {
+      const { id, documentId } = request.params;
+      const userId = request.user.id;
+      const { page = 1, limit = 20 } = request.query;
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      // Get segments from Dify
+      const response = await axios.get(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments`,
+        {
+          params: { page, limit },
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Get Segments Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Update segment
+  fastify.post('/datasets/:id/documents/:documentId/segments/:segmentId', async (request: any, reply) => {
+    try {
+      const { id, documentId, segmentId } = request.params;
+      const userId = request.user.id;
+      const body = request.body;
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      // Update segment in Dify
+      const response = await axios.post(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments/${segmentId}`,
+        body,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Update Segment Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  // Delete segment
+  fastify.delete('/datasets/:id/documents/:documentId/segments/:segmentId', async (request: any, reply) => {
+    try {
+      const { id, documentId, segmentId } = request.params;
+      const userId = request.user.id;
+
+      // Find dataset in local db
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      // Delete segment in Dify
+      const response = await axios.delete(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments/${segmentId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete Segment Error:', error);
       const status = error.response?.status || 500;
       const message = error.response?.data?.message || 'Internal Server Error';
       reply.status(status).send({ message });

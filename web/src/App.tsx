@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
@@ -7,27 +7,12 @@ import { ChatPage } from './pages/chat';
 import { KnowledgePage } from './pages/knowledge';
 import { KnowledgeDetailPage } from './pages/knowledge-detail';
 import { DashboardLayout } from './components/DashboardLayout';
+import { DocumentDetailPage } from './pages/document-detail';
 
-function Dashboard() {
+function Layout() {
   return (
     <DashboardLayout>
-      <ChatPage />
-    </DashboardLayout>
-  );
-}
-
-function KnowledgeDashboard() {
-  return (
-    <DashboardLayout>
-      <KnowledgePage />
-    </DashboardLayout>
-  );
-}
-
-function KnowledgeDetailDashboard() {
-  return (
-    <DashboardLayout>
-      <KnowledgeDetailPage />
+      <Outlet />
     </DashboardLayout>
   );
 }
@@ -47,30 +32,22 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        
         <Route
-          path="/"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <Layout />
             </PrivateRoute>
           }
-        />
-        <Route
-          path="/knowledge"
-          element={
-            <PrivateRoute>
-              <KnowledgeDashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/knowledge/:id"
-          element={
-            <PrivateRoute>
-              <KnowledgeDetailDashboard />
-            </PrivateRoute>
-          }
-        />
+        >
+          <Route path="/" element={<ChatPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
+          <Route
+            path="/knowledge/:datasetId/document/:documentId"
+            element={<DocumentDetailPage />}
+          />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
