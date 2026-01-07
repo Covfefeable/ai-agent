@@ -2,16 +2,15 @@ import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { db } from '../db';
 import { agents, categories } from '../db/schema';
-import { eq, desc, ilike, or } from 'drizzle-orm';
+import { eq, desc, ilike, or, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: any, reply) => {
     try {
       const userRole = request.user.role;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
+      const userId = request.user.id;
+      
       const { keyword } = request.query as { keyword?: string };
 
       let baseQuery = db.select({
@@ -23,10 +22,23 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         categoryId: agents.categoryId,
         createdAt: agents.createdAt,
       }).from(agents).$dynamic();
+
+      const conditions = [];
+
+      // Access control: Admin/Owner see all, others see own
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(agents.userId, userId));
+      }
+
       if (keyword) {
         const k = `%${keyword}%`;
-        baseQuery = baseQuery.where(or(ilike(agents.title, k), ilike(agents.description, k)));
+        conditions.push(or(ilike(agents.title, k), ilike(agents.description, k)));
       }
+
+      if (conditions.length > 0) {
+        baseQuery = baseQuery.where(and(...conditions));
+      }
+
       const list = await baseQuery.orderBy(desc(agents.createdAt));
       return { data: list };
     } catch (error: any) {
@@ -37,7 +49,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
 
   fastify.get('/public', async (request: any, reply) => {
     try {
+      const userRole = request.user.role;
+      const userId = request.user.id;
       const { keyword, categoryId } = request.query as { keyword?: string; categoryId?: string };
+      
       let baseQuery = db.select({
         id: agents.id,
         title: agents.title,
@@ -46,14 +61,28 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         isPublic: agents.isPublic,
         categoryId: agents.categoryId,
         createdAt: agents.createdAt,
-      }).from(agents).where(eq(agents.isPublic, true)).$dynamic();
+      }).from(agents).$dynamic();
+
+      const conditions = [];
+
+      // Access control: Admin/Owner see all, others see public OR own
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(or(eq(agents.isPublic, true), eq(agents.userId, userId)));
+      }
+
       if (keyword) {
         const k = `%${keyword}%`;
-        baseQuery = baseQuery.where(or(ilike(agents.title, k), ilike(agents.description, k)));
+        conditions.push(or(ilike(agents.title, k), ilike(agents.description, k)));
       }
+      
       if (categoryId) {
-        baseQuery = baseQuery.where(eq(agents.categoryId, categoryId));
+        conditions.push(eq(agents.categoryId, categoryId));
       }
+
+      if (conditions.length > 0) {
+        baseQuery = baseQuery.where(and(...conditions));
+      }
+
       const list = await baseQuery.orderBy(desc(agents.createdAt));
       return { data: list };
     } catch (error: any) {
@@ -72,7 +101,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row.isPublic) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
-      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.get(`${baseUrl}/parameters`, {
         headers: {
           Authorization: `Bearer ${row.apiKey}`,
@@ -98,7 +127,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row.isPublic) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
-      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const body = request.body || {};
       const response_mode = 'streaming';
       const payload = {
@@ -155,7 +184,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const form = new FormData();
       form.append('file', blob, data.filename);
       form.append('user', (request.user?.id ?? 'web').toString());
-      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.post(`${baseUrl}/files/upload`, form, {
         headers: {
           Authorization: `Bearer ${row.apiKey}`,
@@ -172,17 +201,17 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       const userId = request.user.id;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
+      // Access control: Anyone logged in can create
+      
       const bodySchema = z.object({
         apiKey: z.string().min(1),
+        baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
       });
-      const { apiKey, isPublic, categoryId } = bodySchema.parse(request.body);
+      const { apiKey, baseUrl: inputBaseUrl, isPublic, categoryId } = bodySchema.parse(request.body);
 
-      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const baseUrl = inputBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.get(`${baseUrl}/site`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -210,6 +239,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         title,
         description,
         apiKey,
+        baseUrl: inputBaseUrl || null,
         iconUrl: iconUrl || null,
         isPublic: !!isPublic,
         categoryId: catId,
@@ -227,10 +257,19 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.delete('/:id', async (request: any, reply) => {
     try {
       const userRole = request.user.role;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
       const id = request.params.id as string;
+      
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+
+      if (!['owner', 'admin'].includes(userRole)) {
+        if (row.userId !== request.user.id) {
+          return reply.status(403).send({ message: 'Forbidden' });
+        }
+      }
+
       await db.delete(agents).where(eq(agents.id, id));
       return { message: 'Deleted' };
     } catch (error: any) {
@@ -242,14 +281,18 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.get('/:id', async (request: any, reply) => {
     try {
       const userRole = request.user.role;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
       const id = request.params.id as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
+
+      if (!['owner', 'admin'].includes(userRole)) {
+        if (row.userId !== request.user.id) {
+           return reply.status(403).send({ message: 'Forbidden' });
+        }
+      }
+
       return { data: row };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent detail error');
@@ -260,29 +303,49 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.patch('/:id', async (request: any, reply) => {
     try {
       const userRole = request.user.role;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
       const id = request.params.id as string;
       const bodySchema = z.object({
         apiKey: z.string().min(1).optional(),
+        baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
       });
       const parsed = bodySchema.safeParse(request.body || {});
       const inputApiKey = parsed.success ? parsed.data.apiKey : undefined;
+      const inputBaseUrl = parsed.success ? parsed.data.baseUrl : undefined;
       const inputIsPublic = parsed.success ? parsed.data.isPublic : undefined;
       const inputCategoryId = parsed.success ? parsed.data.categoryId : undefined;
 
       let targetApiKey = inputApiKey;
-      if (!targetApiKey) {
-        const [record] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
-        if (record?.apiKey) {
-          targetApiKey = record.apiKey as string;
+      let targetBaseUrl = inputBaseUrl;
+
+      // Check DB if needed
+      const [record] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!record) {
+         return reply.status(404).send({ message: 'Not Found' });
+      }
+
+      if (!['owner', 'admin'].includes(userRole)) {
+        if (record.userId !== request.user.id) {
+           return reply.status(403).send({ message: 'Forbidden' });
         }
       }
 
-      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; isPublic: boolean; categoryId: string | null }> = {};
+      if (!targetApiKey) {
+        targetApiKey = record.apiKey;
+      }
+      if (targetBaseUrl === undefined) {
+        targetBaseUrl = record.baseUrl || undefined;
+      }
+
+      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; isPublic: boolean; categoryId: string | null; baseUrl: string | null; apiKey: string }> = {};
+      
+      if (inputApiKey) {
+        updateFields.apiKey = inputApiKey;
+      }
+      if (inputBaseUrl !== undefined) {
+        updateFields.baseUrl = inputBaseUrl || null;
+      }
       if (typeof inputIsPublic === 'boolean') {
         updateFields.isPublic = inputIsPublic;
       }
@@ -299,8 +362,8 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       }
 
       if (targetApiKey) {
-        const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
-        const resp = await axios.get(`${baseUrl}/site`, {
+        const verifyUrl = targetBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+        const resp = await axios.get(`${verifyUrl}/site`, {
           headers: {
             Authorization: `Bearer ${targetApiKey}`,
           },
@@ -313,23 +376,18 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         const iconType: string = data.icon_type || 'emoji';
         const iconUrl: string | null = iconType === 'image' ? (data.icon_url || null) : null;
 
-      const [updated] = await db.update(agents)
-        .set({
-          ...updateFields,
+        Object.assign(updateFields, {
           title,
           description,
           iconUrl: iconUrl || null,
-        })
+        });
+      }
+
+      const [updated] = await db.update(agents)
+        .set(updateFields)
         .where(eq(agents.id, id))
         .returning();
       return { data: updated };
-      } else {
-        const [updated] = await db.update(agents)
-          .set(updateFields)
-          .where(eq(agents.id, id))
-          .returning();
-        return { data: updated };
-      }
     } catch (error: any) {
       fastify.log.error({ error }, 'Update agent error');
       const status = error?.response?.status || 500;

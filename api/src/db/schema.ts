@@ -30,6 +30,7 @@ export const agents = pgTable('agents', {
   title: text('title').notNull(),
   description: text('description'),
   apiKey: text('api_key').notNull(),
+  baseUrl: text('base_url'),
   iconUrl: text('icon_url'),
   isPublic: boolean('is_public').notNull().default(false),
   categoryId: uuid('category_id').references(() => categories.id),

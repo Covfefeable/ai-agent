@@ -7,10 +7,6 @@ import { z } from 'zod';
 export async function agentCategoriesRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: any, reply) => {
     try {
-      const userRole = request.user.role;
-      if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
-      }
       const list = await db.select().from(categories).orderBy(desc(categories.createdAt));
       return { data: list };
     } catch (error: any) {

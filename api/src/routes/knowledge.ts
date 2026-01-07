@@ -76,21 +76,28 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
   fastify.get('/datasets', async (request: any, reply) => {
     try {
       const userId = request.user.id;
+      const userRole = request.user.role;
       const { keyword } = request.query;
       
-      let query = db.select().from(datasets).where(eq(datasets.userId, userId));
+      let baseQuery = db.select().from(datasets).$dynamic();
+      const conditions = [];
       
-      if (keyword) {
-        query = db.select().from(datasets).where(and(
-          eq(datasets.userId, userId),
-          or(
-            ilike(datasets.name, `%${keyword}%`), 
-            ilike(datasets.description, `%${keyword}%`)
-          )
-        ));
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
       }
       
-      const userDatasets = await query.orderBy(desc(datasets.createdAt));
+      if (keyword) {
+        conditions.push(or(
+          ilike(datasets.name, `%${keyword}%`), 
+          ilike(datasets.description, `%${keyword}%`)
+        ));
+      }
+
+      if (conditions.length > 0) {
+        baseQuery = baseQuery.where(and(...conditions));
+      }
+      
+      const userDatasets = await baseQuery.orderBy(desc(datasets.createdAt));
       
       return { data: userDatasets };
     } catch (error: any) {
@@ -104,11 +111,17 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -151,16 +164,22 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
       const { name, description } = request.body;
 
       if (!name) {
         return reply.status(400).send({ message: 'Name is required' });
       }
 
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
+
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -206,12 +225,18 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
       const { page = 1, limit = 20, keyword } = request.query;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -240,11 +265,17 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
+      
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
       
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -329,11 +360,17 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id, documentId } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
+      
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
       
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -363,12 +400,18 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id, documentId } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
       const { page = 1, limit = 20 } = request.query;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -400,12 +443,18 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id, documentId, segmentId } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
       const body = request.body;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -437,11 +486,17 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id, documentId, segmentId } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {
@@ -472,12 +527,18 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
+      const userRole = request.user.role;
       const { query } = request.body;
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
 
       // Find dataset in local db
       const [dataset] = await db.select()
         .from(datasets)
-        .where(and(eq(datasets.id, id), eq(datasets.userId, userId)))
+        .where(and(...conditions))
         .limit(1);
 
       if (!dataset) {

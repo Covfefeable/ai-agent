@@ -17,14 +17,16 @@ interface AgentModalProps {
   initialData?: {
     id?: string;
     apiKey?: string;
+    baseUrl?: string;
     isPublic?: boolean;
     categoryId?: string | null;
   };
 }
 
 export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData }: AgentModalProps) {
-  const [formData, setFormData] = useState<{ apiKey: string; isPublic: boolean; categoryId: string | '' }>({
+  const [formData, setFormData] = useState<{ apiKey: string; baseUrl: string; isPublic: boolean; categoryId: string | '' }>({
     apiKey: '',
+    baseUrl: '',
     isPublic: false,
     categoryId: '',
   });
@@ -34,11 +36,12 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
     if (isOpen && initialData) {
       setFormData({
         apiKey: initialData.apiKey || '',
+        baseUrl: initialData.baseUrl || '',
         isPublic: !!initialData.isPublic,
         categoryId: initialData.categoryId || '',
       });
     } else if (isOpen) {
-      setFormData({ apiKey: '', isPublic: false, categoryId: '' });
+      setFormData({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '' });
     }
   }, [isOpen, initialData]);
 
@@ -50,6 +53,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         if (!formData.apiKey.trim()) return;
         await agentsApi.create({
           apiKey: formData.apiKey,
+          baseUrl: formData.baseUrl,
           isPublic: formData.isPublic,
           categoryId: formData.categoryId || undefined,
         });
@@ -59,6 +63,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         if (!id) return;
         await agentsApi.update(id, {
           isPublic: formData.isPublic,
+          baseUrl: formData.baseUrl,
           categoryId: formData.categoryId || null,
           ...(formData.apiKey ? { apiKey: formData.apiKey } : {}),
         });
@@ -90,6 +95,18 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="baseUrl">API Base URL <span className="text-xs text-slate-400 font-normal ml-1">（选填）</span></Label>
+              <Input
+                id="baseUrl"
+                value={formData.baseUrl}
+                onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                placeholder="https://api.dify.ai/v1"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-slate-500">请填写您的 Dify 智能体所在的 API Base URL。</p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="apiKey">API Key</Label>
               <Input

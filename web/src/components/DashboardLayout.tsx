@@ -186,19 +186,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       用户管理
                     </button>
                     <div className="h-px w-full bg-slate-100" />
-                    <button
-                      onClick={() => {
-                        navigate('/agents');
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                      <Users className="h-4 w-4" />
-                      智能体管理
-                    </button>
-                    <div className="h-px w-full bg-slate-100" />
                   </>
                 )}
+                <button
+                  onClick={() => {
+                    navigate('/agents');
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <Users className="h-4 w-4" />
+                  智能体管理
+                </button>
+                <div className="h-px w-full bg-slate-100" />
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"

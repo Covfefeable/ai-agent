@@ -27,6 +27,7 @@ export function AgentsPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formApiKey, setFormApiKey] = useState('');
+  const [formBaseUrl, setFormBaseUrl] = useState('');
   const [formIsPublic, setFormIsPublic] = useState(false);
   const [formCategoryId, setFormCategoryId] = useState<string | ''>('');
 
@@ -88,6 +89,7 @@ export function AgentsPage() {
             setModalMode('create');
             setEditingId(null);
             setFormApiKey('');
+            setFormBaseUrl('');
             setFormIsPublic(false);
             setFormCategoryId('');
             setModalOpen(true);
@@ -95,7 +97,7 @@ export function AgentsPage() {
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          添加智能体
+          发布智能体
         </Button>
       </header>
 
@@ -143,12 +145,14 @@ export function AgentsPage() {
                           setModalMode('edit');
                           setEditingId(it.id);
                           setFormApiKey('');
+                          setFormBaseUrl('');
                           setFormIsPublic(!!it.isPublic);
                           setFormCategoryId(it.categoryId || '');
                           setModalOpen(true);
                           try {
                             const res = await agentsApi.get(it.id);
                             setFormApiKey(res.data.apiKey || '');
+                            setFormBaseUrl(res.data.baseUrl || '');
                             setFormIsPublic(!!res.data.isPublic);
                             setFormCategoryId(res.data.categoryId || '');
                           } catch {
@@ -180,7 +184,7 @@ export function AgentsPage() {
         isOpen={modalOpen}
         mode={modalMode}
         categories={categories}
-        initialData={editingId ? { id: editingId, apiKey: formApiKey, isPublic: formIsPublic, categoryId: formCategoryId || '' } : undefined}
+        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, isPublic: formIsPublic, categoryId: formCategoryId || '' } : undefined}
         onClose={() => { setModalOpen(false); setEditingId(null); }}
         onSuccess={fetchData}
       />

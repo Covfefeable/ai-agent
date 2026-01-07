@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Users, Calendar } from 'lucide-react';
+import { Search, Calendar, Bot } from 'lucide-react';
 import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { format } from 'date-fns';
@@ -74,7 +74,7 @@ export function AgentsSquarePage() {
         </div>
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
-            <Users className="h-8 w-8 text-slate-400 animate-pulse" />
+            <Bot className="h-8 w-8 text-slate-400 animate-pulse" />
           </div>
         ) : items.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -99,8 +99,8 @@ export function AgentsSquarePage() {
                     {ag.iconUrl ? (
                       <img src={ag.iconUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify中心 rounded-lg bg-slate-900 text-white">
-                        <Users className="h-5 w-5" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
+                        <Bot className="h-5 w-5" />
                       </div>
                     )}
                   </div>
@@ -128,7 +128,7 @@ export function AgentsSquarePage() {
           <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">
             <div className="mb-6 flex justify-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
-                <Users className="h-10 w-10" />
+                <Bot className="h-10 w-10" />
               </div>
             </div>
             <h3 className="mb-2 text-xl font-bold text-slate-900">暂无公开智能体</h3>
