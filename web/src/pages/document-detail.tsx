@@ -59,7 +59,7 @@ export function DocumentDetailPage() {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/knowledge/${datasetId}`)}>
             <ArrowLeft className="h-5 w-5 text-slate-500" />
@@ -68,7 +68,7 @@ export function DocumentDetailPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

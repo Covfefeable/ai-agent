@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot } from 'lucide-react';
+import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { favoritesApi } from '@/api/favorites';
 import { type Agent } from '@/api/agents';
@@ -10,9 +10,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [favoriteAgents, setFavoriteAgents] = useState<(Agent & { favoritedAt: string })[]>([]);
 
   useEffect(() => {
+    // Close mobile menu on route change
+    setIsMobileMenuOpen(false);
     // Update document title based on route
     if (location.pathname === '/' || location.pathname.startsWith('/chat/')) {
       document.title = 'Super Agent - 对话';
@@ -51,9 +54,37 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f9fafb] font-sans">
+      {/* Mobile Menu Button */}
+      <button 
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-40 p-2 text-slate-600 hover:bg-slate-100 rounded-lg bg-white/50 backdrop-blur-sm border border-slate-200/50 shadow-sm"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="flex w-72 flex-col border-r border-slate-200 bg-white shadow-sm">
-        <div className="p-2"></div>
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-72 flex flex-col border-r border-slate-200 bg-white shadow-sm transition-transform duration-300 ease-in-out md:static md:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-100">
+          <span className="font-bold text-lg text-slate-900">Super Agent</span>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="hidden md:block p-2"></div>
         <nav className="flex-1 space-y-1 px-4 py-2 overflow-y-auto">
           <div className="mb-4 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
             功能列表

@@ -56,20 +56,20 @@ export function KnowledgeDetailPage() {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
-        <div className="flex items-center gap-4">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
+        <div className="flex items-center gap-2 md:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/knowledge')}>
             <ArrowLeft className="h-5 w-5 text-slate-500" />
           </Button>
-          <h2 className="text-lg font-bold text-slate-800">文档列表</h2>
-          <div className="relative ml-4">
+          <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">文档列表</h2>
+          <div className="relative ml-2 md:ml-4">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="搜索文档..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              className="h-9 w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
+              className="h-9 w-32 md:w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
             />
           </div>
         </div>
@@ -78,11 +78,12 @@ export function KnowledgeDetailPage() {
           className="gap-2 bg-black hover:bg-black/80 text-white shadow-sm"
         >
           <Plus className="h-4 w-4" />
-          添加文档
+          <span className="hidden md:inline">添加文档</span>
+          <span className="md:hidden">添加</span>
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

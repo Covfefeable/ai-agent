@@ -504,7 +504,7 @@ export function AgentChatPage() {
   };
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-3">
           {agentIconUrl ? (
             <img src={agentIconUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
@@ -556,7 +556,7 @@ export function AgentChatPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="mx-auto max-w-4xl px-8 py-10 space-y-10">
+        <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {loading ? (
             <div className="flex h-[40vh] items-center justify-center text-slate-400">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -576,7 +576,7 @@ export function AgentChatPage() {
                   <div
                     key={msg.id}
                     className={cn(
-                      "flex gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
+                      "flex gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
                       msg.role === 'user' ? "flex-row-reverse" : "flex-row"
                     )}
                   >
@@ -629,7 +629,7 @@ export function AgentChatPage() {
           )}
         </div>
       </div>
-      <div className="p-8 pb-12">
+      <div className="p-4 pb-6 md:p-8 md:pb-12">
         <div className="mx-auto max-w-4xl">
           {suggestions.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">

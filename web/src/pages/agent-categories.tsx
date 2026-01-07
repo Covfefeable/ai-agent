@@ -46,7 +46,7 @@ export function AgentCategoriesPage() {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <h2 className="text-lg font-bold text-slate-800">分类管理</h2>
         <Button
           onClick={() => {
@@ -54,19 +54,22 @@ export function AgentCategoriesPage() {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="gap-2"
+          className="gap-2 px-3 md:px-4"
+          size="sm"
         >
           <Plus className="h-4 w-4" />
-          新增分类
+          <span className="hidden md:inline">新增分类</span>
+          <span className="md:hidden">新增</span>
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center text-slate-500">加载中...</div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-6 py-4 font-medium">名称</th>
@@ -109,6 +112,7 @@ export function AgentCategoriesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

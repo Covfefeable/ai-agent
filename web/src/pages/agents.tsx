@@ -67,15 +67,15 @@ export function AgentsPage() {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-800">智能体管理</h2>
+          <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">智能体管理</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="搜索智能体..."
-              className="h-9 w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
+              placeholder="搜索..."
+              className="h-9 w-24 md:w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
               onChange={(e) => {
                 const v = e.target.value;
                 setSearchKeyword(v);
@@ -94,19 +94,22 @@ export function AgentsPage() {
             setFormCategoryId('');
             setModalOpen(true);
           }}
-          className="gap-2"
+          className="gap-2 px-3 md:px-4"
+          size="sm"
         >
           <Plus className="h-4 w-4" />
-          发布智能体
+          <span className="hidden md:inline">发布智能体</span>
+          <span className="md:hidden">发布</span>
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center text-slate-500">加载中...</div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-6 py-4 font-medium">标题</th>
@@ -176,6 +179,7 @@ export function AgentsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

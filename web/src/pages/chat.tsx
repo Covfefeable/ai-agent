@@ -382,7 +382,7 @@ export function ChatPage() {
   return (
     <div className="flex h-full flex-col bg-white relative">
       {/* Header */}
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <h2 className="text-lg font-bold text-slate-800">Super Agent 聊天</h2>
         <div className="flex items-center gap-2">
           <Button
@@ -411,7 +411,7 @@ export function ChatPage() {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="mx-auto max-w-4xl px-8 py-10 space-y-10">
+        <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {messages.length === 0 ? (
             <div className="flex h-[40vh] flex-col items-center justify-center text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
@@ -425,7 +425,7 @@ export function ChatPage() {
               <div
                 key={msg.id}
                 className={cn(
-                  "flex gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
+                  "flex gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
                   msg.role === 'user' ? "flex-row-reverse" : "flex-row"
                 )}
               >
@@ -519,7 +519,7 @@ export function ChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="p-8 pb-12">
+      <div className="p-4 pb-6 md:p-8 md:pb-12">
         <div className="mx-auto max-w-4xl">
           <div className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition-all focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/10">
             
