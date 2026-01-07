@@ -606,7 +606,7 @@ export function ChatPage() {
             </div>
           </div>
           <p className="mt-4 text-center text-xs text-slate-400">
-            AI 也可能会产生错误信息，请仔细甄别。
+            AI 也可能犯错，请仔细甄别。
           </p>
         </div>
       </div>

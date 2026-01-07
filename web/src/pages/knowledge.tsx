@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Plus, Loader2, Calendar, Trash2, Pencil } from 'lucide-react';
+import { Database, Plus, Loader2, Calendar, Trash2, Pencil, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { KnowledgeBaseModal } from '@/components/knowledge/KnowledgeBaseModal';
@@ -24,11 +24,12 @@ export function KnowledgePage() {
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const fetchKnowledgeBases = async () => {
     try {
       setIsLoading(true);
-      const response = await knowledgeApi.getDatasets();
+      const response = await knowledgeApi.getDatasets(searchKeyword);
       setKnowledgeBases(response.data);
     } catch (error: any) {
       console.error('Failed to fetch knowledge bases:', error);
@@ -38,8 +39,11 @@ export function KnowledgePage() {
   };
 
   useEffect(() => {
-    fetchKnowledgeBases();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchKnowledgeBases();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   const openCreateModal = () => {
     setModalMode('create');
@@ -70,7 +74,19 @@ export function KnowledgePage() {
     <div className="flex h-full flex-col bg-white">
       {/* Header */}
       <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
-        <h2 className="text-lg font-bold text-slate-800">知识库</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-bold text-slate-800">知识库</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="搜索知识库..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="h-9 w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+          </div>
+        </div>
         <Button 
           onClick={openCreateModal}
           className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"

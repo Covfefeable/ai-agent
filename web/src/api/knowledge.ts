@@ -90,8 +90,10 @@ export interface UpdateSegmentParams {
 }
 
 export const knowledgeApi = {
-  getDatasets: () => {
-    return http.get<any, { data: Dataset[] }>('/knowledge/datasets');
+  getDatasets: (keyword?: string) => {
+    return http.get<any, { data: Dataset[] }>('/knowledge/datasets', {
+      params: { keyword }
+    });
   },
 
   createDataset: (data: CreateDatasetParams) => {
@@ -106,9 +108,9 @@ export const knowledgeApi = {
     return http.delete(`/knowledge/datasets/${id}`);
   },
 
-  getDocuments: (id: string, page = 1, limit = 20) => {
+  getDocuments: (id: string, page = 1, limit = 20, keyword?: string) => {
     return http.get<any, GetDocumentsResponse>(`/knowledge/datasets/${id}/documents`, {
-      params: { page, limit },
+      params: { page, limit, keyword },
     });
   },
 

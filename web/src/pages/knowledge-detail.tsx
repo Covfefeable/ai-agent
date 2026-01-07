@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
@@ -13,20 +13,15 @@ export function KnowledgeDetailPage() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      fetchDocuments();
-    }
-  }, [id]);
-
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
-      const response = await knowledgeApi.getDocuments(id!);
+      const response = await knowledgeApi.getDocuments(id!, 1, 20, searchKeyword);
       setDocuments(response.data);
     } catch (error) {
       console.error('Failed to fetch documents:', error);
@@ -35,6 +30,15 @@ export function KnowledgeDetailPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (id) {
+      const timer = setTimeout(() => {
+        fetchDocuments();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [id, searchKeyword]);
 
   const handleDelete = async () => {
     if (!deleteId || !id) return;
@@ -58,6 +62,16 @@ export function KnowledgeDetailPage() {
             <ArrowLeft className="h-5 w-5 text-slate-500" />
           </Button>
           <h2 className="text-lg font-bold text-slate-800">文档列表</h2>
+          <div className="relative ml-4">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="搜索文档..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="h-9 w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+          </div>
         </div>
         <Button 
           onClick={() => setIsUploadModalOpen(true)} 

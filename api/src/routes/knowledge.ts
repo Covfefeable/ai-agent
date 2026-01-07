@@ -4,7 +4,7 @@ import FormData from 'form-data';
 import { z } from 'zod';
 import { db } from '../db';
 import { datasets } from '../db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, ilike, or } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 
 const createDatasetSchema = z.object({
@@ -76,11 +76,21 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
   fastify.get('/datasets', async (request: any, reply) => {
     try {
       const userId = request.user.id;
+      const { keyword } = request.query;
       
-      const userDatasets = await db.select()
-        .from(datasets)
-        .where(eq(datasets.userId, userId))
-        .orderBy(desc(datasets.createdAt));
+      let query = db.select().from(datasets).where(eq(datasets.userId, userId));
+      
+      if (keyword) {
+        query = db.select().from(datasets).where(and(
+          eq(datasets.userId, userId),
+          or(
+            ilike(datasets.name, `%${keyword}%`), 
+            ilike(datasets.description, `%${keyword}%`)
+          )
+        ));
+      }
+      
+      const userDatasets = await query.orderBy(desc(datasets.createdAt));
       
       return { data: userDatasets };
     } catch (error: any) {
@@ -196,7 +206,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params;
       const userId = request.user.id;
-      const { page = 1, limit = 20 } = request.query;
+      const { page = 1, limit = 20, keyword } = request.query;
 
       // Find dataset in local db
       const [dataset] = await db.select()
@@ -210,7 +220,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
 
       // Get documents from Dify
       const response = await axios.get(`${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/documents`, {
-        params: { page, limit },
+        params: { page, limit, keyword },
         headers: {
           'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`
         }
