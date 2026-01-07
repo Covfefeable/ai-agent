@@ -10,7 +10,7 @@ export function AgentCategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [editing, setEditing] = useState<{ id?: string; name: string } | null>(null);
+  const [editing, setEditing] = useState<{ id?: string; name: string; sort: number } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -70,6 +70,7 @@ export function AgentCategoriesPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-6 py-4 font-medium">名称</th>
+                  <th className="px-6 py-4 font-medium">排序</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
                 </tr>
               </thead>
@@ -79,12 +80,15 @@ export function AgentCategoriesPage() {
                     <td className="px-6 py-4">
                       <span className="font-medium text-slate-900">{it.name}</span>
                     </td>
+                    <td className="px-6 py-4 text-slate-500">
+                      {it.sort}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <>
                         <button
                           onClick={() => {
                             setModalMode('edit');
-                            setEditing({ id: it.id, name: it.name });
+                            setEditing({ id: it.id, name: it.name, sort: it.sort });
                             setModalOpen(true);
                           }}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-black/5 hover:text-black"

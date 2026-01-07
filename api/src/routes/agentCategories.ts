@@ -1,13 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
 import { categories } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc } from 'drizzle-orm';
 import { z } from 'zod';
 
 export async function agentCategoriesRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: any, reply) => {
     try {
-      const list = await db.select().from(categories).orderBy(desc(categories.createdAt));
+      const list = await db.select().from(categories).orderBy(asc(categories.sort), desc(categories.createdAt));
       return { data: list };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get categories error');
@@ -21,9 +21,12 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
       if (!['owner', 'admin'].includes(userRole)) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
-      const bodySchema = z.object({ name: z.string().min(1) });
-      const { name } = bodySchema.parse(request.body);
-      const [created] = await db.insert(categories).values({ name }).returning();
+      const bodySchema = z.object({ 
+        name: z.string().min(1),
+        sort: z.number().int().default(0).optional()
+      });
+      const { name, sort } = bodySchema.parse(request.body);
+      const [created] = await db.insert(categories).values({ name, sort: sort || 0 }).returning();
       return { data: created };
     } catch (error: any) {
       fastify.log.error({ error }, 'Create category error');
@@ -38,9 +41,21 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
       const { id } = request.params as { id: string };
-      const bodySchema = z.object({ name: z.string().min(1) });
-      const { name } = bodySchema.parse(request.body);
-      const [updated] = await db.update(categories).set({ name }).where(eq(categories.id, id)).returning();
+      const bodySchema = z.object({ 
+        name: z.string().min(1).optional(),
+        sort: z.number().int().optional()
+      });
+      const { name, sort } = bodySchema.parse(request.body);
+      
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = name;
+      if (sort !== undefined) updateData.sort = sort;
+
+      if (Object.keys(updateData).length === 0) {
+        return reply.status(400).send({ message: 'No data to update' });
+      }
+
+      const [updated] = await db.update(categories).set(updateData).where(eq(categories.id, id)).returning();
       return { data: updated };
     } catch (error: any) {
       fastify.log.error({ error }, 'Update category error');

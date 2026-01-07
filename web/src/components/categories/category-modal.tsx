@@ -14,18 +14,19 @@ interface CategoryModalProps {
   initialData?: {
     id?: string;
     name: string;
+    sort?: number;
   };
 }
 
 export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }: CategoryModalProps) {
-  const [formData, setFormData] = useState<{ name: string }>({ name: '' });
+  const [formData, setFormData] = useState<{ name: string; sort: number }>({ name: '', sort: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData({ name: initialData.name || '' });
+      setFormData({ name: initialData.name || '', sort: initialData.sort || 0 });
     } else if (isOpen) {
-      setFormData({ name: '' });
+      setFormData({ name: '', sort: 0 });
     }
   }, [isOpen, initialData]);
 
@@ -35,12 +36,12 @@ export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }:
     try {
       setIsSubmitting(true);
       if (mode === 'create') {
-        await agentCategoriesApi.create(formData.name.trim());
+        await agentCategoriesApi.create(formData.name.trim(), formData.sort);
         toast.success('分类创建成功');
       } else {
         const id = initialData?.id;
         if (!id) return;
-        await agentCategoriesApi.update(id, formData.name.trim());
+        await agentCategoriesApi.update(id, formData.name.trim(), formData.sort);
         toast.success('分类更新成功');
       }
       onSuccess();
@@ -74,8 +75,18 @@ export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }:
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="请输入分类名称"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sort">排序 (数字越小越靠前)</Label>
+              <Input
+                id="sort"
+                type="number"
+                value={formData.sort}
+                onChange={(e) => setFormData({ ...formData, sort: parseInt(e.target.value) || 0 })}
                 disabled={isSubmitting}
               />
             </div>
