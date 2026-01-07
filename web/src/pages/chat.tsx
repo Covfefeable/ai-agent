@@ -3,7 +3,7 @@ import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Thumb
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { marked } from 'marked';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cn } from '@/lib/utils';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi } from '@/api/chat';
@@ -456,12 +456,12 @@ export function ChatPage() {
                       : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
                   )}>
                     {msg.content ? (
-                      <div 
+                      <MarkdownRenderer
+                        content={msg.content}
                         className={cn(
                           "prose prose-sm break-words max-w-none",
                           msg.role === 'user' ? "prose-invert" : "prose-slate"
                         )}
-                        dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
                       />
                     ) : (
                       <div className="flex items-center gap-1 h-5">

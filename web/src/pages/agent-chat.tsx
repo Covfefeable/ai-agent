@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, MessageSquare, Plus, X } from 'lucide-react';
 import { cn, getFileType } from '@/lib/utils';
-import { marked } from 'marked';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { toast } from 'sonner';
 
 interface Conversation {
@@ -605,9 +605,9 @@ export function AgentChatPage() {
                       )}>
                         {msg.role === 'assistant' ? (
                           msg.content ? (
-                            <div
+                            <MarkdownRenderer
+                              content={msg.content}
                               className={cn("prose prose-sm break-words max-w-none", "prose-slate")}
-                              dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
                             />
                           ) : (
                             <div className="flex items-center gap-1 h-5">
