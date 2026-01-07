@@ -23,10 +23,10 @@ export interface AuthResponse {
 
 export const authApi = {
   login: (data: LoginParams) => {
-    return http.post<any, AuthResponse>('/auth/login', data);
+    return http.post<unknown, AuthResponse>('/auth/login', data);
   },
 
   register: (data: RegisterParams) => {
-    return http.post<any, AuthResponse>('/auth/register', data);
+    return http.post<unknown, AuthResponse>('/auth/register', data);
   },
 };

@@ -81,7 +81,8 @@ export function AgentsSquarePage() {
             {items.map((ag) => (
               <div 
                 key={ag.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md cursor-pointer"
+                onClick={() => { window.location.href = `/agents-square/${ag.id}`; }}
               >
                 {ag.iconUrl && (
                   <div className="absolute inset-0 z-0 pointer-events-none">

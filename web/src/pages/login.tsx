@@ -41,8 +41,9 @@ export function LoginPage() {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || '登录失败，请检查邮箱和密码');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message || '登录失败，请检查邮箱和密码');
     } finally {
       setIsLoading(false);
     }

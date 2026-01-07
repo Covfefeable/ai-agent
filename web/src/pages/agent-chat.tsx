@@ -1,0 +1,587 @@
+import { useEffect, useState, useRef } from 'react';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { useParams } from 'react-router-dom';
+import { agentsApi } from '@/api/agents';
+import { AgentForm, type FormItem, type FormValues } from '@/components/agents/agent-form';
+import { Button } from '@/components/ui/button';
+import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon } from 'lucide-react';
+import { cn, getFileType } from '@/lib/utils';
+import { marked } from 'marked';
+import { toast } from 'sonner';
+
+export function AgentChatPage() {
+  const { id } = useParams<{ id: string }>();
+  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [formItems, setFormItems] = useState<FormItem[]>([]);
+  const [formValues, setFormValues] = useState<FormValues>({});
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
+  const [uploadConfig, setUploadConfig] = useState<{
+    enabled: boolean;
+    allowedTypes: string[];
+    allowedExtensions: string[];
+    allowedMethods: string[];
+    numberLimits: number;
+    sizeLimits: { file: number; image: number; video: number; audio: number };
+  }>({
+    enabled: false,
+    allowedTypes: [],
+    allowedExtensions: [],
+    allowedMethods: [],
+    numberLimits: 0,
+    sizeLimits: { file: 0, image: 0, video: 0, audio: 0 }
+  });
+  const [loading, setLoading] = useState(true);
+  const [streaming, setStreaming] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [agentTitle, setAgentTitle] = useState<string>('智能体');
+  const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string; type: string }>>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    document.title = 'Super Agent - 智能体聊天';
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const fetchParams = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const res = await agentsApi.parameters(id);
+        const opening = res.opening_statement || '';
+        const initialGreeting = opening
+          ? `${opening}`
+          : '你好！很高兴见到你，有什么我可以帮你？';
+        setMessages([{ id: 'opening', role: 'assistant', content: initialGreeting }]);
+        setSuggestions(res.suggested_questions || []);
+        const rawForm = Array.isArray(res.user_input_form) ? res.user_input_form : [];
+        const rawFormList = rawForm as Array<Record<string, unknown>>;
+        const normalized: Array<{
+          type: 'text-input' | 'paragraph' | 'select' | 'number' | 'checkbox' | 'file' | 'file-list';
+          variable: string;
+          label: string;
+          required?: boolean;
+          options?: string[];
+          max_length?: number;
+          placeholder?: string;
+          default?: string;
+          allowed_file_upload_methods?: string[];
+          allowed_file_types?: string[];
+          allowed_file_extensions?: string[];
+        }> = rawFormList.map((item) => {
+          const key = Object.keys(item || {})[0];
+          const cfg = (item as Record<string, unknown>)[key] as Record<string, unknown>;
+          const t = typeof cfg?.['type'] === 'string' ? (cfg['type'] as string) : 'text-input';
+          let typeVal: 'text-input' | 'paragraph' | 'select' | 'number' | 'checkbox' | 'file' | 'file-list';
+          switch (t) {
+            case 'text-input':
+              typeVal = 'text-input';
+              break;
+            case 'paragraph':
+              typeVal = 'paragraph';
+              break;
+            case 'select':
+              typeVal = 'select';
+              break;
+            case 'number':
+              typeVal = 'number';
+              break;
+            case 'checkbox':
+              typeVal = 'checkbox';
+              break;
+            case 'file':
+              typeVal = 'file';
+              break;
+            case 'file-list':
+              typeVal = 'file-list';
+              break;
+            default:
+              typeVal = 'text-input';
+          }
+          return {
+            type: typeVal,
+            variable: typeof cfg?.['variable'] === 'string' ? (cfg['variable'] as string) : key,
+            label: typeof cfg?.['label'] === 'string' ? (cfg['label'] as string) : key,
+            required: typeof cfg?.['required'] === 'boolean' ? (cfg['required'] as boolean) : false,
+            options: Array.isArray(cfg?.['options']) ? (cfg['options'] as string[]) : [],
+            max_length: typeof cfg?.['max_length'] === 'number' ? (cfg['max_length'] as number) : undefined,
+            placeholder: typeof cfg?.['placeholder'] === 'string' ? (cfg['placeholder'] as string) : '',
+            default: typeof cfg?.['default'] === 'string' ? (cfg['default'] as string) : '',
+            allowed_file_upload_methods: Array.isArray(cfg?.['allowed_file_upload_methods']) ? (cfg['allowed_file_upload_methods'] as string[]) : [],
+            allowed_file_types: Array.isArray(cfg?.['allowed_file_types']) ? (cfg['allowed_file_types'] as string[]) : [],
+            allowed_file_extensions: Array.isArray(cfg?.['allowed_file_extensions']) ? (cfg['allowed_file_extensions'] as string[]) : [],
+          };
+        }).filter(i => !!i.type && !!i.variable && !!i.label);
+        setFormItems(normalized);
+        const initialVals: Record<string, string | number | boolean | Array<{ id: string; name: string; type: string }>> = {};
+        normalized.forEach(i => {
+          if (i.type === 'checkbox') {
+            initialVals[i.variable] = false;
+          } else if (i.type === 'number') {
+            initialVals[i.variable] = 0;
+          } else if (i.type === 'file' || i.type === 'file-list') {
+            initialVals[i.variable] = [];
+          } else {
+            initialVals[i.variable] = i.default ?? '';
+          }
+        });
+        setFormValues(initialVals);
+        setFormSubmitted(normalized.length === 0);
+        setFormOpen(normalized.length > 0);
+        const fu = res.file_upload || {};
+        const sp = res.system_parameters || {};
+        const cfg = fu.fileUploadConfig || {};
+        const enabled = !!fu.enabled;
+        const allowedTypes: string[] = Array.isArray(fu.allowed_file_types) ? fu.allowed_file_types : [];
+        const allowedExtensions: string[] = Array.isArray(fu.allowed_file_extensions) ? fu.allowed_file_extensions : [];
+        const allowedMethods: string[] = Array.isArray(fu.allowed_file_upload_methods) ? fu.allowed_file_upload_methods : [];
+        const numberLimits: number = typeof fu.number_limits === 'number' ? fu.number_limits : 0;
+        const sizeLimits = {
+          file: typeof cfg.file_size_limit === 'number' ? cfg.file_size_limit : (typeof sp.file_size_limit === 'number' ? sp.file_size_limit : 0),
+          image: typeof cfg.image_file_size_limit === 'number' ? cfg.image_file_size_limit : (typeof sp.image_file_size_limit === 'number' ? sp.image_file_size_limit : 0),
+          video: typeof cfg.video_file_size_limit === 'number' ? cfg.video_file_size_limit : (typeof sp.video_file_size_limit === 'number' ? sp.video_file_size_limit : 0),
+          audio: typeof cfg.audio_file_size_limit === 'number' ? cfg.audio_file_size_limit : (typeof sp.audio_file_size_limit === 'number' ? sp.audio_file_size_limit : 0),
+        };
+        setUploadConfig({
+          enabled,
+          allowedTypes,
+          allowedExtensions,
+          allowedMethods,
+          numberLimits,
+          sizeLimits
+        });
+      } catch { void 0; } finally {
+        setLoading(false);
+      }
+    };
+    fetchParams();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (!id) return;
+      try {
+        const listRes = await agentsApi.publicList();
+        const target = (listRes.data || []).find((a) => a.id === id);
+        if (target) {
+          setAgentTitle(target.title || '智能体');
+          setAgentIconUrl(target.iconUrl || null);
+        }
+      } catch { void 0; }
+    };
+    fetchAgent();
+  }, [id]);
+
+  useEffect(() => {
+    if (agentTitle) {
+      document.title = `Super Agent - ${agentTitle}`;
+    }
+  }, [agentTitle]);
+  const isFormValid = () => {
+    return formItems.every(i => {
+      if (!i.required) return true;
+      const v = formValues[i.variable];
+      if (i.type === 'checkbox') return typeof v === 'boolean';
+      if (i.type === 'number') return typeof v === 'number';
+      if (i.type === 'file') return Array.isArray(v) && v.length === 1;
+      if (i.type === 'file-list') {
+        const ok = Array.isArray(v) && v.length >= 1;
+        const ml = typeof i.max_length === 'number' ? i.max_length : undefined;
+        return ok && (ml ? (v as Array<unknown>).length <= ml : true);
+      }
+      return !!(v && String(v as string).trim());
+    });
+  };
+  const handleFormSubmit = () => {
+    if (!isFormValid()) {
+      toast.error('请先填写必填表单');
+      return;
+    }
+    setFormSubmitted(true);
+    setFormOpen(false);
+    toast.success('表单已提交，可以开始对话');
+  };
+
+  const handleSend = async () => {
+    const formRequired = formItems.length > 0;
+    const isValid = formItems.every(i => {
+      if (!i.required) return true;
+      const v = formValues[i.variable];
+      if (i.type === 'checkbox') return typeof v === 'boolean';
+      if (i.type === 'number') return typeof v === 'number';
+      return !!(v && String(v).trim());
+    });
+    if (formRequired && !isValid) {
+      toast.error('请先填写必填表单');
+      return;
+    }
+    if ((!inputValue.trim() && uploadedFiles.length === 0) || !id || streaming) return;
+    const query = inputValue.trim();
+    const userMessage = { id: Date.now().toString(), role: 'user' as const, content: query };
+    const assistantId = `assistant-${Date.now()}`;
+    setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '' }]);
+    setInputValue('');
+    const token = localStorage.getItem('token') || '';
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    // 处理表单输入，转换文件格式
+    const processedInputs: Record<string, unknown> = {};
+    Object.entries(formValues).forEach(([key, value]) => {
+      const item = formItems.find(i => i.variable === key);
+      if (item && item.type === 'file') {
+        const files = value as Array<{ id: string; name: string; type: string }>;
+        if (files.length > 0) {
+          processedInputs[key] = {
+            type: files[0].type,
+            transfer_method: 'local_file',
+            upload_file_id: files[0].id
+          };
+        } else {
+          processedInputs[key] = null;
+        }
+      } else if (item && item.type === 'file-list') {
+        const files = value as Array<{ id: string; name: string; type: string }>;
+        processedInputs[key] = files.map(f => ({
+          type: f.type,
+          transfer_method: 'local_file',
+          upload_file_id: f.id
+        }));
+      } else {
+        processedInputs[key] = value;
+      }
+    });
+
+    try {
+      await fetchEventSource(`/api/agents/${id}/chat-messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query,
+          inputs: processedInputs,
+          files: uploadedFiles.map(f => ({
+          type: f.type,
+          transfer_method: 'local_file',
+          upload_file_id: f.id
+        })),
+        conversation_id: conversationId
+      }),
+      signal: controller.signal,
+        onopen: async (response) => {
+          if (!response.ok) {
+            throw new Error(`发送失败: ${response.statusText}`);
+          }
+        },
+        onmessage: (msg) => {
+          try {
+            const data = JSON.parse(msg.data);
+            if (data.event === 'message') {
+              if (data.conversation_id && !conversationId) {
+                setConversationId(data.conversation_id);
+              }
+              const answerChunk = data.answer || '';
+              setMessages(prev => prev.map(m => 
+                m.id === assistantId 
+                  ? { ...m, content: (m.content || '') + answerChunk }
+                  : m
+              ));
+            }
+          } catch {
+            // 忽略解析错误
+          }
+        },
+        onerror(err) {
+          throw err;
+        }
+      });
+    } catch {
+      // 忽略错误，统一在 finally 收尾
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+      setUploadedFiles([]);
+    }
+  };
+
+  const handleStop = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    setStreaming(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    if (!uploadConfig.enabled) {
+      toast.error('当前智能体未开启文件上传');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (!uploadConfig.allowedMethods.includes('local_file')) {
+      toast.error('智能体未允许本地文件上传');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (uploadConfig.numberLimits > 0 && uploadedFiles.length >= uploadConfig.numberLimits) {
+      toast.error(`最多上传${uploadConfig.numberLimits}个文件`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    const type = getFileType(file);
+    if (!uploadConfig.allowedTypes.includes(type)) {
+      toast.error('不支持的文件类型');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    const mb = 1024 * 1024;
+    let limitMb = uploadConfig.sizeLimits.file;
+    if (type === 'image' && uploadConfig.sizeLimits.image) limitMb = uploadConfig.sizeLimits.image;
+    if (type === 'video' && uploadConfig.sizeLimits.video) limitMb = uploadConfig.sizeLimits.video;
+    if (type === 'audio' && uploadConfig.sizeLimits.audio) limitMb = uploadConfig.sizeLimits.audio;
+    if (limitMb > 0 && file.size > limitMb * mb) {
+      toast.error(`文件大小超过限制（最大${limitMb}MB）`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setUploading(true);
+    try {
+      const resp = await agentsApi.uploadFile(id, file);
+      setUploadedFiles(prev => [...prev, { id: resp.id, name: file.name, type: getFileType(file) }]);
+    } catch {
+      void 0;
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+  const removeFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  };
+  return (
+    <div className="flex h-full flex-col bg-white">
+      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
+        <div className="flex items-center gap-3">
+          {agentIconUrl ? (
+            <img src={agentIconUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <Bot className="h-4 w-4" />
+            </div>
+          )}
+          <h2 className="text-lg font-bold text-slate-800">{agentTitle}</h2>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto max-w-4xl px-8 py-10 space-y-10">
+          {loading ? (
+            <div className="flex h-[40vh] items-center justify-center text-slate-400">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {messages.length === 0 ? (
+                <div className="flex h-[40vh] flex-col items-center justify-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
+                    <Bot className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">有什么可以帮你的吗？</h3>
+                  <p className="mt-2 text-sm text-slate-500">你可以发送消息开始对话</p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "flex gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
+                      msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                    )}
+                  >
+                    {msg.role === 'assistant' ? (
+                      agentIconUrl ? (
+                        <img src={agentIconUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover shadow-sm" />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                          <Bot className="h-5 w-5" />
+                        </div>
+                      )
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+                        <User className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className={cn(
+                      "flex max-w-[85%] flex-col gap-3",
+                      msg.role === 'user' ? "items-end" : "items-start"
+                    )}>
+                      <div className={cn(
+                        "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm",
+                        msg.role === 'user' 
+                          ? "bg-slate-900 text-white rounded-tr-none" 
+                          : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
+                      )}>
+                        {msg.role === 'assistant' ? (
+                          msg.content ? (
+                            <div
+                              className={cn("prose prose-sm break-words max-w-none", "prose-slate")}
+                              dangerouslySetInnerHTML={{ __html: marked(msg.content) }}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-1 h-5">
+                              <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                              <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                              <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+                            </div>
+                          )
+                        ) : (
+                          <div className="break-words">{msg.content}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      </div>
+      <div className="p-8 pb-12">
+        <div className="mx-auto max-w-4xl">
+          {suggestions.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {suggestions.map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setInputValue(q)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100"
+                  title={q}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <AgentForm
+            agentId={id || ''}
+            formItems={formItems}
+            formValues={formValues}
+            onValuesChange={setFormValues}
+            onSubmit={handleFormSubmit}
+            uploadConfig={uploadConfig}
+            loading={loading}
+            streaming={streaming}
+            formSubmitted={formSubmitted}
+            formOpen={formOpen}
+            onFormOpenChange={setFormOpen}
+            isFormValid={isFormValid}
+          />
+          {(!formItems.length || (formSubmitted && !formOpen)) && (
+          <div className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition-all focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/10">
+            {uploadedFiles.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-3">
+                {uploadedFiles.map(f => (
+                  <div key={f.id} className="group relative flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 border border-slate-100 transition-all hover:bg-slate-100">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm">
+                      <FileIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate" title={f.name}>{f.name}</span>
+                      <span className="text-[10px] text-slate-400">File</span>
+                    </div>
+                    <button 
+                      onClick={() => removeFile(f.id)} 
+                      className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition-all group-hover:flex hover:bg-red-600"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="发消息..."
+              className="w-full resize-none border-none bg-transparent p-0 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 min-h-[60px] max-h-60"
+              disabled={loading || streaming}
+            />
+
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={
+                    uploading ||
+                    streaming ||
+                    loading ||
+                    !uploadConfig.enabled ||
+                    !uploadConfig.allowedMethods.includes('local_file') ||
+                    (uploadConfig.numberLimits > 0 && uploadedFiles.length >= uploadConfig.numberLimits)
+                  }
+                  title="上传附件"
+                >
+                  {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                </Button>
+              </div>
+
+              {streaming ? (
+                <Button 
+                  onClick={handleStop}
+                  className="h-9 w-9 rounded-full bg-red-600 p-0 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:scale-95"
+                  title="停止生成"
+                >
+                  <Square className="h-4 w-4 fill-current" />
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleSend} 
+                  disabled={loading || (!inputValue.trim() && uploadedFiles.length === 0)}
+                  className={`h-9 w-9 rounded-full p-0 transition-all ${
+                    (loading || (!inputValue.trim() && uploadedFiles.length === 0))
+                      ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95'
+                  }`}
+                  title="发送"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+          </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

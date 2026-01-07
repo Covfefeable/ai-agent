@@ -62,6 +62,112 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get('/:id/parameters', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const resp = await axios.get(`${baseUrl}/parameters`, {
+        headers: {
+          Authorization: `Bearer ${row.apiKey}`,
+        },
+        timeout: 10000,
+      });
+      return resp.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Get agent parameters error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  fastify.post('/:id/chat-messages', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const body = request.body || {};
+      const response_mode = 'streaming';
+      const payload = {
+        inputs: body?.inputs ?? {},
+        query: body?.query,
+        files: Array.isArray(body?.files) ? body.files : [],
+        conversation_id: body?.conversation_id,
+        response_mode,
+        user: (request.user?.id ?? 'web').toString(),
+        auto_generate_name: true,
+      };
+      if (!payload.query) {
+        return reply.status(400).send({ message: 'query is required' });
+      }
+      const response = await axios.post(
+        `${baseUrl}/chat-messages`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${row.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          responseType: 'stream'
+        }
+      );
+      reply.header('Content-Type', 'text/event-stream');
+      reply.header('Cache-Control', 'no-cache');
+      reply.header('Connection', 'keep-alive');
+      return response.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Chat messages proxy error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  fastify.post('/:id/files/upload', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({ message: 'No file uploaded' });
+      }
+      const buffer = await data.toBuffer();
+      const blob = new Blob([buffer], { type: data.mimetype });
+      const form = new FormData();
+      form.append('file', blob, data.filename);
+      form.append('user', (request.user?.id ?? 'web').toString());
+      const baseUrl = process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const resp = await axios.post(`${baseUrl}/files/upload`, form, {
+        headers: {
+          Authorization: `Bearer ${row.apiKey}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return resp.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Agent file upload error');
+      reply.status(500).send({ message: 'Upload failed' });
+    }
+  });
   fastify.post('/', async (request: any, reply) => {
     try {
       const userRole = request.user.role;

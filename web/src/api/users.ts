@@ -10,7 +10,7 @@ export interface User {
 
 export const usersApi = {
   getUsers: (keyword?: string) => {
-    return http.get<any, { data: User[] }>('/users', {
+    return http.get<unknown, { data: User[] }>('/users', {
       params: { keyword }
     });
   },

@@ -36,7 +36,7 @@ export function ChatPage() {
   const [webSearch, setWebSearch] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [knowledgeBases, setKnowledgeBases] = useState<any[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,15 +71,13 @@ export function ChatPage() {
       const response = await chatApi.getMessages(id);
       
       const formattedMessages: Message[] = [];
-       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-       response.data.forEach((item: any) => {
+       response.data.forEach((item: { id: string; query: string; answer?: string; feedback?: { rating: 'like' | 'dislike' | null }; message_files?: Array<{ id: string; name: string; type: string; belongs_to: 'user' | 'assistant' }> }) => {
          formattedMessages.push({
            id: item.id + '_user',
            originalId: item.id,
            role: 'user',
            content: item.query,
-           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-           files: item.message_files?.filter((f:any) => f.belongs_to === 'user').map((f:any) => ({ id: f.id, name: f.name, type: f.type }))
+           files: item.message_files?.filter((f) => f.belongs_to === 'user').map((f) => ({ id: f.id, name: f.name, type: f.type }))
          });
          if (item.answer) {
            formattedMessages.push({
@@ -88,8 +86,7 @@ export function ChatPage() {
              role: 'assistant',
              content: item.answer,
              feedback: item.feedback,
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-             files: item.message_files?.filter((f:any) => f.belongs_to === 'assistant').map((f:any) => ({ id: f.id, name: f.name, type: f.type }))
+             files: item.message_files?.filter((f) => f.belongs_to === 'assistant').map((f) => ({ id: f.id, name: f.name, type: f.type }))
            });
          }
        });

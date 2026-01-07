@@ -52,8 +52,9 @@ export function RegisterPage() {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || '注册失败，请稍后重试');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message || '注册失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }

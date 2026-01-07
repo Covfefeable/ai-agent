@@ -22,7 +22,7 @@ export interface Document {
   id: string;
   position: number;
   data_source_type: string;
-  data_source_info: any;
+  data_source_info: unknown;
   dataset_process_rule_id: string;
   name: string;
   created_from: string;
@@ -91,17 +91,17 @@ export interface UpdateSegmentParams {
 
 export const knowledgeApi = {
   getDatasets: (keyword?: string) => {
-    return http.get<any, { data: Dataset[] }>('/knowledge/datasets', {
+    return http.get<unknown, { data: Dataset[] }>('/knowledge/datasets', {
       params: { keyword }
     });
   },
 
   createDataset: (data: CreateDatasetParams) => {
-    return http.post<any, Dataset>('/knowledge/datasets', data);
+    return http.post<unknown, Dataset>('/knowledge/datasets', data);
   },
 
   updateDataset: (id: string, data: UpdateDatasetParams) => {
-    return http.patch<any, Dataset>(`/knowledge/datasets/${id}`, data);
+    return http.patch<unknown, Dataset>(`/knowledge/datasets/${id}`, data);
   },
 
   deleteDataset: (id: string) => {
@@ -109,19 +109,19 @@ export const knowledgeApi = {
   },
 
   getDocuments: (id: string, page = 1, limit = 20, keyword?: string) => {
-    return http.get<any, GetDocumentsResponse>(`/knowledge/datasets/${id}/documents`, {
+    return http.get<unknown, GetDocumentsResponse>(`/knowledge/datasets/${id}/documents`, {
       params: { page, limit, keyword },
     });
   },
 
   getSegments: (datasetId: string, documentId: string, page = 1, limit = 20) => {
-    return http.get<any, GetSegmentsResponse>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments`, {
+    return http.get<unknown, GetSegmentsResponse>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments`, {
       params: { page, limit },
     });
   },
 
   updateSegment: (datasetId: string, documentId: string, segmentId: string, data: UpdateSegmentParams) => {
-    return http.post<any, { data: Segment }>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments/${segmentId}`, {
+    return http.post<unknown, { data: Segment }>(`/knowledge/datasets/${datasetId}/documents/${documentId}/segments/${segmentId}`, {
       segment: data
     });
   },
@@ -135,15 +135,15 @@ export const knowledgeApi = {
     formData.append('file', file);
     formData.append('separator', params.separator);
     formData.append('max_tokens', params.max_tokens.toString());
-    return http.post<any, any>(`/knowledge/datasets/${id}/documents/upload`, formData);
+    return http.post<unknown, unknown>(`/knowledge/datasets/${id}/documents/upload`, formData);
   },
 
   deleteDocument: (datasetId: string, documentId: string) => {
     return http.delete(`/knowledge/datasets/${datasetId}/documents/${documentId}`);
   },
 
-  retrieve: (id: string, query: string, retrieval_model?: any) => {
-    return http.post<any, { query: { content: string }, records: any[] }>(`/knowledge/datasets/${id}/retrieve`, {
+  retrieve: (id: string, query: string, retrieval_model?: unknown) => {
+    return http.post<unknown, { query: { content: string }, records: unknown[] }>(`/knowledge/datasets/${id}/retrieve`, {
       query,
       retrieval_model
     });

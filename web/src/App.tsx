@@ -12,6 +12,7 @@ import { UsersPage } from './pages/users';
 import { AgentsPage } from './pages/agents';
 import { AgentCategoriesPage } from './pages/agent-categories';
 import { AgentsSquarePage } from './pages/agents-square';
+import { AgentChatPage } from './pages/agent-chat';
 
 function Layout() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agent-categories" element={<AgentCategoriesPage />} />
           <Route path="/agents-square" element={<AgentsSquarePage />} />
+          <Route path="/agents-square/:id" element={<AgentChatPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

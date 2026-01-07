@@ -35,7 +35,7 @@ export interface UploadResponse {
 
 export const chatApi = {
   getConversations: () => {
-    return http.get<any, { data: Conversation[] }>('/chat/conversations');
+    return http.get<unknown, { data: Conversation[] }>('/chat/conversations');
   },
 
   deleteConversation: (id: string) => {
@@ -43,7 +43,7 @@ export const chatApi = {
   },
 
   getMessages: (conversationId: string) => {
-    return http.get<any, { data: Message[] }>('/chat/messages', {
+    return http.get<unknown, { data: Message[] }>('/chat/messages', {
       params: { conversation_id: conversationId },
     });
   },
@@ -59,7 +59,7 @@ export const chatApi = {
   uploadFile: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return http.post<any, UploadResponse>('/chat/upload', formData, {
+    return http.post<unknown, UploadResponse>('/chat/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
