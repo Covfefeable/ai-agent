@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AgentModal } from '@/components/agents/agent-modal';
+import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 
 export function AgentsPage() {
@@ -17,6 +18,10 @@ export function AgentsPage() {
 
   const [items, setItems] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
+  
   // 统一弹窗替代原有新增/编辑状态
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -35,21 +40,27 @@ export function AgentsPage() {
     try {
       setIsLoading(true);
       const [agentsRes, catsRes] = await Promise.all([
-        agentsApi.list(searchKeyword),
+        agentsApi.list(searchKeyword, currentPage, pageSize),
         agentCategoriesApi.list()
       ]);
       setItems(agentsRes.data);
+      setTotalItems(agentsRes.total || agentsRes.data?.length || 0);
       setCategories(catsRes.data);
     } catch (e) {
       toast.error(getErrMsg(e, '获取智能体列表失败'));
     } finally {
       setIsLoading(false);
     }
-  }, [searchKeyword]);
+  }, [searchKeyword, currentPage]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Reset page when search keyword changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword]);
 
   // 统一弹窗的提交逻辑由 AgentModal 内部处理
 
@@ -107,7 +118,8 @@ export function AgentsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center text-slate-500">加载中...</div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
@@ -180,7 +192,16 @@ export function AgentsPage() {
               </tbody>
             </table>
             </div>
-          </div>
+            </div>
+            
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="justify-end mt-4"
+            />
+          </>
         )}
       </div>
 

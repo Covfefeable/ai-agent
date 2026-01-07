@@ -1,4 +1,5 @@
 import http from '@/lib/http';
+import { type PaginatedResponse } from './agents';
 
 export interface User {
   id: string;
@@ -9,9 +10,9 @@ export interface User {
 }
 
 export const usersApi = {
-  getUsers: (keyword?: string) => {
-    return http.get<unknown, { data: User[] }>('/users', {
-      params: { keyword }
+  getUsers: (keyword?: string, page: number = 1, limit: number = 20) => {
+    return http.get<unknown, PaginatedResponse<User>>('/users', {
+      params: { keyword, page, limit }
     });
   },
 

@@ -4,7 +4,7 @@ import FormData from 'form-data';
 import { z } from 'zod';
 import { db } from '../db';
 import { datasets } from '../db/schema';
-import { eq, desc, and, ilike, or } from 'drizzle-orm';
+import { eq, desc, and, ilike, or, sql } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 
 const createDatasetSchema = z.object({
@@ -77,9 +77,11 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     try {
       const userId = request.user.id;
       const userRole = request.user.role;
-      const { keyword } = request.query;
+      const { keyword, page = 1, limit = 20 } = request.query as { keyword?: string; page?: number; limit?: number };
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
       
-      let baseQuery = db.select().from(datasets).$dynamic();
       const conditions = [];
       
       if (!['owner', 'admin'].includes(userRole)) {
@@ -93,13 +95,29 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         ));
       }
 
-      if (conditions.length > 0) {
-        baseQuery = baseQuery.where(and(...conditions));
-      }
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      // Get total count
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(datasets)
+        .where(whereClause);
+      const total = Number(countResult?.count || 0);
       
-      const userDatasets = await baseQuery.orderBy(desc(datasets.createdAt));
+      // Get paginated data
+      const userDatasets = await db.select()
+        .from(datasets)
+        .where(whereClause)
+        .orderBy(desc(datasets.createdAt))
+        .limit(limitNum)
+        .offset(offset);
       
-      return { data: userDatasets };
+      return { 
+        data: userDatasets,
+        total,
+        page: pageNum,
+        limit: limitNum
+      };
     } catch (error: any) {
       console.error('Get Datasets Error:', error);
       reply.status(500).send({ message: 'Internal Server Error' });

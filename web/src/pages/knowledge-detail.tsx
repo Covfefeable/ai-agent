@@ -6,6 +6,7 @@ import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { UploadDocumentModal } from '@/components/knowledge/upload-document-modal';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 
 export function KnowledgeDetailPage() {
@@ -13,16 +14,38 @@ export function KnowledgeDetailPage() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 20;
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (id) {
+      const timer = setTimeout(() => {
+        setDebouncedKeyword(searchKeyword);
+        setCurrentPage(1);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [id, searchKeyword]);
+
+  useEffect(() => {
+    if (id) {
+      fetchDocuments();
+    }
+  }, [id, debouncedKeyword, currentPage]);
+
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
-      const response = await knowledgeApi.getDocuments(id!, 1, 20, searchKeyword);
+      const response = await knowledgeApi.getDocuments(id!, currentPage, pageSize, debouncedKeyword);
       setDocuments(response.data);
+      setTotalItems(response.total);
     } catch (error) {
       console.error('Failed to fetch documents:', error);
       toast.error('获取文档列表失败');
@@ -30,15 +53,6 @@ export function KnowledgeDetailPage() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (id) {
-      const timer = setTimeout(() => {
-        fetchDocuments();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [id, searchKeyword]);
 
   const handleDelete = async () => {
     if (!deleteId || !id) return;
@@ -89,69 +103,78 @@ export function KnowledgeDetailPage() {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         ) : documents.length > 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">名称</th>
-                    <th className="px-6 py-4 font-medium">字符数</th>
-                    <th className="px-6 py-4 font-medium">状态</th>
-                    <th className="px-6 py-4 font-medium">创建时间</th>
-                    <th className="px-6 py-4 font-medium text-right">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {documents.map((doc) => (
-                    <tr 
-                      key={doc.id} 
-                      className="cursor-pointer hover:bg-slate-50/50"
-                      onClick={() => navigate(`/knowledge/${id}/document/${doc.id}`)}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                            <FileText className="h-4 w-4" />
-                          </div>
-                          <span className="font-medium text-slate-900">{doc.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {(doc.word_count || 0).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          doc.indexing_status === 'completed' 
-                            ? 'bg-green-50 text-green-700' 
-                            : doc.indexing_status === 'error'
-                            ? 'bg-red-50 text-red-700'
-                            : 'bg-yellow-50 text-yellow-700'
-                        }`}>
-                          {doc.indexing_status === 'completed' ? '已完成' : 
-                           doc.indexing_status === 'error' ? '失败' : '处理中'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {format(new Date(doc.created_at * 1000), 'yyyy-MM-dd HH:mm')}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(doc.id);
-                          }}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="删除文档"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">名称</th>
+                      <th className="px-6 py-4 font-medium">字符数</th>
+                      <th className="px-6 py-4 font-medium">状态</th>
+                      <th className="px-6 py-4 font-medium">创建时间</th>
+                      <th className="px-6 py-4 font-medium text-right">操作</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {documents.map((doc) => (
+                      <tr 
+                        key={doc.id} 
+                        className="cursor-pointer hover:bg-slate-50/50"
+                        onClick={() => navigate(`/knowledge/${id}/document/${doc.id}`)}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <span className="font-medium text-slate-900">{doc.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {(doc.word_count || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            doc.indexing_status === 'completed' 
+                              ? 'bg-green-50 text-green-700' 
+                              : doc.indexing_status === 'error'
+                              ? 'bg-red-50 text-red-700'
+                              : 'bg-yellow-50 text-yellow-700'
+                          }`}>
+                            {doc.indexing_status === 'completed' ? '已完成' : 
+                             doc.indexing_status === 'error' ? '失败' : '处理中'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500">
+                          {format(new Date(doc.created_at * 1000), 'yyyy-MM-dd HH:mm')}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(doc.id);
+                            }}
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="删除文档"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="justify-end mt-4"
+            />
+          </>
         ) : (
           <div className="flex h-64 flex-col items-center justify-center gap-4 text-slate-500">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">

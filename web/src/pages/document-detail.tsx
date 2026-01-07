@@ -6,9 +6,8 @@ import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EditSegmentModal } from '@/components/knowledge/edit-segment-modal';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
-
-
 
 export function DocumentDetailPage() {
   const { datasetId, documentId } = useParams<{ datasetId: string; documentId: string }>();
@@ -18,18 +17,23 @@ export function DocumentDetailPage() {
   const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
   const [deletingSegmentId, setDeletingSegmentId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 20;
 
   useEffect(() => {
     if (datasetId && documentId) {
       fetchSegments();
     }
-  }, [datasetId, documentId]);
+  }, [datasetId, documentId, currentPage]);
 
   const fetchSegments = async () => {
     try {
       setIsLoading(true);
-      const response = await knowledgeApi.getSegments(datasetId!, documentId!);
+      const response = await knowledgeApi.getSegments(datasetId!, documentId!, currentPage, pageSize);
       setSegments(response.data);
+      setTotalItems(response.total);
     } catch (error) {
       console.error('Failed to fetch segments:', error);
       toast.error('获取文档分段失败');
@@ -74,69 +78,78 @@ export function DocumentDetailPage() {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         ) : segments.length > 0 ? (
-          <div className="space-y-4">
-            {segments.map((segment) => (
-              <div key={segment.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-medium text-slate-600">
-                      #{segment.position}
-                    </span>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      segment.status === 'completed' 
-                        ? 'bg-green-50 text-green-700' 
-                        : 'bg-yellow-50 text-yellow-700'
-                    }`}>
-                      {segment.status === 'completed' ? '已索引' : '处理中'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
-                    <div className="flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      {segment.word_count} 字
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(segment.created_at * 1000), 'yyyy-MM-dd HH:mm')}
-                    </div>
-                    <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 text-slate-400 hover:text-blue-600"
-                        onClick={() => setEditingSegment(segment)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 text-slate-400 hover:text-red-600"
-                        onClick={() => setDeletingSegmentId(segment.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
-                  {segment.content}
-                </div>
-
-                {segment.keywords && segment.keywords.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {segment.keywords.map((keyword, index) => (
-                      <span key={index} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-600">
-                        <Tag className="h-3 w-3" />
-                        {keyword}
+          <>
+            <div className="space-y-4">
+              {segments.map((segment) => (
+                <div key={segment.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-medium text-slate-600">
+                        #{segment.position}
                       </span>
-                    ))}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        segment.status === 'completed' 
+                          ? 'bg-green-50 text-green-700' 
+                          : 'bg-yellow-50 text-yellow-700'
+                      }`}>
+                        {segment.status === 'completed' ? '已索引' : '处理中'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                      <div className="flex items-center gap-1">
+                        <Hash className="h-3 w-3" />
+                        {segment.word_count} 字
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(new Date(segment.created_at * 1000), 'yyyy-MM-dd HH:mm')}
+                      </div>
+                      <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-slate-400 hover:text-blue-600"
+                          onClick={() => setEditingSegment(segment)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-slate-400 hover:text-red-600"
+                          onClick={() => setDeletingSegmentId(segment.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+
+                  <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                    {segment.content}
+                  </div>
+
+                  {segment.keywords && segment.keywords.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {segment.keywords.map((keyword, index) => (
+                        <span key={index} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-600">
+                          <Tag className="h-3 w-3" />
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="justify-end mt-4"
+            />
+          </>
         ) : (
           <div className="flex h-64 flex-col items-center justify-center gap-4 text-slate-500">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">

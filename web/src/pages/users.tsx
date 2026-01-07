@@ -3,6 +3,7 @@ import { usersApi, type User } from '@/api/users';
 import { toast } from 'sonner';
 import { Loader2, Shield, User as UserIcon, ShieldAlert, Search } from 'lucide-react';
 import { Select } from '@/components/ui/select';
+import { Pagination } from '@/components/ui/pagination';
 import { format } from 'date-fns';
 
 export function UsersPage() {
@@ -10,19 +11,29 @@ export function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchUsers();
+      setDebouncedKeyword(searchKeyword);
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [debouncedKeyword, currentPage]);
+
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const response = await usersApi.getUsers(searchKeyword);
+      const response = await usersApi.getUsers(debouncedKeyword, currentPage, pageSize);
       setUsers(response.data);
+      setTotalItems(response.total);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to fetch users:', msg);
@@ -92,48 +103,57 @@ export function UsersPage() {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  <th className="px-6 py-4 font-medium">用户</th>
-                  <th className="px-6 py-4 font-medium">邮箱</th>
-                  <th className="px-6 py-4 font-medium">角色</th>
-                  <th className="px-6 py-4 font-medium">注册时间</th>
-                  <th className="px-6 py-4 font-medium text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/50">
-                    <td className="px-6 py-4 font-medium text-slate-900">{user.name}</td>
-                    <td className="px-6 py-4 text-slate-600">{user.email}</td>
-                    <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {user.role !== 'owner' && (
-                        <div className="inline-block w-40">
-                          <Select
-                            options={[
-                              { label: '设为普通用户', value: 'member' },
-                              { label: '设为管理员', value: 'admin' },
-                            ]}
-                            value={user.role}
-                            onChange={(val: string) => handleRoleChange(user.id, val as 'admin' | 'member')}
-                            className="w-full"
-                          />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">用户</th>
+                      <th className="px-6 py-4 font-medium">邮箱</th>
+                      <th className="px-6 py-4 font-medium">角色</th>
+                      <th className="px-6 py-4 font-medium">注册时间</th>
+                      <th className="px-6 py-4 font-medium text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-slate-50/50">
+                        <td className="px-6 py-4 font-medium text-slate-900">{user.name}</td>
+                        <td className="px-6 py-4 text-slate-600">{user.email}</td>
+                        <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {user.role !== 'owner' && (
+                            <div className="inline-block w-40">
+                              <Select
+                                options={[
+                                  { label: '设为普通用户', value: 'member' },
+                                  { label: '设为管理员', value: 'admin' },
+                                ]}
+                                value={user.role}
+                                onChange={(val: string) => handleRoleChange(user.id, val as 'admin' | 'member')}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="justify-end mt-4"
+            />
+          </>
         )}
       </div>
     </div>

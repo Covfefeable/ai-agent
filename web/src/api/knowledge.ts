@@ -1,4 +1,5 @@
 import http from '@/lib/http';
+import { type PaginatedResponse } from './agents';
 
 export interface Dataset {
   id: string;
@@ -90,9 +91,9 @@ export interface UpdateSegmentParams {
 }
 
 export const knowledgeApi = {
-  getDatasets: (keyword?: string) => {
-    return http.get<unknown, { data: Dataset[] }>('/knowledge/datasets', {
-      params: { keyword }
+  getDatasets: (keyword?: string, page: number = 1, limit: number = 20) => {
+    return http.get<unknown, PaginatedResponse<Dataset>>('/knowledge/datasets', {
+      params: { keyword, page, limit }
     });
   },
 

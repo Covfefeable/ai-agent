@@ -2,8 +2,21 @@ import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { db } from '../db';
 import { agents, categories } from '../db/schema';
-import { eq, desc, ilike, or, and } from 'drizzle-orm';
+import { eq, desc, ilike, or, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
+
+async function fetchImageAsBase64(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
+    const buffer = Buffer.from(response.data);
+    const mimeType = response.headers['content-type'] || 'image/png';
+    return `data:${mimeType};base64,${buffer.toString('base64')}`;
+  } catch (error) {
+    console.error(`Failed to fetch icon image from ${url}:`, error);
+    return null;
+  }
+}
 
 export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: any, reply) => {
@@ -11,17 +24,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const userRole = request.user.role;
       const userId = request.user.id;
       
-      const { keyword } = request.query as { keyword?: string };
-
-      let baseQuery = db.select({
-        id: agents.id,
-        title: agents.title,
-        description: agents.description,
-        iconUrl: agents.iconUrl,
-        isPublic: agents.isPublic,
-        categoryId: agents.categoryId,
-        createdAt: agents.createdAt,
-      }).from(agents).$dynamic();
+      const { keyword, page = 1, limit = 20 } = request.query as { keyword?: string; page?: number; limit?: number };
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
 
       const conditions = [];
 
@@ -35,12 +41,37 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         conditions.push(or(ilike(agents.title, k), ilike(agents.description, k)));
       }
 
-      if (conditions.length > 0) {
-        baseQuery = baseQuery.where(and(...conditions));
-      }
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-      const list = await baseQuery.orderBy(desc(agents.createdAt));
-      return { data: list };
+      // Get total count
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(agents)
+        .where(whereClause);
+      const total = Number(countResult?.count || 0);
+
+      // Get paginated data
+      const list = await db.select({
+        id: agents.id,
+        title: agents.title,
+        description: agents.description,
+        iconUrl: agents.iconUrl,
+        isPublic: agents.isPublic,
+        categoryId: agents.categoryId,
+        createdAt: agents.createdAt,
+      })
+      .from(agents)
+      .where(whereClause)
+      .orderBy(desc(agents.createdAt))
+      .limit(limitNum)
+      .offset(offset);
+
+      return { 
+        data: list,
+        total,
+        page: pageNum,
+        limit: limitNum
+      };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agents error');
       reply.status(500).send({ message: 'Internal Server Error' });
@@ -51,17 +82,11 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       const userId = request.user.id;
-      const { keyword, categoryId } = request.query as { keyword?: string; categoryId?: string };
+      const { keyword, categoryId, page = 1, limit = 20 } = request.query as { keyword?: string; categoryId?: string; page?: number; limit?: number };
       
-      let baseQuery = db.select({
-        id: agents.id,
-        title: agents.title,
-        description: agents.description,
-        iconUrl: agents.iconUrl,
-        isPublic: agents.isPublic,
-        categoryId: agents.categoryId,
-        createdAt: agents.createdAt,
-      }).from(agents).$dynamic();
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
 
       const conditions = [];
 
@@ -79,12 +104,37 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         conditions.push(eq(agents.categoryId, categoryId));
       }
 
-      if (conditions.length > 0) {
-        baseQuery = baseQuery.where(and(...conditions));
-      }
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-      const list = await baseQuery.orderBy(desc(agents.createdAt));
-      return { data: list };
+      // Get total count
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(agents)
+        .where(whereClause);
+      const total = Number(countResult?.count || 0);
+
+      // Get paginated data
+      const list = await db.select({
+        id: agents.id,
+        title: agents.title,
+        description: agents.description,
+        iconUrl: agents.iconUrl,
+        isPublic: agents.isPublic,
+        categoryId: agents.categoryId,
+        createdAt: agents.createdAt,
+      })
+      .from(agents)
+      .where(whereClause)
+      .orderBy(desc(agents.createdAt))
+      .limit(limitNum)
+      .offset(offset);
+
+      return { 
+        data: list,
+        total,
+        page: pageNum,
+        limit: limitNum
+      };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get public agents error');
       reply.status(500).send({ message: 'Internal Server Error' });
@@ -324,6 +374,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const description: string = data.description || '';
       const iconType: string = data.icon_type || 'emoji';
       const iconUrl: string | null = iconType === 'image' ? (data.icon_url || null) : null;
+      const iconBase64 = await fetchImageAsBase64(iconUrl);
 
       // validate category if provided
       let catId: string | undefined = categoryId;
@@ -340,7 +391,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         description,
         apiKey,
         baseUrl: inputBaseUrl || null,
-        iconUrl: iconUrl || null,
+        iconUrl: iconBase64 || iconUrl || null,
         isPublic: !!isPublic,
         categoryId: catId,
       }).returning();
@@ -475,11 +526,12 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         const description: string = data.description || '';
         const iconType: string = data.icon_type || 'emoji';
         const iconUrl: string | null = iconType === 'image' ? (data.icon_url || null) : null;
+        const iconBase64 = await fetchImageAsBase64(iconUrl);
 
         Object.assign(updateFields, {
           title,
           description,
-          iconUrl: iconUrl || null,
+          iconUrl: iconBase64 || iconUrl || null,
         });
       }
 

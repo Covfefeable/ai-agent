@@ -4,6 +4,7 @@ import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { Pagination } from '@/components/ui/pagination';
 
 export function AgentsSquarePage() {
   const [items, setItems] = useState<Agent[]>([]);
@@ -11,27 +12,36 @@ export function AgentsSquarePage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [categories, setCategories] = useState<AgentCategory[]>([]);
   const [categoryId, setCategoryId] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 12;
 
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [agentsRes, catsRes] = await Promise.all([
-        agentsApi.publicList(searchKeyword, categoryId || undefined),
+        agentsApi.publicList(searchKeyword, categoryId || undefined, currentPage, pageSize),
         agentCategoriesApi.list()
       ]);
       setItems(agentsRes.data);
+      setTotalItems(agentsRes.total || agentsRes.data?.length || 0);
       setCategories(catsRes.data);
     } catch {
       toast.error('获取智能体广场数据失败');
     } finally {
       setIsLoading(false);
     }
-  }, [searchKeyword, categoryId]);
+  }, [searchKeyword, categoryId, currentPage]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchData(), 400);
     return () => clearTimeout(timer);
   }, [fetchData]);
+
+  // Reset page when search keyword or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword, categoryId]);
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -77,53 +87,62 @@ export function AgentsSquarePage() {
             <Bot className="h-8 w-8 text-slate-400 animate-pulse" />
           </div>
         ) : items.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map((ag) => (
-              <div 
-                key={ag.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md cursor-pointer"
-                onClick={() => { window.location.href = `/agents-square/${ag.id}`; }}
-              >
-                {ag.iconUrl && (
-                  <div className="absolute inset-0 z-0 pointer-events-none">
-                    <img 
-                      src={ag.iconUrl} 
-                      alt="" 
-                      className="h-full w-full object-cover opacity-15 blur-2xl scale-110 transition-transform duration-700 ease-out group-hover:scale-125 group-hover:rotate-1"
-                    />
-                    <div className="absolute inset-0 bg-white/50" />
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
+              {items.map((ag) => (
+                <div 
+                  key={ag.id}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md cursor-pointer"
+                  onClick={() => { window.location.href = `/agents-square/${ag.id}`; }}
+                >
+                  {ag.iconUrl && (
+                    <div className="absolute inset-0 z-0 pointer-events-none">
+                      <img 
+                        src={ag.iconUrl} 
+                        alt="" 
+                        className="h-full w-full object-cover opacity-15 blur-2xl scale-110 transition-transform duration-700 ease-out group-hover:scale-125 group-hover:rotate-1"
+                      />
+                      <div className="absolute inset-0 bg-white/50" />
+                    </div>
+                  )}
+                  <div className="relative z-10">
+                    <div className="mb-4 flex items-center gap-3">
+                      {ag.iconUrl ? (
+                        <img src={ag.iconUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
+                          <Bot className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="mb-2 text-base font-semibold text-slate-900 line-clamp-1" title={ag.title}>
+                      {ag.title}
+                    </h3>
+                    <p className="mb-4 text-sm text-slate-500 line-clamp-2 min-h-[40px]" title={ag.description || ''}>
+                      {ag.description || '暂无描述'}
+                    </p>
                   </div>
-                )}
-                <div className="relative z-10">
-                  <div className="mb-4 flex items-center gap-3">
-                    {ag.iconUrl ? (
-                      <img src={ag.iconUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
-                        <Bot className="h-5 w-5" />
-                      </div>
-                    )}
+                  
+                  <div className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>{format(new Date(ag.createdAt), 'yyyy-MM-dd')}</span>
+                    </div>
+                    <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
+                      {ag.isPublic ? '公开' : '私有'}
+                    </span>
                   </div>
-                  <h3 className="mb-2 text-base font-semibold text-slate-900 line-clamp-1" title={ag.title}>
-                    {ag.title}
-                  </h3>
-                  <p className="mb-4 text-sm text-slate-500 line-clamp-2 min-h-[40px]" title={ag.description || ''}>
-                    {ag.description || '暂无描述'}
-                  </p>
                 </div>
-                
-                <div className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>{format(new Date(ag.createdAt), 'yyyy-MM-dd')}</span>
-                  </div>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
-                    {ag.isPublic ? '公开' : '私有'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="justify-end mt-4"
+            />
+          </>
         ) : (
           <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">
             <div className="mb-6 flex justify-center">

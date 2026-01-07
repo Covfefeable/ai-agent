@@ -4,6 +4,7 @@ import { Database, Plus, Loader2, Calendar, Trash2, Pencil, Search } from 'lucid
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { KnowledgeBaseModal } from '@/components/knowledge/knowledge-base-modal';
+import { Pagination } from '@/components/ui/pagination';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { knowledgeApi } from '@/api/knowledge';
@@ -25,12 +26,17 @@ export function KnowledgePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 12;
 
   const fetchKnowledgeBases = async () => {
     try {
       setIsLoading(true);
-      const response = await knowledgeApi.getDatasets(searchKeyword);
+      const response = await knowledgeApi.getDatasets(debouncedKeyword, currentPage, pageSize);
       setKnowledgeBases(response.data);
+      setTotalItems(response.total);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to fetch knowledge bases:', msg);
@@ -41,10 +47,15 @@ export function KnowledgePage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchKnowledgeBases();
+      setDebouncedKeyword(searchKeyword);
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchKeyword]);
+
+  useEffect(() => {
+    fetchKnowledgeBases();
+  }, [debouncedKeyword, currentPage]);
 
   const openCreateModal = () => {
     setModalMode('create');
@@ -106,7 +117,8 @@ export function KnowledgePage() {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         ) : knowledgeBases.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {knowledgeBases.map((kb) => (
               <div 
                 key={kb.id}
@@ -157,6 +169,14 @@ export function KnowledgePage() {
                 </div>
               </div>
             ))}
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              className="mt-4 justify-end"
+            />
           </div>
         ) : (
           <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
 import { users } from '../db/schema';
-import { eq, desc, not, ilike, or } from 'drizzle-orm';
+import { eq, desc, not, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 export async function usersRoutes(fastify: FastifyInstance) {
@@ -13,12 +13,22 @@ export async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
 
-      const { keyword } = request.query;
+      const { keyword, page = 1, limit = 20 } = request.query as { keyword?: string; page?: number; limit?: number };
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
       
       let conditions = undefined;
       if (keyword) {
         conditions = or(ilike(users.name, `%${keyword}%`), ilike(users.email, `%${keyword}%`));
       }
+
+      // Get total count
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(conditions);
+      const total = Number(countResult?.count || 0);
 
       let baseQuery = db.select({
         id: users.id,
@@ -34,9 +44,17 @@ export async function usersRoutes(fastify: FastifyInstance) {
         baseQuery = baseQuery.where(conditions);
       }
 
-      const allUsers = await baseQuery.orderBy(desc(users.createdAt));
+      const allUsers = await baseQuery
+        .orderBy(desc(users.createdAt))
+        .limit(limitNum)
+        .offset(offset);
 
-      return { data: allUsers };
+      return { 
+        data: allUsers,
+        total,
+        page: pageNum,
+        limit: limitNum
+      };
     } catch (error) {
       console.error('Get Users Error:', error);
       reply.status(500).send({ message: 'Internal Server Error' });

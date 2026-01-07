@@ -12,15 +12,22 @@ export interface Agent {
   createdAt: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const agentsApi = {
-  list: (keyword?: string) => {
-    return http.get<unknown, { data: Agent[] }>('/agents', {
-      params: { keyword }
+  list: (keyword?: string, page: number = 1, limit: number = 20) => {
+    return http.get<unknown, PaginatedResponse<Agent>>('/agents', {
+      params: { keyword, page, limit }
     });
   },
-  publicList: (keyword?: string, categoryId?: string) => {
-    return http.get<unknown, { data: Agent[] }>('/agents/public', {
-      params: { keyword, categoryId }
+  publicList: (keyword?: string, categoryId?: string, page: number = 1, limit: number = 20) => {
+    return http.get<unknown, PaginatedResponse<Agent>>('/agents/public', {
+      params: { keyword, categoryId, page, limit }
     });
   },
   get: (id: string) => {
