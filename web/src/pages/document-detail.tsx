@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { EditSegmentModal } from '@/components/knowledge/EditSegmentModal';
+import { EditSegmentModal } from '@/components/knowledge/edit-segment-modal';
 import { toast } from 'sonner';
 
 

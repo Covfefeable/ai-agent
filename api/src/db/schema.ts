@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, boolean } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -15,5 +15,23 @@ export const datasets = pgTable('datasets', {
   userId: uuid('user_id').references(() => users.id).notNull(),
   name: text('name').notNull(),
   description: text('description'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const categories = pgTable('categories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const agents = pgTable('agents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  apiKey: text('api_key').notNull(),
+  iconUrl: text('icon_url'),
+  isPublic: boolean('is_public').notNull().default(false),
+  categoryId: uuid('category_id').references(() => categories.id),
   createdAt: timestamp('created_at').defaultNow(),
 });

@@ -52,8 +52,9 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
       
       onSuccess();
       onClose();
-    } catch (error: any) {
-      console.error(`Failed to ${mode} knowledge base:`, error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to ${mode} knowledge base:`, msg);
       toast.error(mode === 'create' ? '创建失败' : '更新失败');
     } finally {
       setIsSubmitting(false);
@@ -120,7 +121,7 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
             </Button>
             <Button 
               type="submit" 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-black hover:bg-black/80 text-white"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

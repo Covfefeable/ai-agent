@@ -9,6 +9,8 @@ import { KnowledgeDetailPage } from './pages/knowledge-detail';
 import { DashboardLayout } from './components/DashboardLayout';
 import { DocumentDetailPage } from './pages/document-detail';
 import { UsersPage } from './pages/users';
+import { AgentsPage } from './pages/agents';
+import { AgentCategoriesPage } from './pages/agent-categories';
 
 function Layout() {
   return (
@@ -44,11 +46,12 @@ function App() {
           <Route path="/" element={<ChatPage />} />
           <Route path="/knowledge" element={<KnowledgePage />} />
           <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
-          <Route
-            path="/knowledge/:datasetId/document/:documentId"
+          <Route path="/knowledge/:datasetId/document/:documentId"
             element={<DocumentDetailPage />}
           />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/agent-categories" element={<AgentCategoriesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

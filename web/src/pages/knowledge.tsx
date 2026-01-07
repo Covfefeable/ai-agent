@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Database, Plus, Loader2, Calendar, Trash2, Pencil, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { KnowledgeBaseModal } from '@/components/knowledge/KnowledgeBaseModal';
+import { KnowledgeBaseModal } from '@/components/knowledge/knowledge-base-modal';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { knowledgeApi } from '@/api/knowledge';
@@ -31,8 +31,9 @@ export function KnowledgePage() {
       setIsLoading(true);
       const response = await knowledgeApi.getDatasets(searchKeyword);
       setKnowledgeBases(response.data);
-    } catch (error: any) {
-      console.error('Failed to fetch knowledge bases:', error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to fetch knowledge bases:', msg);
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +66,9 @@ export function KnowledgePage() {
       setKnowledgeBases(prev => prev.filter(kb => kb.id !== deleteId));
       setDeleteId(null);
       toast.success('知识库删除成功');
-    } catch (error: any) {
-      console.error('Failed to delete knowledge base:', error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to delete knowledge base:', msg);
     }
   };
 
@@ -89,7 +91,7 @@ export function KnowledgePage() {
         </div>
         <Button 
           onClick={openCreateModal}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="gap-2 bg-black hover:bg-black/80 text-white shadow-sm"
         >
           <Plus className="h-4 w-4" />
           新建知识库
@@ -121,7 +123,7 @@ export function KnowledgePage() {
                           e.stopPropagation();
                           openEditModal(kb);
                         }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-black/5 hover:text-black"
                         title="编辑知识库"
                       >
                         <Pencil className="h-4 w-4" />

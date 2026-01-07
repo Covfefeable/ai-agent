@@ -19,7 +19,6 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
   const [newKeyword, setNewKeyword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset state when segment changes or dialog opens
   useEffect(() => {
     if (isOpen) {
       setContent(segment.content);
@@ -118,7 +117,7 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
 
         <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
           <Button variant="ghost" onClick={onClose} disabled={isSaving}>取消</Button>
-          <Button onClick={handleSave} isLoading={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">保存</Button>
+          <Button onClick={handleSave} isLoading={isSaving} className="bg-black hover:bg-black/80 text-white">保存</Button>
         </div>
       </div>
     </div>

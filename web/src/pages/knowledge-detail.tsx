@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { UploadDocumentModal } from '@/components/knowledge/UploadDocumentModal';
+import { UploadDocumentModal } from '@/components/knowledge/upload-document-modal';
 import { toast } from 'sonner';
 
 export function KnowledgeDetailPage() {
@@ -75,7 +75,7 @@ export function KnowledgeDetailPage() {
         </div>
         <Button 
           onClick={() => setIsUploadModalOpen(true)} 
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="gap-2 bg-black hover:bg-black/80 text-white shadow-sm"
         >
           <Plus className="h-4 w-4" />
           添加文档

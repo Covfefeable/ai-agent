@@ -95,7 +95,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
                   id="separator"
                   value={separator}
                   onChange={(e) => setSeparator(e.target.value)}
-                  placeholder="\n\n\n"
+                  placeholder="\\n\\n\\n"
                 />
               </div>
               <div className="space-y-2">
@@ -121,7 +121,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
             </Button>
             <Button 
               type="submit" 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-black hover:bg-black/80 text-white"
               disabled={isUploading || !uploadFile}
             >
               {isUploading ? (
