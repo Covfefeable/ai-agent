@@ -9,16 +9,17 @@ RUN npm install -g pnpm
 # Copy package files
 COPY package.json pnpm-workspace.yaml ./
 COPY api/package.json api/
+COPY web/package.json web/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile --filter api...
+RUN pnpm install --no-lockfile --config.node-linker=hoisted
 
 # Copy source code
 COPY api api
 
 # Build
 WORKDIR /app/api
-RUN pnpm tsc
+RUN pnpm build
 
 # Production stage
 FROM node:20-alpine

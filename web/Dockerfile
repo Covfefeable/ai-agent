@@ -9,9 +9,10 @@ RUN npm install -g pnpm
 # Copy package files
 COPY package.json pnpm-workspace.yaml ./
 COPY web/package.json web/
+COPY api/package.json api/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile --filter web...
+RUN pnpm install --no-lockfile --config.node-linker=hoisted
 
 # Copy source code
 COPY web web

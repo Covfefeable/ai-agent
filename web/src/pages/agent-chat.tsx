@@ -3,7 +3,6 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { agentsApi } from '@/api/agents';
 import { favoritesApi } from '@/api/favorites';
-import { chatApi } from '@/api/chat';
 import { AgentForm, type FormItem, type FormValues } from '@/components/agents/agent-form';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
