@@ -128,15 +128,17 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                 disabled={isSubmitting}
                 className="mt-1 w-full"
               />
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => { window.location.href = '/agent-categories'; }}
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  分类管理
-                </button>
-              </div>
+              {(JSON.parse(localStorage.getItem('user') || '{}')?.role === 'owner' || JSON.parse(localStorage.getItem('user') || '{}')?.role === 'admin') && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = '/agent-categories'; }}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    分类管理
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
