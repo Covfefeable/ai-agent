@@ -46,6 +46,7 @@ function App() {
           }
         >
           <Route path="/" element={<ChatPage />} />
+          <Route path="/chat/:id" element={<AgentChatPage />} />
           <Route path="/knowledge" element={<KnowledgePage />} />
           <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
           <Route path="/knowledge/:datasetId/document/:documentId"

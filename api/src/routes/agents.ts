@@ -165,6 +165,106 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get('/:id/conversations', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const user = (request.user?.id ?? 'web').toString();
+      
+      const response = await axios.get(`${baseUrl}/conversations`, {
+        params: {
+          user,
+          last_id: request.query.last_id,
+          limit: request.query.limit || 20,
+        },
+        headers: {
+          Authorization: `Bearer ${row.apiKey}`,
+        },
+        timeout: 10000,
+      });
+      return response.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Get agent conversations error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  fastify.delete('/:id/conversations/:conversationId', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const conversationId = request.params.conversationId as string;
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const user = (request.user?.id ?? 'web').toString();
+
+      const response = await axios.delete(`${baseUrl}/conversations/${conversationId}`, {
+        data: { user },
+        headers: {
+          Authorization: `Bearer ${row.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000,
+      });
+      return response.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Delete agent conversation error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  fastify.get('/:id/messages', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const { conversation_id, first_id, limit = 20 } = request.query as { conversation_id: string; first_id?: string; limit?: number };
+      
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const user = (request.user?.id ?? 'web').toString();
+
+      const response = await axios.get(`${baseUrl}/messages`, {
+        params: {
+          user,
+          conversation_id,
+          first_id,
+          limit
+        },
+        headers: {
+          Authorization: `Bearer ${row.apiKey}`,
+        },
+        timeout: 10000,
+      });
+      return response.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Get agent messages error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
   fastify.post('/:id/files/upload', async (request: any, reply) => {
     try {
       const id = request.params.id as string;

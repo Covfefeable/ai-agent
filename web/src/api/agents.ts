@@ -1,4 +1,5 @@
 import http from '@/lib/http';
+import type { Conversation, Message } from './chat';
 
 export interface Agent {
   id: string;
@@ -84,5 +85,16 @@ export const agentsApi = {
   },
   remove: (id: string) => {
     return http.delete(`/agents/${id}`);
+  },
+  getConversations: (id: string) => {
+    return http.get<unknown, { data: Conversation[] }>(`/agents/${id}/conversations`);
+  },
+  deleteConversation: (id: string, conversationId: string) => {
+    return http.delete(`/agents/${id}/conversations/${conversationId}`);
+  },
+  getMessages: (id: string, conversationId: string) => {
+    return http.get<unknown, { data: Message[] }>(`/agents/${id}/messages`, {
+      params: { conversation_id: conversationId },
+    });
   },
 };

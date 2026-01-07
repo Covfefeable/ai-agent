@@ -13,6 +13,7 @@ import { knowledgeRoutes } from './routes/knowledge';
 import { usersRoutes } from './routes/users';
 import { agentsRoutes } from './routes/agents';
 import { agentCategoriesRoutes } from './routes/agentCategories';
+import { favoritesRoutes } from './routes/favorites';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
@@ -55,6 +56,7 @@ fastify.register(async (instance) => {
   instance.register(usersRoutes, { prefix: '/users' });
   instance.register(agentsRoutes, { prefix: '/agents' });
   instance.register(agentCategoriesRoutes, { prefix: '/agent-categories' });
+  instance.register(favoritesRoutes, { prefix: '/favorites' });
 });
 
 // Health check

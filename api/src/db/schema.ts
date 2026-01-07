@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, boolean, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -37,3 +37,12 @@ export const agents = pgTable('agents', {
   categoryId: uuid('category_id').references(() => categories.id),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const userFavoriteAgents = pgTable('user_favorite_agents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  agentId: uuid('agent_id').references(() => agents.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => ({
+  uniqueUserAgent: unique().on(t.userId, t.agentId),
+}));

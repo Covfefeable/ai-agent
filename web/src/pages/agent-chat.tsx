@@ -1,16 +1,31 @@
 import { useEffect, useState, useRef } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { agentsApi } from '@/api/agents';
+import { favoritesApi } from '@/api/favorites';
+import { chatApi } from '@/api/chat';
 import { AgentForm, type FormItem, type FormValues } from '@/components/agents/agent-form';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, MessageSquare, Plus, X } from 'lucide-react';
 import { cn, getFileType } from '@/lib/utils';
 import { marked } from 'marked';
 import { toast } from 'sonner';
 
+interface Conversation {
+  id: string;
+  name: string;
+  inputs: unknown;
+  status: string;
+  created_at: number;
+}
+
 export function AgentChatPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const urlConversationId = searchParams.get('conversation_id');
+  
   const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -38,11 +53,102 @@ export function AgentChatPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [agentTitle, setAgentTitle] = useState<string>('智能体');
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string; type: string }>>([]);
+  const [openingStatement, setOpeningStatement] = useState('');
+  
+  // History related states
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchConversations = async () => {
+    if (!id) return;
+    try {
+      const response = await agentsApi.getConversations(id);
+      setConversations(response.data);
+    } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchConversations();
+  }, [id]);
+
+  const confirmDelete = async () => {
+    if (!deleteId || !id) return;
+
+    try {
+      await agentsApi.deleteConversation(id, deleteId);
+      setConversations(prev => prev.filter(c => c.id !== deleteId));
+      if (conversationId === deleteId) {
+        navigate(`/chat/${id}`);
+        setConversationId(null);
+        if (openingStatement) {
+          setMessages([{ id: 'opening', role: 'assistant', content: openingStatement }]);
+        } else {
+          setMessages([]);
+        }
+      }
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  const deleteConversation = async (e: React.MouseEvent, convId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteId(convId);
+  };
+
+  const loadHistory = async (convId: string) => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const response = await agentsApi.getMessages(id, convId);
+      
+      const formattedMessages: Array<{ id: string; role: 'user' | 'assistant'; content: string }> = [];
+       response.data.forEach((item: any) => {
+         formattedMessages.push({
+           id: item.id + '_user',
+           role: 'user',
+           content: item.query,
+         });
+         if (item.answer) {
+           formattedMessages.push({
+             id: item.id + '_assistant',
+             role: 'assistant',
+             content: item.answer,
+           });
+         }
+       });
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (urlConversationId) {
+      setConversationId(urlConversationId);
+      loadHistory(urlConversationId);
+    } else {
+      setConversationId(null);
+      if (openingStatement) {
+        setMessages([{ id: 'opening', role: 'assistant', content: openingStatement }]);
+      }
+    }
+  }, [urlConversationId, openingStatement]); // Added openingStatement dependency to ensure reset works if params load later
 
   useEffect(() => {
     document.title = 'Super Agent - 智能体聊天';
@@ -66,7 +172,10 @@ export function AgentChatPage() {
         const initialGreeting = opening
           ? `${opening}`
           : '你好！很高兴见到你，有什么我可以帮你？';
-        setMessages([{ id: 'opening', role: 'assistant', content: initialGreeting }]);
+        setOpeningStatement(initialGreeting);
+        if (!urlConversationId) {
+          setMessages([{ id: 'opening', role: 'assistant', content: initialGreeting }]);
+        }
         setSuggestions(res.suggested_questions || []);
         const rawForm = Array.isArray(res.user_input_form) ? res.user_input_form : [];
         const rawFormList = rawForm as Array<Record<string, unknown>>;
@@ -181,10 +290,29 @@ export function AgentChatPage() {
           setAgentTitle(target.title || '智能体');
           setAgentIconUrl(target.iconUrl || null);
         }
+        const favRes = await favoritesApi.check(id);
+        setIsFavorite(favRes.isFavorite);
       } catch { void 0; }
     };
     fetchAgent();
   }, [id]);
+
+  const toggleFavorite = async () => {
+    if (!id) return;
+    try {
+      if (isFavorite) {
+        await favoritesApi.remove(id);
+        setIsFavorite(false);
+        toast.success('已取消收藏');
+      } else {
+        await favoritesApi.add(id);
+        setIsFavorite(true);
+        toast.success('已添加到我的智能体');
+      }
+    } catch {
+      toast.error('操作失败');
+    }
+  };
 
   useEffect(() => {
     if (agentTitle) {
@@ -388,6 +516,44 @@ export function AgentChatPage() {
           )}
           <h2 className="text-lg font-bold text-slate-800">{agentTitle}</h2>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsHistoryOpen(true)}
+            className="text-slate-500 hover:text-slate-900"
+            title="历史会话"
+          >
+            <History className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              navigate(`/chat/${id}`);
+              if (!urlConversationId) {
+                setMessages([{ id: 'opening', role: 'assistant', content: openingStatement }]);
+                setConversationId(null);
+                setFormSubmitted(false);
+                setFormValues({});
+                setFormOpen(true);
+              }
+            }}
+            className="text-slate-500 hover:text-slate-900"
+            title="新建对话"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFavorite}
+            className={cn("text-slate-400 hover:text-yellow-500", isFavorite && "text-yellow-500")}
+            title={isFavorite ? "取消收藏" : "添加到我的智能体"}
+          >
+            <Star className={cn("h-5 w-5", isFavorite && "fill-current")} />
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -582,6 +748,77 @@ export function AgentChatPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="删除会话"
+        description="确定要删除这个会话吗？此操作无法撤销。"
+        confirmText="删除"
+        variant="destructive"
+      />
+
+      {/* History Drawer */}
+      {isHistoryOpen && (
+        <div className="absolute inset-0 z-50 flex overflow-hidden">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsHistoryOpen(false)}
+          />
+          
+          {/* Drawer Panel */}
+          <div className="relative ml-auto flex h-full w-80 flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4">
+              <h3 className="font-bold text-slate-800">历史会话</h3>
+              <Button variant="ghost" size="icon" onClick={() => setIsHistoryOpen(false)}>
+                <X className="h-5 w-5 text-slate-500" />
+              </Button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <div className="space-y-1">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={cn(
+                      "group flex cursor-pointer items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                      conversationId === conv.id
+                        ? "bg-slate-100 text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                    onClick={() => {
+                      if (conversationId !== conv.id) {
+                        navigate(`/chat/${id}?conversation_id=${conv.id}`);
+                        setIsHistoryOpen(false);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <MessageSquare className={cn(
+                        "h-4 w-4 shrink-0 transition-colors",
+                        conversationId === conv.id ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
+                      )} />
+                      <span className="truncate">{conv.name || 'New Chat'}</span>
+                    </div>
+                    <button
+                      onClick={(e) => deleteConversation(e, conv.id)}
+                      className="hidden text-slate-400 hover:text-red-600 group-hover:block"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                {conversations.length === 0 && (
+                  <div className="py-8 text-center text-sm text-slate-400">
+                    暂无历史会话
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
