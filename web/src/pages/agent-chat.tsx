@@ -328,6 +328,7 @@ export function AgentChatPage() {
         setIsFavorite(true);
         toast.success('已添加到我的智能体');
       }
+      window.dispatchEvent(new Event('refreshFavorites'));
     } catch {
       toast.error('操作失败');
     }

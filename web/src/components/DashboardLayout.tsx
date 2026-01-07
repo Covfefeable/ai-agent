@@ -38,6 +38,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       }
     };
     fetchFavorites();
+
+    const handleRefresh = () => fetchFavorites();
+    window.addEventListener('refreshFavorites', handleRefresh);
+    return () => window.removeEventListener('refreshFavorites', handleRefresh);
   }, []);
 
   const handleLogout = () => {
