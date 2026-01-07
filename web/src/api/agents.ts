@@ -93,8 +93,10 @@ export const agentsApi = {
   remove: (id: string) => {
     return http.delete(`/agents/${id}`);
   },
-  getConversations: (id: string) => {
-    return http.get<unknown, { data: Conversation[] }>(`/agents/${id}/conversations`);
+  getConversations: (id: string, last_id?: string, limit: number = 20) => {
+    return http.get<unknown, { data: Conversation[], has_more: boolean, limit: number }>(`/agents/${id}/conversations`, {
+      params: { last_id, limit }
+    });
   },
   deleteConversation: (id: string, conversationId: string) => {
     return http.delete(`/agents/${id}/conversations/${conversationId}`);

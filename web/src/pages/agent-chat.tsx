@@ -61,18 +61,38 @@ export function AgentChatPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [lastId, setLastId] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (loadMore = false) => {
     if (!id) return;
+    if (loadMore && isLoadingMore) return;
+    if (loadMore) setIsLoadingMore(true);
+
     try {
-      const response = await agentsApi.getConversations(id);
-      setConversations(response.data);
+      const currentLastId = loadMore ? lastId || undefined : undefined;
+      const response = await agentsApi.getConversations(id, currentLastId);
+      setConversations(prev => loadMore ? [...prev, ...response.data] : response.data);
+      setHasMore(response.has_more);
+      if (response.data.length > 0) {
+        setLastId(response.data[response.data.length - 1].id);
+      }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
+    } finally {
+      if (loadMore) setIsLoadingMore(false);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50 && hasMore && !isLoadingMore) {
+      fetchConversations(true);
     }
   };
 
@@ -519,7 +539,10 @@ export function AgentChatPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsHistoryOpen(true)}
+            onClick={() => {
+              setIsHistoryOpen(true);
+              fetchConversations();
+            }}
             className="text-slate-500 hover:text-slate-900"
             title="历史会话"
           >
@@ -775,7 +798,7 @@ export function AgentChatPage() {
               </Button>
             </div>
             
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-4" onScroll={handleScroll}>
               <div className="space-y-1">
                 {conversations.map((conv) => (
                   <div
@@ -808,9 +831,14 @@ export function AgentChatPage() {
                     </button>
                   </div>
                 ))}
-                {conversations.length === 0 && (
+                {conversations.length === 0 && !isLoadingMore && (
                   <div className="py-8 text-center text-sm text-slate-400">
                     暂无历史会话
+                  </div>
+                )}
+                {isLoadingMore && (
+                  <div className="py-2 text-center text-xs text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                   </div>
                 )}
               </div>

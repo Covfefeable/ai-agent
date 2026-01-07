@@ -34,8 +34,10 @@ export interface UploadResponse {
 }
 
 export const chatApi = {
-  getConversations: () => {
-    return http.get<unknown, { data: Conversation[] }>('/chat/conversations');
+  getConversations: (last_id?: string, limit: number = 20) => {
+    return http.get<unknown, { data: Conversation[], has_more: boolean, limit: number }>('/chat/conversations', {
+      params: { last_id, limit }
+    });
   },
 
   deleteConversation: (id: string) => {
