@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, Lock, Camera, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
 import { userApi } from '@/api/user';
@@ -116,10 +117,6 @@ export function ProfilePage() {
 
   return (
     <div className="flex h-full flex-col bg-white overflow-y-auto">
-      <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8">
-        <h2 className="text-lg font-bold text-slate-800">个人中心</h2>
-      </header>
-
       <div className="flex-1 p-8">
         <div className="mx-auto max-w-2xl space-y-8">
           {/* 用户信息卡片 */}
@@ -264,29 +261,14 @@ export function ProfilePage() {
             </table>
           </div>
           
-          {total > pageSize && (
-            <div className="flex justify-center mt-4 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-              >
-                上一页
-              </Button>
-              <span className="flex items-center text-sm text-slate-600">
-                第 {page} 页 / 共 {Math.ceil(total / pageSize)} 页
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => Math.min(Math.ceil(total / pageSize), p + 1))}
-                disabled={page >= Math.ceil(total / pageSize) || loading}
-              >
-                下一页
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end mt-4">
+            <Pagination
+              currentPage={page}
+              totalItems={total}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </div>
 

@@ -59,6 +59,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         iconUrl: agents.iconUrl,
         isPublic: agents.isPublic,
         categoryId: agents.categoryId,
+        multiplier: agents.multiplier,
         createdAt: agents.createdAt,
       })
       .from(agents)
@@ -122,6 +123,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         iconUrl: agents.iconUrl,
         isPublic: agents.isPublic,
         categoryId: agents.categoryId,
+        multiplier: agents.multiplier,
         createdAt: agents.createdAt,
       })
       .from(agents)

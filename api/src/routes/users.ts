@@ -276,4 +276,41 @@ export async function usersRoutes(fastify: FastifyInstance) {
       reply.status(500).send({ message: 'Internal Server Error' });
     }
   });
+
+  // Recharge user balance (Owner/Admin only)
+  fastify.post('/:id/recharge', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const currentUserRole = request.user.role;
+
+      if (!['owner', 'admin'].includes(currentUserRole)) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+
+      const schema = z.object({
+        amount: z.number().int().positive('充值金额必须为正整数'),
+      });
+
+      const { amount } = schema.parse(request.body);
+
+      // Check target user
+      const [targetUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      if (!targetUser) {
+        return reply.status(404).send({ message: 'User not found' });
+      }
+
+      // Update balance
+      await db.update(users)
+        .set({ balance: sql`${users.balance} + ${amount}` })
+        .where(eq(users.id, id));
+
+      return { message: 'Recharge successfully' };
+    } catch (error) {
+      console.error('Recharge Error:', error);
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+      }
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
 }

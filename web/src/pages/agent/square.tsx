@@ -137,9 +137,19 @@ export function AgentsSquarePage() {
                       <Calendar className="h-3.5 w-3.5" />
                       <span>{format(new Date(ag.createdAt), 'yyyy-MM-dd')}</span>
                     </div>
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
-                      {ag.isPublic ? '公开' : '私有'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {ag.multiplier > 1 && (
+                        <span 
+                          className="rounded bg-orange-100 px-2 py-0.5 text-orange-600 cursor-help"
+                          title={`倍率: ${ag.multiplier}x`}
+                        >
+                          {ag.multiplier}x
+                        </span>
+                      )}
+                      <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
+                        {ag.isPublic ? '公开' : '私有'}
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
               ))}

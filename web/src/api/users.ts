@@ -21,4 +21,8 @@ export const usersApi = {
   updateRole: (id: string, role: 'admin' | 'member') => {
     return http.patch(`/users/${id}/role`, { role });
   },
+
+  rechargeUser: (id: string, amount: number) => {
+    return http.post(`/users/${id}/recharge`, { amount });
+  },
 };

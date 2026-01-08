@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { usersApi, type User } from '@/api/users';
 import { toast } from 'sonner';
-import { Loader2, Shield, User as UserIcon, ShieldAlert, Search } from 'lucide-react';
+import { Loader2, Shield, User as UserIcon, ShieldAlert, Search, Coins } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
+import { RechargeModal } from '@/components/admin/recharge-modal';
 import { format } from 'date-fns';
 
 export function UsersPage() {
@@ -15,6 +17,9 @@ export function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 10;
+
+  const [rechargeModalOpen, setRechargeModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -131,16 +136,30 @@ export function UsersPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           {user.role !== 'owner' && (
-                            <div className="inline-block w-40">
-                              <Select
-                                options={[
-                                  { label: '设为普通用户', value: 'member' },
-                                  { label: '设为管理员', value: 'admin' },
-                                ]}
-                                value={user.role}
-                                onChange={(val: string) => handleRoleChange(user.id, val as 'admin' | 'member')}
-                                className="w-full"
-                              />
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setRechargeModalOpen(true);
+                                }}
+                                className="h-9 px-3"
+                              >
+                                <Coins className="mr-1 h-3 w-3" />
+                                充值
+                              </Button>
+                              <div className="w-32">
+                                <Select
+                                  options={[
+                                    { label: '设为普通用户', value: 'member' },
+                                    { label: '设为管理员', value: 'admin' },
+                                  ]}
+                                  value={user.role}
+                                  onChange={(val: string) => handleRoleChange(user.id, val as 'admin' | 'member')}
+                                  className="w-full"
+                                />
+                              </div>
                             </div>
                           )}
                         </td>
@@ -160,6 +179,21 @@ export function UsersPage() {
           </>
         )}
       </div>
+
+      {selectedUser && (
+        <RechargeModal
+          isOpen={rechargeModalOpen}
+          onClose={() => {
+            setRechargeModalOpen(false);
+            setSelectedUser(null);
+          }}
+          onSuccess={() => {
+            fetchUsers();
+          }}
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+        />
+      )}
     </div>
   );
 }
