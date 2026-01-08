@@ -3,8 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm config set registry $NPM_REGISTRY && npm install -g pnpm
 
 # Copy package files
 COPY package.json pnpm-workspace.yaml ./
@@ -12,7 +14,7 @@ COPY api/package.json api/
 COPY web/package.json web/
 
 # Install dependencies
-RUN pnpm install --no-lockfile --config.node-linker=hoisted
+RUN pnpm config set registry $NPM_REGISTRY && pnpm install --no-lockfile --config.node-linker=hoisted
 
 # Copy source code
 COPY api api
