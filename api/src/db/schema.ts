@@ -57,3 +57,30 @@ export const models = pgTable('models', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const userUsage = pgTable('user_usage', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  source: text('source').notNull(), // 'super_agent' or agentId
+  
+  // Usage fields
+  promptTokens: integer('prompt_tokens'),
+  promptUnitPrice: text('prompt_unit_price'),
+  promptPriceUnit: text('prompt_price_unit'),
+  promptPrice: text('prompt_price'),
+  
+  completionTokens: integer('completion_tokens'),
+  completionUnitPrice: text('completion_unit_price'),
+  completionPriceUnit: text('completion_price_unit'),
+  completionPrice: text('completion_price'),
+  
+  totalTokens: integer('total_tokens'),
+  totalPrice: text('total_price'),
+  currency: text('currency'),
+  
+  latency: text('latency'),
+  timeToFirstToken: text('time_to_first_token'),
+  timeToGenerate: text('time_to_generate'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+});

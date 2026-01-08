@@ -1,11 +1,73 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
-import { users } from '../db/schema';
-import { eq, desc, not, ilike, or, sql } from 'drizzle-orm';
+import { users, userUsage, agents } from '../db/schema';
+import { eq, desc, not, ilike, or, sql, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
 export async function usersRoutes(fastify: FastifyInstance) {
+  // Get user usage list
+  fastify.get('/me/usage', async (request: any, reply) => {
+    try {
+      const userId = request.user.id;
+      const { page = 1, limit = 20 } = request.query as { page?: number; limit?: number };
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Get total count
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(userUsage)
+        .where(eq(userUsage.userId, userId));
+      const total = Number(countResult?.count || 0);
+
+      // Get list
+      const list = await db
+        .select()
+        .from(userUsage)
+        .where(eq(userUsage.userId, userId))
+        .orderBy(desc(userUsage.createdAt))
+        .limit(limitNum)
+        .offset(offset);
+
+      // Enrich with agent names
+      // Deduplicate agentIds
+      const agentIds = Array.from(new Set(
+        list
+          .map(item => item.source)
+          .filter(source => source !== 'super_agent')
+      ));
+      
+      let agentMap: Record<string, string> = {};
+      if (agentIds.length > 0) {
+        const agentList = await db
+          .select({ id: agents.id, title: agents.title })
+          .from(agents)
+          .where(inArray(agents.id, agentIds));
+        agentMap = agentList.reduce((acc, curr) => {
+          acc[curr.id] = curr.title;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+
+      const data = list.map(item => ({
+        ...item,
+        agentName: item.source === 'super_agent' ? 'Super Agent' : (agentMap[item.source] || '未知智能体'),
+      }));
+
+      return {
+        data,
+        total,
+        page: pageNum,
+        limit: limitNum
+      };
+    } catch (error) {
+      console.error('Get User Usage Error:', error);
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
   // Update password
   fastify.patch('/me/password', async (request: any, reply) => {
     try {

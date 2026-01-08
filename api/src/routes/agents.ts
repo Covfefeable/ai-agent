@@ -4,6 +4,7 @@ import { db } from '../db';
 import { agents, categories } from '../db/schema';
 import { eq, desc, ilike, or, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { createUsageLogStream } from '../lib/usage';
 
 async function fetchImageAsBase64(url: string | null): Promise<string | null> {
   if (!url) return null;
@@ -243,7 +244,9 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       reply.header('Content-Type', 'text/event-stream');
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
-      return response.data;
+      const logStream = createUsageLogStream((request.user?.id ?? 'web').toString(), id);
+      response.data.pipe(logStream);
+      return logStream;
     } catch (error: any) {
       fastify.log.error({ error }, 'Chat messages proxy error');
       const status = error?.response?.status || 500;

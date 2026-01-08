@@ -4,6 +4,7 @@ import axios from 'axios';
 import { db } from '../db';
 import { datasets } from '../db/schema';
 import { inArray, eq, and } from 'drizzle-orm';
+import { createUsageLogStream } from '../lib/usage';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
@@ -94,7 +95,9 @@ export async function chatRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
       
-      return response.data;
+      const logStream = createUsageLogStream(user.id, 'super_agent');
+      response.data.pipe(logStream);
+      return logStream;
 
     } catch (error) {
       if (error instanceof z.ZodError) {
