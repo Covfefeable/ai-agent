@@ -2,18 +2,18 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
-import { LoginPage } from './pages/login';
-import { RegisterPage } from './pages/register';
+import { LoginPage } from './pages/auth/login';
+import { RegisterPage } from './pages/auth/register';
 import { ChatPage } from './pages/chat';
 import { KnowledgePage } from './pages/knowledge';
-import { KnowledgeDetailPage } from './pages/knowledge-detail';
+import { KnowledgeDetailPage } from './pages/knowledge/detail';
 import { DashboardLayout } from './components/DashboardLayout';
-import { DocumentDetailPage } from './pages/document-detail';
-import { UsersPage } from './pages/users';
-import { AgentsPage } from './pages/agents';
-import { AgentCategoriesPage } from './pages/agent-categories';
-import { AgentsSquarePage } from './pages/agents-square';
-import { AgentChatPage } from './pages/agent-chat';
+import { DocumentDetailPage } from './pages/knowledge/document';
+import { UsersPage } from './pages/admin/users';
+import { AgentsPage } from './pages/agent';
+import { AgentCategoriesPage } from './pages/agent/categories';
+import { AgentsSquarePage } from './pages/agent/square';
+import { AgentChatPage } from './pages/agent/chat';
 
 function Layout() {
   const location = useLocation();
