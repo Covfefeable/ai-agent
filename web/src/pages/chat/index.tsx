@@ -6,10 +6,11 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cn } from '@/lib/utils';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { chatApi } from '@/api/chat';
+import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { useClickOutside } from '@/hooks/use-click-outside';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -151,7 +152,7 @@ export function ChatPage() {
       const response = await chatApi.getMessages(id);
       
       const formattedMessages: Message[] = [];
-       response.data.forEach((item: { id: string; query: string; answer?: string; feedback?: { rating: 'like' | 'dislike' | null }; message_files?: Array<{ id: string; name: string; type: string; belongs_to: 'user' | 'assistant' }> }) => {
+       response.data.forEach((item: ApiMessage) => {
          formattedMessages.push({
            id: item.id + '_user',
            originalId: item.id,
@@ -174,6 +175,7 @@ export function ChatPage() {
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Failed to load history:', error);
+      toast.error('加载历史记录失败');
     } finally {
       setIsLoading(false);
     }
@@ -391,6 +393,7 @@ export function ChatPage() {
         console.log('Generation stopped by user');
       } else {
         console.error('Error in fetchEventSource:', error);
+        toast.error('发送消息失败，请重试');
         setMessages(prev => prev.map(m => 
           m.id === assistantMessageId 
             ? { ...m, content: m.content + '\n\n**[消息发送失败，请检查网络设置]**' }

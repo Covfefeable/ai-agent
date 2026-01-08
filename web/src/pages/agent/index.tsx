@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AgentModal } from '@/components/agents/agent-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export function AgentsPage() {
   const getErrMsg = (e: unknown, fallback: string) => {
@@ -25,6 +26,7 @@ export function AgentsPage() {
   // 统一弹窗替代原有新增/编辑状态
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
   // const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [categories, setCategories] = useState<AgentCategory[]>([]);
   // 统一弹窗替代原有新增/编辑状态
@@ -35,12 +37,13 @@ export function AgentsPage() {
   const [formBaseUrl, setFormBaseUrl] = useState('');
   const [formIsPublic, setFormIsPublic] = useState(false);
   const [formCategoryId, setFormCategoryId] = useState<string | ''>('');
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [agentsRes, catsRes] = await Promise.all([
-        agentsApi.list(searchKeyword, currentPage, pageSize),
+        agentsApi.list(debouncedSearchKeyword, currentPage, pageSize),
         agentCategoriesApi.list()
       ]);
       setItems(agentsRes.data);
@@ -51,7 +54,7 @@ export function AgentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchKeyword, currentPage]);
+  }, [debouncedSearchKeyword, currentPage]);
 
   useEffect(() => {
     fetchData();
@@ -60,7 +63,7 @@ export function AgentsPage() {
   // Reset page when search keyword changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchKeyword]);
+  }, [debouncedSearchKeyword]);
 
   // 统一弹窗的提交逻辑由 AgentModal 内部处理
 
@@ -163,6 +166,7 @@ export function AgentsPage() {
                           setFormBaseUrl('');
                           setFormIsPublic(!!it.isPublic);
                           setFormCategoryId(it.categoryId || '');
+                          setIsFetchingDetail(true);
                           setModalOpen(true);
                           try {
                             const res = await agentsApi.get(it.id);
@@ -172,6 +176,8 @@ export function AgentsPage() {
                             setFormCategoryId(res.data.categoryId || '');
                           } catch {
                             toast.error('获取智能体详情失败');
+                          } finally {
+                            setIsFetchingDetail(false);
                           }
                         }}
                         className="ml-2 rounded-lg p-1.5 text-slate-400 hover:bg-black/5 hover:text-black"
@@ -212,6 +218,7 @@ export function AgentsPage() {
         initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, isPublic: formIsPublic, categoryId: formCategoryId || '' } : undefined}
         onClose={() => { setModalOpen(false); setEditingId(null); }}
         onSuccess={fetchData}
+        isLoading={isFetchingDetail}
       />
 
       {/* 统一弹窗已覆盖新增与编辑 */}

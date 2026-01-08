@@ -164,7 +164,10 @@ export function AgentChatPage() {
     } else {
       setConversationId(null);
       if (openingStatement) {
-        setMessages([{ id: 'opening', role: 'assistant', content: openingStatement }]);
+        setMessages(prev => {
+          if (prev.length > 0) return prev;
+          return [{ id: 'opening', role: 'assistant', content: openingStatement }];
+        });
       }
     }
   }, [urlConversationId, openingStatement]); // Added openingStatement dependency to ensure reset works if params load later
@@ -469,7 +472,7 @@ export function AgentChatPage() {
         }
       });
     } catch {
-      // 忽略错误，统一在 finally 收尾
+      toast.error('发送消息失败，请重试');
     } finally {
       setStreaming(false);
       abortRef.current = null;

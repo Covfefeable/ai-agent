@@ -14,6 +14,7 @@ interface AgentModalProps {
   onSuccess: () => void;
   mode: 'create' | 'edit';
   categories: AgentCategory[];
+  isLoading?: boolean;
   initialData?: {
     id?: string;
     apiKey?: string;
@@ -23,7 +24,7 @@ interface AgentModalProps {
   };
 }
 
-export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData }: AgentModalProps) {
+export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData, isLoading }: AgentModalProps) {
   const [formData, setFormData] = useState<{ apiKey: string; baseUrl: string; isPublic: boolean; categoryId: string | '' }>({
     apiKey: '',
     baseUrl: '',
@@ -94,73 +95,79 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="baseUrl">API Base URL <span className="text-xs text-slate-400 font-normal ml-1">（选填）</span></Label>
-              <Input
-                id="baseUrl"
-                value={formData.baseUrl}
-                onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-                placeholder="https://api.dify.ai/v1"
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-slate-500">请填写您的 Dify 智能体所在的 API Base URL。</p>
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="apiKey">API Key</Label>
-              <Input
-                id="apiKey"
-                value={formData.apiKey}
-                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                placeholder="请输入 Dify API Key"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">分类</Label>
-              <Select
-                options={[{ label: '未分类', value: '' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
-                value={formData.categoryId}
-                onChange={(val) => setFormData({ ...formData, categoryId: val })}
-                placeholder="选择分类"
-                disabled={isSubmitting}
-                className="mt-1 w-full"
-              />
-              {(JSON.parse(localStorage.getItem('user') || '{}')?.role === 'owner' || JSON.parse(localStorage.getItem('user') || '{}')?.role === 'admin') && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => { window.location.href = '/agent-categories'; }}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    分类管理
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="isPublic" className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  id="isPublic"
-                  type="checkbox"
-                  checked={formData.isPublic}
-                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="baseUrl">API Base URL <span className="text-xs text-slate-400 font-normal ml-1">（选填）</span></Label>
+                <Input
+                  id="baseUrl"
+                  value={formData.baseUrl}
+                  onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                  placeholder="https://api.dify.ai/v1"
                   disabled={isSubmitting}
-                  className="h-4 w-4 rounded-sm border border-slate-300 accent-black"
                 />
-                <span className="text-sm text-slate-700">是否公开</span>
-              </label>
+                <p className="text-xs text-slate-500">请填写您的 Dify 智能体所在的 API Base URL。</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <Input
+                  id="apiKey"
+                  value={formData.apiKey}
+                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                  placeholder="请输入 Dify API Key"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">分类</Label>
+                <Select
+                  options={[{ label: '未分类', value: '' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
+                  value={formData.categoryId}
+                  onChange={(val) => setFormData({ ...formData, categoryId: val })}
+                  placeholder="选择分类"
+                  disabled={isSubmitting}
+                  className="mt-1 w-full"
+                />
+                {(JSON.parse(localStorage.getItem('user') || '{}')?.role === 'owner' || JSON.parse(localStorage.getItem('user') || '{}')?.role === 'admin') && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { window.location.href = '/agent-categories'; }}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      分类管理
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="isPublic" className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    id="isPublic"
+                    type="checkbox"
+                    checked={formData.isPublic}
+                    onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                    disabled={isSubmitting}
+                    className="h-4 w-4 rounded-sm border border-slate-300 accent-black"
+                  />
+                  <span className="text-sm text-slate-700">是否公开</span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               取消
             </Button>
-            <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting}>
+            <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting || isLoading}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

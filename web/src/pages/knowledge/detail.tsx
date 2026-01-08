@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { UploadDocumentModal } from '@/components/knowledge/upload-document-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export function KnowledgeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ export function KnowledgeDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const debouncedKeyword = useDebounce(searchKeyword, 500);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 20;
@@ -26,13 +27,9 @@ export function KnowledgeDetailPage() {
 
   useEffect(() => {
     if (id) {
-      const timer = setTimeout(() => {
-        setDebouncedKeyword(searchKeyword);
-        setCurrentPage(1);
-      }, 500);
-      return () => clearTimeout(timer);
+      setCurrentPage(1);
     }
-  }, [id, searchKeyword]);
+  }, [id, debouncedKeyword]);
 
   useEffect(() => {
     if (id) {

@@ -21,7 +21,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   useEffect(() => {

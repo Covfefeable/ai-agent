@@ -8,6 +8,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { knowledgeApi } from '@/api/knowledge';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface KnowledgeBase {
   id: string;
@@ -26,7 +27,7 @@ export function KnowledgePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const debouncedKeyword = useDebounce(searchKeyword, 500);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 12;
@@ -40,18 +41,15 @@ export function KnowledgePage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to fetch knowledge bases:', msg);
+      toast.error('获取知识库列表失败');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(searchKeyword);
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchKeyword]);
+    setCurrentPage(1);
+  }, [debouncedKeyword]);
 
   useEffect(() => {
     fetchKnowledgeBases();
@@ -80,6 +78,7 @@ export function KnowledgePage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to delete knowledge base:', msg);
+      toast.error('删除知识库失败');
     }
   };
 
