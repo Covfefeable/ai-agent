@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
+import { modelsApi, type Model } from '@/api/models';
 import { useClickOutside } from '@/hooks/use-click-outside';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { toast } from 'sonner';
@@ -53,6 +54,12 @@ export function ChatPage() {
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
   const kbSelectorRef = useClickOutside<HTMLDivElement>(() => setShowKbSelector(false));
+  
+  // Model related states
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const modelSelectorRef = useClickOutside<HTMLDivElement>(() => setShowModelSelector(false));
   
   // History related states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -144,6 +151,22 @@ export function ChatPage() {
       }
     };
     fetchKbs();
+  }, []);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res = await modelsApi.list('', 1, 100);
+        const enabledModels = res.data.filter(m => m.enabled);
+        setModels(enabledModels);
+        if (enabledModels.length > 0 && !selectedModelId) {
+          setSelectedModelId(enabledModels[0].modelId);
+        }
+      } catch (e) {
+        console.error('Failed to fetch models', e);
+      }
+    };
+    fetchModels();
   }, []);
 
   const loadHistory = async (id: string) => {
@@ -352,7 +375,8 @@ export function ChatPage() {
           })),
           inputs: {
             knowledge_base_ids: Array.from(selectedKbIds),
-            web_search: webSearch
+            web_search: webSearch,
+            model: selectedModelId
           }
         }),
         signal: abortControllerRef.current.signal,
@@ -621,6 +645,62 @@ export function ChatPage() {
                 </div>
                 
                 <div className="flex items-center gap-2 border-l border-slate-200 pl-4 relative">
+                  {/* Model Selector */}
+                  <div ref={modelSelectorRef} className="relative">
+                    <button
+                      onClick={() => setShowModelSelector(!showModelSelector)}
+                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all"
+                      title="选择模型"
+                    >
+                      {(() => {
+                        const current = models.find(m => m.modelId === selectedModelId);
+                        return (
+                          <>
+                            {current?.iconUrl ? (
+                              <img src={current.iconUrl} alt="" className="h-3.5 w-3.5 rounded object-cover" />
+                            ) : (
+                              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                            )}
+                            <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
+                            <ChevronDown className="h-3 w-3 text-slate-400" />
+                          </>
+                        );
+                      })()}
+                    </button>
+
+                    {showModelSelector && (
+                      <div className="absolute bottom-full left-0 mb-2 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="max-h-64 overflow-y-auto space-y-0.5">
+                          {models.map(model => (
+                            <button
+                              key={model.id}
+                              onClick={() => {
+                                setSelectedModelId(model.modelId);
+                                setShowModelSelector(false);
+                              }}
+                              className={cn(
+                                "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
+                                selectedModelId === model.modelId 
+                                  ? "bg-blue-50 text-blue-600" 
+                                  : "text-slate-700 hover:bg-slate-50"
+                              )}
+                            >
+                              {model.iconUrl ? (
+                                <img src={model.iconUrl} alt="" className="h-4 w-4 rounded object-cover" />
+                              ) : (
+                                <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100">
+                                  <Bot className="h-3 w-3 text-slate-500" />
+                                </div>
+                              )}
+                              <span className="truncate flex-1">{model.name}</span>
+                              {selectedModelId === model.modelId && <Check className="h-3 w-3" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={() => setWebSearch(!webSearch)}
                     className={cn(

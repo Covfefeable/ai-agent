@@ -46,3 +46,14 @@ export const userFavoriteAgents = pgTable('user_favorite_agents', {
 }, (t) => ({
   uniqueUserAgent: unique().on(t.userId, t.agentId),
 }));
+
+export const models = pgTable('models', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  modelId: text('model_id').notNull().unique(), // 实际调用大模型时的模型 ID
+  sort: integer('sort').notNull().default(0),
+  enabled: boolean('enabled').notNull().default(true),
+  iconUrl: text('icon_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});

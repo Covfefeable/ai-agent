@@ -14,6 +14,7 @@ import { AgentsPage } from './pages/agent';
 import { AgentCategoriesPage } from './pages/agent/categories';
 import { AgentsSquarePage } from './pages/agent/square';
 import { AgentChatPage } from './pages/agent/chat';
+import { ModelsPage } from './pages/model';
 
 function Layout() {
   const location = useLocation();
@@ -61,6 +62,7 @@ function App() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agent-categories" element={<AgentCategoriesPage />} />
+          <Route path="/models" element={<ModelsPage />} />
           <Route path="/agents-square" element={<AgentsSquarePage />} />
           <Route path="/agents-square/:id" element={<AgentChatPage />} />
         </Route>

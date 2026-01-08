@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X } from 'lucide-react';
+import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { favoritesApi } from '@/api/favorites';
@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="hidden md:flex px-6 pt-6 pb-2">
+        <div className="hidden md:flex px-6 pt-4 pb-2">
           <Link to="/">
             <Logo />
           </Link>
@@ -183,6 +183,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   智能体管理
                 </button>
                 <div className="h-px w-full bg-slate-100" />
+
+                {(user?.role === 'owner' || user?.role === 'admin') && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/models');
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <Package className="h-4 w-4" />
+                      模型管理
+                    </button>
+                    <div className="h-px w-full bg-slate-100" />
+                  </>
+                )}
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
