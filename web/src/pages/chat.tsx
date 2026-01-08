@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
+import { useClickOutside } from '@/hooks/use-click-outside';
 
 interface Message {
   id: string;
@@ -49,6 +50,7 @@ export function ChatPage() {
   const [knowledgeBases, setKnowledgeBases] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
+  const kbSelectorRef = useClickOutside<HTMLDivElement>(() => setShowKbSelector(false));
   
   // History related states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -618,7 +620,7 @@ export function ChatPage() {
                     联网搜索
                   </button>
 
-                  <div className="relative">
+                  <div ref={kbSelectorRef} className="relative">
                     <button
                       onClick={() => setShowKbSelector(!showKbSelector)}
                       className={cn(

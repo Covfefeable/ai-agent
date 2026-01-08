@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { favoritesApi } from '@/api/favorites';
 import { type Agent } from '@/api/agents';
+import { useClickOutside } from '@/hooks/use-click-outside';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
   const [favoriteAgents, setFavoriteAgents] = useState<(Agent & { favoritedAt: string })[]>([]);
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="border-t border-slate-100 p-4">
+        <div ref={menuRef} className="relative mt-auto border-t border-slate-100 p-4">
           <div className="relative">
             {isMenuOpen && (
               <div className="absolute bottom-full left-0 mb-3 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
