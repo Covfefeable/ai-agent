@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus, ChevronDown, Sparkles } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cn } from '@/lib/utils';
@@ -9,7 +10,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { modelsApi, type Model } from '@/api/models';
-import { useClickOutside } from '@/hooks/use-click-outside';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { toast } from 'sonner';
 
@@ -53,13 +53,11 @@ export function ChatPage() {
   const [knowledgeBases, setKnowledgeBases] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
-  const kbSelectorRef = useClickOutside<HTMLDivElement>(() => setShowKbSelector(false));
   
   // Model related states
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const modelSelectorRef = useClickOutside<HTMLDivElement>(() => setShowModelSelector(false));
   
   // History related states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -69,6 +67,7 @@ export function ChatPage() {
   const [lastId, setLastId] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -481,7 +480,7 @@ export function ChatPage() {
                 <Bot className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold text-slate-900">有什么可以帮你的吗？</h3>
-              <p className="mt-2 text-sm text-slate-500">你可以发送消息或者上传图片开始对话</p>
+              <p className="mt-2 text-sm text-slate-500">你可以发送消息或者上传文件开始对话</p>
             </div>
           ) : (
             messages.map((msg) => (
@@ -655,37 +654,37 @@ export function ChatPage() {
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-2 border-l border-slate-200 pl-4 relative">
+                <div className="flex items-center gap-2 border-l border-slate-200 pl-4 relative flex-wrap">
                   {/* Model Selector */}
-                  <div ref={modelSelectorRef} className="relative">
-                    <button
-                      onClick={() => setShowModelSelector(!showModelSelector)}
-                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all"
-                      title="选择模型"
-                    >
-                      {(() => {
-                        const current = models.find(m => m.modelId === selectedModelId);
-                        return (
-                          <>
-                            {current?.iconUrl ? (
-                              <img src={current.iconUrl} alt="" className="h-3.5 w-3.5 rounded object-cover" />
-                            ) : (
-                              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                            )}
-                            <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
-                            {current?.multiplier && current.multiplier > 1 && (
-                              <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600" title={`倍率: ${current.multiplier}`}>
-                                x{current.multiplier}
-                              </span>
-                            )}
-                            <ChevronDown className="h-3 w-3 text-slate-400" />
-                          </>
-                        );
-                      })()}
-                    </button>
-
-                    {showModelSelector && (
-                      <div className="absolute bottom-full left-0 mb-2 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="relative">
+                    <Popover open={showModelSelector} onOpenChange={setShowModelSelector}>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all"
+                          title="选择模型"
+                        >
+                          {(() => {
+                            const current = models.find(m => m.modelId === selectedModelId);
+                            return (
+                              <>
+                                {current?.iconUrl ? (
+                                  <img src={current.iconUrl} alt="" className="h-3.5 w-3.5 rounded object-cover" />
+                                ) : (
+                                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                                )}
+                                <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
+                                {current?.multiplier && current.multiplier > 1 && (
+                                  <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600" title={`倍率: ${current.multiplier}`}>
+                                    x{current.multiplier}
+                                  </span>
+                                )}
+                                <ChevronDown className="h-3 w-3 text-slate-400" />
+                              </>
+                            );
+                          })()}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-1" align="start" side="top" sideOffset={8}>
                         <div className="max-h-64 overflow-y-auto space-y-0.5">
                           {models.map(model => (
                             <button
@@ -720,44 +719,45 @@ export function ChatPage() {
                             </button>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <button
                     onClick={() => setWebSearch(!webSearch)}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
                       webSearch 
                         ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
-                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
+                      mobileToolbarExpanded ? "flex" : "hidden md:flex"
                     )}
                   >
                     <Globe className={cn("h-3.5 w-3.5", webSearch ? "text-blue-600" : "text-slate-400")} />
                     联网搜索
                   </button>
 
-                  <div ref={kbSelectorRef} className="relative">
-                    <button
-                      onClick={() => setShowKbSelector(!showKbSelector)}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                        selectedKbIds.size > 0
-                          ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
-                          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                      )}
-                    >
-                      <Database className={cn("h-3.5 w-3.5", selectedKbIds.size > 0 ? "text-blue-600" : "text-slate-400")} />
-                      知识库
-                      {selectedKbIds.size > 0 && (
-                        <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">
-                          {selectedKbIds.size}
-                        </span>
-                      )}
-                    </button>
-
-                    {showKbSelector && (
-                      <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-lg z-10">
+                  <div className={cn("relative", mobileToolbarExpanded ? "block" : "hidden md:block")}>
+                    <Popover open={showKbSelector} onOpenChange={setShowKbSelector}>
+                      <PopoverTrigger asChild>
+                        <button
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                            selectedKbIds.size > 0
+                              ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
+                              : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                          )}
+                        >
+                          <Database className={cn("h-3.5 w-3.5", selectedKbIds.size > 0 ? "text-blue-600" : "text-slate-400")} />
+                          知识库
+                          {selectedKbIds.size > 0 && (
+                            <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">
+                              {selectedKbIds.size}
+                            </span>
+                          )}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-2" align="start" side="top" sideOffset={8}>
                          <div className="mb-2 flex items-center justify-between px-2 pb-2 border-b border-slate-50">
                             <span className="text-xs font-medium text-slate-500">需要引用的知识库</span>
                             <button onClick={() => setShowKbSelector(false)} className="text-slate-400 hover:text-slate-600">
@@ -794,9 +794,16 @@ export function ChatPage() {
                              </div>
                            )}
                          </div>
-                      </div>
-                    )}
+                      </PopoverContent>
+                    </Popover>
                   </div>
+
+                  <button
+                    onClick={() => setMobileToolbarExpanded(!mobileToolbarExpanded)}
+                    className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                  >
+                    {mobileToolbarExpanded ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 

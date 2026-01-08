@@ -227,8 +227,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 isMenuOpen ? "bg-slate-100" : "hover:bg-slate-50"
               )}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
-                <User className="h-5 w-5" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-transparent text-slate-900 overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
               </div>
               <div className="flex flex-1 flex-col overflow-hidden text-left">
                 <span className="truncate text-sm font-bold text-slate-900">{user.name}</span>

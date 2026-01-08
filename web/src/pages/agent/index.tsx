@@ -37,6 +37,7 @@ export function AgentsPage() {
   const [formBaseUrl, setFormBaseUrl] = useState('');
   const [formIsPublic, setFormIsPublic] = useState(false);
   const [formCategoryId, setFormCategoryId] = useState<string | ''>('');
+  const [formMultiplier, setFormMultiplier] = useState(1.0);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -106,6 +107,7 @@ export function AgentsPage() {
             setFormBaseUrl('');
             setFormIsPublic(false);
             setFormCategoryId('');
+            setFormMultiplier(1.0);
             setModalOpen(true);
           }}
           className="gap-2 px-3 md:px-4"
@@ -168,6 +170,7 @@ export function AgentsPage() {
                           setFormBaseUrl('');
                           setFormIsPublic(!!it.isPublic);
                           setFormCategoryId(it.categoryId || '');
+                          setFormMultiplier(it.multiplier || 1.0);
                           setIsFetchingDetail(true);
                           setModalOpen(true);
                           try {
@@ -176,6 +179,7 @@ export function AgentsPage() {
                             setFormBaseUrl(res.data.baseUrl || '');
                             setFormIsPublic(!!res.data.isPublic);
                             setFormCategoryId(res.data.categoryId || '');
+                            setFormMultiplier(res.data.multiplier || 1.0);
                           } catch {
                             toast.error('获取智能体详情失败');
                           } finally {
@@ -217,7 +221,7 @@ export function AgentsPage() {
         isOpen={modalOpen}
         mode={modalMode}
         categories={categories}
-        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, isPublic: formIsPublic, categoryId: formCategoryId || '' } : undefined}
+        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, isPublic: formIsPublic, categoryId: formCategoryId || '', multiplier: formMultiplier } : undefined}
         onClose={() => { setModalOpen(false); setEditingId(null); }}
         onSuccess={fetchData}
         isLoading={isFetchingDetail}
