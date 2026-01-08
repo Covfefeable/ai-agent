@@ -131,6 +131,7 @@ export function AgentsPage() {
                   <th className="px-6 py-4 font-medium">描述</th>
                   <th className="px-6 py-4 font-medium">图标</th>
                   <th className="px-6 py-4 font-medium">分类</th>
+                  <th className="px-6 py-4 font-medium">倍率</th>
                   <th className="px-6 py-4 font-medium">是否公开</th>
                   <th className="px-6 py-4 font-medium">创建时间</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
@@ -153,6 +154,7 @@ export function AgentsPage() {
                         ? (categories.find(c => c.id === it.categoryId)?.name || '-')
                         : '-'}
                     </td>
+                    <td className="px-6 py-4">{it.multiplier || 1.0}</td>
                     <td className="px-6 py-4">{it.isPublic ? '公开' : '私有'}</td>
                     <td className="px-6 py-4 text-slate-600">
                       {it.createdAt ? format(new Date(it.createdAt), 'yyyy-MM-dd HH:mm') : '-'}

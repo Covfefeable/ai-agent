@@ -111,6 +111,7 @@ export function ModelsPage() {
                   <th className="px-6 py-4 font-medium">Logo</th>
                   <th className="px-6 py-4 font-medium">模型名称</th>
                   <th className="px-6 py-4 font-medium">模型ID</th>
+                  <th className="px-6 py-4 font-medium">倍率</th>
                   <th className="px-6 py-4 font-medium">排序</th>
                   <th className="px-6 py-4 font-medium">是否启用</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
@@ -128,6 +129,7 @@ export function ModelsPage() {
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-900">{it.name}</td>
                     <td className="px-6 py-4 text-slate-600">{it.modelId}</td>
+                    <td className="px-6 py-4 text-slate-600">{it.multiplier || 1.0}</td>
                     <td className="px-6 py-4 text-slate-600">{it.sort}</td>
                     <td className="px-6 py-4">
                         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${it.enabled ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'}`}>

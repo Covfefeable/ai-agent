@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import axios from 'axios';
 import { db } from '../db';
-import { datasets, users } from '../db/schema';
+import { datasets, users, models } from '../db/schema';
 import { inArray, eq, and } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
 
@@ -104,7 +104,15 @@ export async function chatRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
       
-      const logStream = createUsageLogStream(user.id, dbUser.role, 'super_agent');
+      let multiplier = 1.0;
+      if (inputs && inputs.model) {
+        const [model] = await db.select().from(models).where(eq(models.modelId, inputs.model)).limit(1);
+        if (model) {
+          multiplier = model.multiplier;
+        }
+      }
+
+      const logStream = createUsageLogStream(user.id, dbUser.role, 'super_agent', multiplier);
       response.data.pipe(logStream);
       return logStream;
 

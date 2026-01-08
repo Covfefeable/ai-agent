@@ -16,6 +16,7 @@ interface ModelModalProps {
     sort: number;
     enabled: boolean;
     iconUrl: string | null;
+    multiplier: number;
   };
   onClose: () => void;
   onSuccess: () => void;
@@ -29,6 +30,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     sort: 0,
     enabled: true,
     iconUrl: '',
+    multiplier: 1.0,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +43,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
         sort: initialData.sort,
         enabled: initialData.enabled,
         iconUrl: initialData.iconUrl || '',
+        multiplier: initialData.multiplier || 1.0,
       });
     } else if (isOpen) {
       setFormData({
@@ -49,6 +52,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
         sort: 0,
         enabled: true,
         iconUrl: '',
+        multiplier: 1.0,
       });
     }
   }, [isOpen, initialData]);
@@ -160,6 +164,20 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                   value={formData.sort}
                   onChange={(e) => setFormData({ ...formData, sort: parseInt(e.target.value) || 0 })}
                   placeholder="数字越小越靠前"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="multiplier">倍率</Label>
+                <Input
+                  id="multiplier"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={formData.multiplier}
+                  onChange={(e) => setFormData({ ...formData, multiplier: parseFloat(e.target.value) || 1.0 })}
+                  placeholder="最小为 1"
                   disabled={isSubmitting}
                 />
               </div>

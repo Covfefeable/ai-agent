@@ -7,6 +7,7 @@ export interface Model {
   sort: number;
   enabled: boolean;
   iconUrl: string | null;
+  multiplier: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,10 +28,10 @@ export const modelsApi = {
   get: (id: string) => {
     return http.get<unknown, { data: Model }>(`/models/${id}`);
   },
-  create: (params: { name: string; modelId: string; sort: number; enabled: boolean; iconUrl?: string }) => {
+  create: (params: { name: string; modelId: string; sort: number; enabled: boolean; iconUrl?: string; multiplier?: number }) => {
     return http.post('/models', params);
   },
-  update: (id: string, params: { name?: string; modelId?: string; sort?: number; enabled?: boolean; iconUrl?: string }) => {
+  update: (id: string, params: { name?: string; modelId?: string; sort?: number; enabled?: boolean; iconUrl?: string; multiplier?: number }) => {
     return http.patch(`/models/${id}`, params);
   },
   remove: (id: string) => {

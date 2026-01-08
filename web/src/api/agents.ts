@@ -9,6 +9,7 @@ export interface Agent {
   baseUrl: string | null;
   isPublic: boolean;
   categoryId?: string | null;
+  multiplier: number;
   createdAt: string;
 }
 
@@ -84,10 +85,10 @@ export const agentsApi = {
       },
     });
   },
-  create: (params: { apiKey: string; baseUrl?: string; isPublic?: boolean; categoryId?: string }) => {
+  create: (params: { apiKey: string; baseUrl?: string; isPublic?: boolean; categoryId?: string; multiplier?: number }) => {
     return http.post('/agents', params);
   },
-  update: (id: string, params?: { apiKey?: string; baseUrl?: string; isPublic?: boolean; categoryId?: string | null }) => {
+  update: (id: string, params?: { apiKey?: string; baseUrl?: string; isPublic?: boolean; categoryId?: string | null; multiplier?: number }) => {
     return http.patch(`/agents/${id}`, params || {});
   },
   remove: (id: string) => {

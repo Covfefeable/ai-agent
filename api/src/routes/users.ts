@@ -79,6 +79,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
       const data = list.map(item => ({
         ...item,
         agentName: item.source === 'super_agent' ? 'Super Agent' : (agentMap[item.source] || '未知智能体'),
+        calculatedTotalTokens: Math.ceil((item.totalTokens || 0) * (item.multiplier || 1.0)),
       }));
 
       return {
@@ -126,6 +127,30 @@ export async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
       }
       console.error('Update Password Error:', error);
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
+  // Update user info (nickname)
+  fastify.patch('/me/info', async (request: any, reply) => {
+    try {
+      const userId = request.user.id;
+      const schema = z.object({
+        name: z.string().min(1, '昵称不能为空').max(50, '昵称不能超过50个字符'),
+      });
+      
+      const { name } = schema.parse(request.body);
+
+      await db.update(users)
+        .set({ name })
+        .where(eq(users.id, userId));
+
+      return { message: 'User info updated successfully' };
+    } catch (error) {
+      console.error('Update User Info Error:', error);
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+      }
       reply.status(500).send({ message: 'Internal Server Error' });
     }
   });

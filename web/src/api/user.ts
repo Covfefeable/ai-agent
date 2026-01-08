@@ -13,4 +13,7 @@ export const userApi = {
   updateAvatar: (avatar: string) => {
     return http.patch('/users/me/avatar', { avatar });
   },
+  updateInfo: (data: { name: string }) => {
+    return http.patch('/users/me/info', data);
+  },
 };

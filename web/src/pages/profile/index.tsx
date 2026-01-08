@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Lock, Camera } from 'lucide-react';
+import { User, Lock, Camera, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
 import { userApi } from '@/api/user';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ interface UsageItem {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  calculatedTotalTokens?: number;
   latency: string;
   totalPrice: string;
   currency: string;
@@ -25,6 +27,8 @@ export function ProfilePage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [loading, setLoading] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,6 +72,32 @@ export function ProfilePage() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleStartEditName = () => {
+    setNameInput(user.name);
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setNameInput('');
+  };
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) {
+      toast.error('昵称不能为空');
+      return;
+    }
+    try {
+      await userApi.updateInfo({ name: nameInput });
+      toast.success('昵称修改成功');
+      setIsEditingName(false);
+      fetchProfile();
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      toast.error('昵称修改失败');
+    }
   };
 
   const fetchUsage = async () => {
@@ -130,14 +160,48 @@ export function ProfilePage() {
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-slate-900">{user.name || '未命名用户'}</h1>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    user.role === 'owner' ? 'bg-purple-100 text-purple-800' :
-                    user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                    'bg-slate-100 text-slate-800'
-                  }`}>
-                    {user.role === 'owner' ? '所有者' : user.role === 'admin' ? '管理员' : '成员'}
-                  </span>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        className="h-8 w-48"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveName();
+                          if (e.key === 'Escape') handleCancelEditName();
+                        }}
+                      />
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={handleSaveName}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100" onClick={handleCancelEditName}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 group/name">
+                      <h1 className="text-2xl font-bold text-slate-900">{user.name || '未命名用户'}</h1>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 hidden group-hover/name:inline-flex text-slate-400 hover:text-slate-600"
+                        onClick={handleStartEditName}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {!isEditingName && (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      user.role === 'owner' ? 'bg-purple-100 text-purple-800' :
+                      user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                      'bg-slate-100 text-slate-800'
+                    }`}>
+                      {user.role === 'owner' ? '所有者' : user.role === 'admin' ? '管理员' : '成员'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm text-slate-500">{user.email}</div>
                 <div className="text-sm font-medium text-slate-600 pt-1">
@@ -161,6 +225,7 @@ export function ProfilePage() {
                   <th className="px-4 py-3">时间</th>
                   <th className="px-4 py-3">来源</th>
                   <th className="px-4 py-3">Tokens</th>
+                  <th className="px-4 py-3">结算token</th>
                   <th className="px-4 py-3">耗时</th>
                   {/* <th className="px-4 py-3">费用</th> */}
                 </tr>
@@ -176,6 +241,9 @@ export function ProfilePage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.totalTokens}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-900">
+                      {item.calculatedTotalTokens || item.totalTokens}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {Number(item.latency).toFixed(2)}s

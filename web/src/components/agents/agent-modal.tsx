@@ -21,15 +21,17 @@ interface AgentModalProps {
     baseUrl?: string;
     isPublic?: boolean;
     categoryId?: string | null;
+    multiplier?: number;
   };
 }
 
 export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData, isLoading }: AgentModalProps) {
-  const [formData, setFormData] = useState<{ apiKey: string; baseUrl: string; isPublic: boolean; categoryId: string | '' }>({
+  const [formData, setFormData] = useState<{ apiKey: string; baseUrl: string; isPublic: boolean; categoryId: string | ''; multiplier: number }>({
     apiKey: '',
     baseUrl: '',
     isPublic: false,
     categoryId: '',
+    multiplier: 1.0,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,9 +42,10 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         baseUrl: initialData.baseUrl || '',
         isPublic: !!initialData.isPublic,
         categoryId: initialData.categoryId || '',
+        multiplier: initialData.multiplier || 1.0,
       });
     } else if (isOpen) {
-      setFormData({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '' });
+      setFormData({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '', multiplier: 1.0 });
     }
   }, [isOpen, initialData]);
 
@@ -57,6 +60,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
           baseUrl: formData.baseUrl,
           isPublic: formData.isPublic,
           categoryId: formData.categoryId || undefined,
+          multiplier: formData.multiplier,
         });
         toast.success('智能体创建成功');
       } else {
@@ -66,6 +70,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
           isPublic: formData.isPublic,
           baseUrl: formData.baseUrl,
           categoryId: formData.categoryId || null,
+          multiplier: formData.multiplier,
           ...(formData.apiKey ? { apiKey: formData.apiKey } : {}),
         });
         toast.success('智能体更新成功');
@@ -145,6 +150,20 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                     </button>
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="multiplier">倍率</Label>
+                <Input
+                  id="multiplier"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={formData.multiplier}
+                  onChange={(e) => setFormData({ ...formData, multiplier: parseFloat(e.target.value) || 1.0 })}
+                  placeholder="最小为 1"
+                  disabled={isSubmitting}
+                />
               </div>
 
               <div className="space-y-2">

@@ -80,6 +80,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         sort: z.number().optional().default(0),
         enabled: z.boolean().optional().default(true),
         iconUrl: z.string().optional(),
+        multiplier: z.number().min(1).default(1.0),
       });
 
       const data = bodySchema.parse(request.body);
@@ -96,6 +97,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         sort: data.sort,
         enabled: data.enabled,
         iconUrl: data.iconUrl || null,
+        multiplier: data.multiplier,
       }).returning();
 
       return { data: created };
@@ -123,6 +125,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         sort: z.number().optional(),
         enabled: z.boolean().optional(),
         iconUrl: z.string().optional(),
+        multiplier: z.number().min(1).optional(),
       });
 
       const data = bodySchema.parse(request.body);

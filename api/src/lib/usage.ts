@@ -3,7 +3,7 @@ import { db } from '../db';
 import { userUsage, users } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 
-export function createUsageLogStream(userId: string, userRole: string, source: string) {
+export function createUsageLogStream(userId: string, userRole: string, source: string, multiplier: number = 1.0) {
   const logStream = new PassThrough();
   let buffer = '';
 
@@ -36,13 +36,14 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
             latency: String(usage.latency),
             timeToFirstToken: String(usage.time_to_first_token),
             timeToGenerate: String(usage.time_to_generate),
+            multiplier: multiplier,
           });
 
           // Deduct balance for regular members
           if (userRole === 'member') {
              await db.update(users)
                .set({ 
-                 balance: sql`${users.balance} - ${usage.total_tokens}` 
+                 balance: sql`${users.balance} - ${Math.ceil(usage.total_tokens * multiplier)}` 
                })
                .where(eq(users.id, userId));
           }

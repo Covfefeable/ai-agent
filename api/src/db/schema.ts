@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique, doublePrecision } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -37,6 +37,7 @@ export const agents = pgTable('agents', {
   iconUrl: text('icon_url'),
   isPublic: boolean('is_public').notNull().default(false),
   categoryId: uuid('category_id').references(() => categories.id),
+  multiplier: doublePrecision('multiplier').notNull().default(1.0),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -56,6 +57,7 @@ export const models = pgTable('models', {
   sort: integer('sort').notNull().default(0),
   enabled: boolean('enabled').notNull().default(true),
   iconUrl: text('icon_url'),
+  multiplier: doublePrecision('multiplier').notNull().default(1.0),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -80,6 +82,8 @@ export const userUsage = pgTable('user_usage', {
   totalPrice: text('total_price'),
   currency: text('currency'),
   
+  multiplier: doublePrecision('multiplier').notNull().default(1.0),
+
   latency: text('latency'),
   timeToFirstToken: text('time_to_first_token'),
   timeToGenerate: text('time_to_generate'),

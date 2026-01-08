@@ -419,10 +419,11 @@ export function ChatPage() {
         console.log('Generation stopped by user');
       } else {
         console.error('Error in fetchEventSource:', error);
-        toast.error('发送消息失败，请重试');
+        const errorMessage = error instanceof Error ? error.message : '发送消息失败，请重试';
+        toast.error(errorMessage);
         setMessages(prev => prev.map(m => 
           m.id === assistantMessageId 
-            ? { ...m, content: m.content + '\n\n**[消息发送失败，请检查网络设置]**' }
+            ? { ...m, content: m.content + `\n\n**[Error: ${errorMessage}]**` }
             : m
         ));
       }
@@ -672,6 +673,11 @@ export function ChatPage() {
                               <Sparkles className="h-3.5 w-3.5 text-blue-600" />
                             )}
                             <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
+                            {current?.multiplier && current.multiplier > 1 && (
+                              <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600" title={`倍率: ${current.multiplier}`}>
+                                x{current.multiplier}
+                              </span>
+                            )}
                             <ChevronDown className="h-3 w-3 text-slate-400" />
                           </>
                         );
@@ -702,7 +708,14 @@ export function ChatPage() {
                                   <Bot className="h-3 w-3 text-slate-500" />
                                 </div>
                               )}
-                              <span className="truncate flex-1">{model.name}</span>
+                              <span className="truncate flex-1">
+                                {model.name}
+                                {model.multiplier > 1 && (
+                                  <span className="ml-1.5 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600" title={`费率倍数: ${model.multiplier}`}>
+                                    x{model.multiplier}
+                                  </span>
+                                )}
+                              </span>
                               {selectedModelId === model.modelId && <Check className="h-3 w-3" />}
                             </button>
                           ))}

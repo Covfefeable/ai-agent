@@ -259,7 +259,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       reply.header('Content-Type', 'text/event-stream');
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
-      const logStream = createUsageLogStream((request.user?.id ?? 'web').toString(), userRole, id);
+      const logStream = createUsageLogStream((request.user?.id ?? 'web').toString(), userRole, id, row.multiplier);
       response.data.pipe(logStream);
       return logStream;
     } catch (error: any) {
@@ -381,8 +381,9 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
+        multiplier: z.number().min(1).optional(),
       });
-      const { apiKey, baseUrl: inputBaseUrl, isPublic, categoryId } = bodySchema.parse(request.body);
+      const { apiKey, baseUrl: inputBaseUrl, isPublic, categoryId, multiplier } = bodySchema.parse(request.body);
 
       const baseUrl = inputBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.get(`${baseUrl}/site`, {
@@ -417,6 +418,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         iconUrl: iconBase64 || iconUrl || null,
         isPublic: !!isPublic,
         categoryId: catId,
+        multiplier: multiplier || 1.0,
       }).returning();
 
       return { data: created };
@@ -483,12 +485,14 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
+        multiplier: z.number().min(1).optional(),
       });
       const parsed = bodySchema.safeParse(request.body || {});
       const inputApiKey = parsed.success ? parsed.data.apiKey : undefined;
       const inputBaseUrl = parsed.success ? parsed.data.baseUrl : undefined;
       const inputIsPublic = parsed.success ? parsed.data.isPublic : undefined;
       const inputCategoryId = parsed.success ? parsed.data.categoryId : undefined;
+      const inputMultiplier = parsed.success ? parsed.data.multiplier : undefined;
 
       let targetApiKey = inputApiKey;
       let targetBaseUrl = inputBaseUrl;
@@ -512,10 +516,13 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         targetBaseUrl = record.baseUrl || undefined;
       }
 
-      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; isPublic: boolean; categoryId: string | null; baseUrl: string | null; apiKey: string }> = {};
+      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; isPublic: boolean; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number }> = {};
       
       if (inputApiKey) {
         updateFields.apiKey = inputApiKey;
+      }
+      if (inputMultiplier) {
+        updateFields.multiplier = inputMultiplier;
       }
       if (inputBaseUrl !== undefined) {
         updateFields.baseUrl = inputBaseUrl || null;
