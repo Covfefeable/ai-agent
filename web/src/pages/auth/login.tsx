@@ -54,7 +54,7 @@ export function LoginPage() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-white" style={{ perspective: '2000px' }}>
       {/* Right Underlay - Revealed when card flips away */}
-      <div className="absolute top-0 right-0 h-full w-1/2 overflow-hidden z-0">
+      <div className="absolute top-0 right-0 z-0 hidden h-full w-1/2 overflow-hidden lg:block">
         <div className="h-full w-[200%] ml-[-100%]">
           <HomeSkeleton />
         </div>
@@ -62,7 +62,7 @@ export function LoginPage() {
 
       {/* Left Panel - Form */}
       <div 
-        className={`flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-12 xl:px-24 z-0 transition-opacity duration-500 delay-300 ${isSuccess ? 'opacity-0' : 'opacity-100'}`}
+        className={`relative z-10 flex w-full flex-col justify-center bg-white px-8 transition-opacity duration-500 delay-300 lg:w-1/2 lg:px-12 xl:px-24 ${isSuccess ? 'opacity-0' : 'opacity-100'}`}
       >
         <div className="mx-auto w-full max-w-[400px]">
           {/* Logo & Header */}
