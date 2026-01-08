@@ -3,8 +3,46 @@ import { db } from '../db';
 import { users } from '../db/schema';
 import { eq, desc, not, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 
 export async function usersRoutes(fastify: FastifyInstance) {
+  // Update password
+  fastify.patch('/me/password', async (request: any, reply) => {
+    try {
+      const userId = request.user.id;
+      const schema = z.object({
+        oldPassword: z.string(),
+        newPassword: z.string().min(6),
+      });
+      
+      const { oldPassword, newPassword } = schema.parse(request.body);
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!user) {
+        return reply.status(404).send({ message: 'User not found' });
+      }
+
+      const isValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isValid) {
+        return reply.status(400).send({ message: 'Invalid old password' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      await db.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+
+      return { message: 'Password updated successfully' };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+      }
+      console.error('Update Password Error:', error);
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
   // Get users list (Owner/Admin only)
   fastify.get('/', async (request: any, reply) => {
     try {

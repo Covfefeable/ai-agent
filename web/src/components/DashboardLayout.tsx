@@ -200,6 +200,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </>
                 )}
                 <button
+                  onClick={() => {
+                    navigate('/profile');
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <User className="h-4 w-4" />
+                  个人中心
+                </button>
+                <div className="h-px w-full bg-slate-100" />
+                <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
