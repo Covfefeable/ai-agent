@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -7,6 +10,16 @@ import { Label } from '@/components/ui/label';
 import type { AgentCategory } from '@/api/agentCategories';
 import { agentsApi } from '@/api/agents';
 import { toast } from 'sonner';
+
+const agentSchema = z.object({
+  apiKey: z.string().min(1, '请输入 API Key'),
+  baseUrl: z.string().optional(),
+  isPublic: z.boolean().default(false),
+  categoryId: z.string().optional(),
+  multiplier: z.coerce.number().min(1, '倍率最小为 1'),
+});
+
+type AgentFormValues = z.infer<typeof agentSchema>;
 
 interface AgentModalProps {
   isOpen: boolean;
@@ -26,18 +39,26 @@ interface AgentModalProps {
 }
 
 export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData, isLoading }: AgentModalProps) {
-  const [formData, setFormData] = useState<{ apiKey: string; baseUrl: string; isPublic: boolean; categoryId: string | ''; multiplier: number }>({
-    apiKey: '',
-    baseUrl: '',
-    isPublic: false,
-    categoryId: '',
-    multiplier: 1.0,
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<AgentFormValues>({
+    resolver: zodResolver(agentSchema) as any,
+    defaultValues: {
+      apiKey: '',
+      baseUrl: '',
+      isPublic: false,
+      categoryId: '',
+      multiplier: 1.0,
+    },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData({
+      reset({
         apiKey: initialData.apiKey || '',
         baseUrl: initialData.baseUrl || '',
         isPublic: !!initialData.isPublic,
@@ -45,33 +66,30 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         multiplier: initialData.multiplier || 1.0,
       });
     } else if (isOpen) {
-      setFormData({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '', multiplier: 1.0 });
+      reset({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '', multiplier: 1.0 });
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: AgentFormValues) => {
     try {
-      setIsSubmitting(true);
       if (mode === 'create') {
-        if (!formData.apiKey.trim()) return;
         await agentsApi.create({
-          apiKey: formData.apiKey,
-          baseUrl: formData.baseUrl,
-          isPublic: formData.isPublic,
-          categoryId: formData.categoryId || undefined,
-          multiplier: formData.multiplier,
+          apiKey: data.apiKey,
+          baseUrl: data.baseUrl,
+          isPublic: data.isPublic,
+          categoryId: data.categoryId || undefined,
+          multiplier: data.multiplier,
         });
         toast.success('智能体创建成功');
       } else {
         const id = initialData?.id;
         if (!id) return;
         await agentsApi.update(id, {
-          isPublic: formData.isPublic,
-          baseUrl: formData.baseUrl,
-          categoryId: formData.categoryId || null,
-          multiplier: formData.multiplier,
-          ...(formData.apiKey ? { apiKey: formData.apiKey } : {}),
+          isPublic: data.isPublic,
+          baseUrl: data.baseUrl,
+          categoryId: data.categoryId || null,
+          multiplier: data.multiplier,
+          ...(data.apiKey ? { apiKey: data.apiKey } : {}),
         });
         toast.success('智能体更新成功');
       }
@@ -79,8 +97,6 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
       onClose();
     } catch {
       toast.error(mode === 'create' ? '创建失败' : '更新失败');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -99,7 +115,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -110,10 +126,9 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                 <Label htmlFor="baseUrl">API Base URL <span className="text-xs text-slate-400 font-normal ml-1">（选填）</span></Label>
                 <Input
                   id="baseUrl"
-                  value={formData.baseUrl}
-                  onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
                   placeholder="https://api.dify.ai/v1"
                   disabled={isSubmitting}
+                  {...register('baseUrl')}
                 />
                 <p className="text-xs text-slate-500">请填写您的 Dify 智能体所在的 API Base URL。</p>
               </div>
@@ -122,22 +137,30 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                 <Label htmlFor="apiKey">API Key</Label>
                 <Input
                   id="apiKey"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                   placeholder="请输入 Dify API Key"
                   disabled={isSubmitting}
+                  {...register('apiKey')}
                 />
+                {errors.apiKey && (
+                  <p className="text-xs text-red-500">{errors.apiKey.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="category">分类</Label>
-                <Select
-                  options={[{ label: '未分类', value: '' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
-                  value={formData.categoryId}
-                  onChange={(val) => setFormData({ ...formData, categoryId: val })}
-                  placeholder="选择分类"
-                  disabled={isSubmitting}
-                  className="mt-1 w-full"
+                <Controller
+                  name="categoryId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={[{ label: '未分类', value: '' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="选择分类"
+                      disabled={isSubmitting}
+                      className="mt-1 w-full"
+                    />
+                  )}
                 />
                 {(JSON.parse(localStorage.getItem('user') || '{}')?.role === 'owner' || JSON.parse(localStorage.getItem('user') || '{}')?.role === 'admin') && (
                   <div className="mt-2">
@@ -159,11 +182,13 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                   type="number"
                   step="0.1"
                   min="1"
-                  value={formData.multiplier}
-                  onChange={(e) => setFormData({ ...formData, multiplier: parseFloat(e.target.value) || 1.0 })}
                   placeholder="最小为 1"
                   disabled={isSubmitting}
+                  {...register('multiplier')}
                 />
+                {errors.multiplier && (
+                  <p className="text-xs text-red-500">{errors.multiplier.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -171,10 +196,9 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                   <input
                     id="isPublic"
                     type="checkbox"
-                    checked={formData.isPublic}
-                    onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                    disabled={isSubmitting}
                     className="h-4 w-4 rounded-sm border border-slate-300 accent-black"
+                    disabled={isSubmitting}
+                    {...register('isPublic')}
                   />
                   <span className="text-sm text-slate-700">是否公开</span>
                 </label>

@@ -1,19 +1,24 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X, Package } from 'lucide-react';
+import { MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { favoritesApi } from '@/api/favorites';
 import { type Agent } from '@/api/agents';
-import { useClickOutside } from '@/hooks/use-click-outside';
+import { routeTitles, profileMenuItems } from '@/constants/dashboard';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
   const [favoriteAgents, setFavoriteAgents] = useState<(Agent & { favoritedAt: string })[]>([]);
 
   useEffect(() => {
@@ -25,14 +30,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Update document title based on route
-    if (location.pathname === '/' || location.pathname.startsWith('/chat/')) {
-      document.title = 'Super Agent - 对话';
-    } else if (location.pathname === '/knowledge') {
-      document.title = 'Super Agent - 知识库';
-    } else if (location.pathname.startsWith('/knowledge/')) {
-      document.title = 'Super Agent - 知识库详情';
-    } else if (location.pathname === '/agents-square') {
-      document.title = 'Super Agent - 智能体广场';
+    const currentRoute = routeTitles.find(route => {
+      if (route.exact) {
+        return location.pathname === route.path;
+      }
+      if (route.prefix) {
+        return location.pathname.startsWith(route.path);
+      }
+      return false;
+    });
+
+    if (currentRoute) {
+      document.title = currentRoute.title;
     }
   }, [location.pathname]);
 
@@ -153,97 +162,57 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div ref={menuRef} className="relative mt-auto border-t border-slate-100 p-4">
-          <div className="relative">
-            {isMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-3 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-                {(user?.role === 'owner' || user?.role === 'admin') && (
-                  <>
-                    <button
-                      onClick={() => {
-                        navigate('/users');
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                      <Users className="h-4 w-4" />
-                      用户管理
-                    </button>
-                    <div className="h-px w-full bg-slate-100" />
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    navigate('/agents');
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  <Users className="h-4 w-4" />
-                  智能体管理
-                </button>
-                <div className="h-px w-full bg-slate-100" />
+        <div className="relative mt-auto border-t border-slate-100 p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex w-full items-center gap-3 rounded-2xl p-3 transition-all duration-200 hover:bg-slate-50 outline-none data-[state=open]:bg-slate-100"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-transparent text-slate-900 overflow-hidden">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col overflow-hidden text-left">
+                  <span className="truncate text-sm font-bold text-slate-900">{user.name}</span>
+                  <span className="truncate text-[11px] font-medium text-slate-500">{user.email}</span>
+                </div>
+                <ChevronUp className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-64 p-2 mb-2" sideOffset={10}>
+              {profileMenuItems.map((item, index) => {
+                // Check role permission
+                if (item.roles && !item.roles.includes(user?.role)) {
+                  return null;
+                }
 
-                {(user?.role === 'owner' || user?.role === 'admin') && (
-                  <>
-                    <button
+                return (
+                  <div key={index}>
+                    <DropdownMenuItem 
                       onClick={() => {
-                        navigate('/models');
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        if (item.action === 'logout') {
+                          handleLogout();
+                        } else if (item.path) {
+                          navigate(item.path);
+                        }
+                      }} 
+                      className={cn(
+                        "gap-3 px-3 py-2.5 cursor-pointer",
+                        item.className
+                      )}
                     >
-                      <Package className="h-4 w-4" />
-                      模型管理
-                    </button>
-                    <div className="h-px w-full bg-slate-100" />
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    navigate('/profile');
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  <User className="h-4 w-4" />
-                  个人中心
-                </button>
-                <div className="h-px w-full bg-slate-100" />
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  退出登录
-                </button>
-              </div>
-            )}
-            
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-2xl p-3 transition-all duration-200",
-                isMenuOpen ? "bg-slate-100" : "hover:bg-slate-50"
-              )}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-transparent text-slate-900 overflow-hidden">
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-                ) : (
-                  <User className="h-5 w-5" />
-                )}
-              </div>
-              <div className="flex flex-1 flex-col overflow-hidden text-left">
-                <span className="truncate text-sm font-bold text-slate-900">{user.name}</span>
-                <span className="truncate text-[11px] font-medium text-slate-500">{user.email}</span>
-              </div>
-              <ChevronUp className={cn(
-                "h-4 w-4 text-slate-400 transition-transform duration-200",
-                isMenuOpen ? "rotate-180" : ""
-              )} />
-            </button>
-          </div>
+                      <item.icon className={cn("h-4 w-4", item.className ? "text-current" : "text-slate-500")} />
+                      <span className={cn("font-medium", !item.className && "text-slate-700")}>{item.label}</span>
+                    </DropdownMenuItem>
+                    {item.separator && <DropdownMenuSeparator className="my-1 bg-slate-100" />}
+                  </div>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 

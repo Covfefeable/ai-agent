@@ -1,10 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, X } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { usersApi } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+const rechargeSchema = z.object({
+  amount: z.coerce.number().min(1, '请输入有效的正整数金额').int('请输入整数'),
+});
+
+type RechargeFormValues = z.infer<typeof rechargeSchema>;
 
 interface RechargeModalProps {
   isOpen: boolean;
@@ -15,27 +24,27 @@ interface RechargeModalProps {
 }
 
 export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: RechargeModalProps) {
-  const [amount, setAmount] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<RechargeFormValues>({
+    resolver: zodResolver(rechargeSchema) as any,
+    defaultValues: {
+      amount: 0,
+    },
+  });
 
   useEffect(() => {
     if (isOpen) {
-      setAmount('');
+      reset({ amount: undefined });
     }
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const rechargeAmount = parseInt(amount);
-    if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
-      toast.error('请输入有效的正整数金额');
-      return;
-    }
-
+  const onSubmit = async (data: RechargeFormValues) => {
     try {
-      setIsSubmitting(true);
-      await usersApi.rechargeUser(userId, rechargeAmount);
+      await usersApi.rechargeUser(userId, data.amount);
       toast.success('充值成功');
       onSuccess();
       onClose();
@@ -43,8 +52,6 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Recharge failed:', msg);
       toast.error('充值失败');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -67,7 +74,7 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
           正在为用户 <span className="font-bold text-slate-900">{userName}</span> 充值
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="amount">充值数额 (Token)</Label>
@@ -76,12 +83,14 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
                 type="number"
                 min="1"
                 step="1"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
                 placeholder="请输入充值数额"
                 disabled={isSubmitting}
                 autoFocus
+                {...register('amount')}
               />
+              {errors.amount && (
+                <p className="text-xs text-red-500">{errors.amount.message}</p>
+              )}
             </div>
           </div>
 
@@ -89,7 +98,7 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               取消
             </Button>
-            <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting || !amount}>
+            <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

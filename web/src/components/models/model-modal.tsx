@@ -1,10 +1,24 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { modelsApi } from '@/api/models';
 import { toast } from 'sonner';
 import { X, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const modelSchema = z.object({
+  name: z.string().min(1, '请输入模型名称'),
+  modelId: z.string().min(1, '请输入模型ID'),
+  sort: z.coerce.number().default(0),
+  enabled: z.boolean().default(true),
+  iconUrl: z.string().min(1, '请上传模型Logo'),
+  multiplier: z.coerce.number().min(1, '倍率最小为 1').default(1.0),
+});
+
+type ModelFormValues = z.infer<typeof modelSchema>;
 
 interface ModelModalProps {
   isOpen: boolean;
@@ -24,20 +38,30 @@ interface ModelModalProps {
 }
 
 export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLoading: isFetchingDetail }: ModelModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    modelId: '',
-    sort: 0,
-    enabled: true,
-    iconUrl: '',
-    multiplier: 1.0,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ModelFormValues>({
+    resolver: zodResolver(modelSchema) as any,
+    defaultValues: {
+      name: '',
+      modelId: '',
+      sort: 0,
+      enabled: true,
+      iconUrl: '',
+      multiplier: 1.0,
+    },
+  });
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData({
+      reset({
         name: initialData.name,
         modelId: initialData.modelId,
         sort: initialData.sort,
@@ -46,7 +70,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
         multiplier: initialData.multiplier || 1.0,
       });
     } else if (isOpen) {
-      setFormData({
+      reset({
         name: '',
         modelId: '',
         sort: 0,
@@ -55,7 +79,9 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
         multiplier: 1.0,
       });
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, reset]);
+
+  const iconUrl = watch('iconUrl');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,7 +96,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
-      setFormData(prev => ({ ...prev, iconUrl: base64 }));
+      setValue('iconUrl', base64, { shouldValidate: true });
     };
     reader.onerror = () => {
       toast.error('读取图片失败');
@@ -78,28 +104,13 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      toast.error('请输入模型名称');
-      return;
-    }
-    if (!formData.modelId.trim()) {
-      toast.error('请输入模型ID');
-      return;
-    }
-    if (!formData.iconUrl) {
-      toast.error('请上传模型Logo');
-      return;
-    }
-
+  const onSubmit = async (data: ModelFormValues) => {
     try {
-      setIsSubmitting(true);
       if (mode === 'create') {
-        await modelsApi.create(formData);
+        await modelsApi.create(data);
         toast.success('模型创建成功');
       } else if (initialData?.id) {
-        await modelsApi.update(initialData.id, formData);
+        await modelsApi.update(initialData.id, data);
         toast.success('模型更新成功');
       }
       onSuccess();
@@ -107,8 +118,6 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     } catch (e) {
       const resp = (e as { response?: { data?: { message?: string } } })?.response;
       toast.error(resp?.data?.message || (mode === 'create' ? '创建失败' : '更新失败'));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -122,12 +131,12 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
           <h3 className="text-lg font-bold text-slate-900">
             {mode === 'create' ? '新建模型' : '编辑模型'}
           </h3>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           {isFetchingDetail ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -138,22 +147,26 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                 <Label htmlFor="name">模型名称</Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  {...register('name')}
                   placeholder="例如：GPT-4"
                   disabled={isSubmitting}
                 />
+                {errors.name && (
+                  <p className="text-xs text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="modelId">模型ID</Label>
                 <Input
                   id="modelId"
-                  value={formData.modelId}
-                  onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
+                  {...register('modelId')}
                   placeholder="例如：gpt-4"
                   disabled={isSubmitting}
                 />
+                {errors.modelId && (
+                  <p className="text-xs text-red-500">{errors.modelId.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -161,8 +174,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                 <Input
                   id="sort"
                   type="number"
-                  value={formData.sort}
-                  onChange={(e) => setFormData({ ...formData, sort: parseInt(e.target.value) || 0 })}
+                  {...register('sort')}
                   placeholder="数字越小越靠前"
                   disabled={isSubmitting}
                 />
@@ -175,11 +187,13 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                   type="number"
                   step="0.1"
                   min="1"
-                  value={formData.multiplier}
-                  onChange={(e) => setFormData({ ...formData, multiplier: parseFloat(e.target.value) || 1.0 })}
+                  {...register('multiplier')}
                   placeholder="最小为 1"
                   disabled={isSubmitting}
                 />
+                {errors.multiplier && (
+                  <p className="text-xs text-red-500">{errors.multiplier.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -189,10 +203,10 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                     onClick={() => !isSubmitting && fileInputRef.current?.click()}
                     className={`relative flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 transition-all hover:border-slate-400 hover:bg-slate-100 ${isSubmitting ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
-                    {formData.iconUrl ? (
+                    {iconUrl ? (
                       <>
                         <img 
-                          src={formData.iconUrl} 
+                          src={iconUrl} 
                           alt="Logo Preview" 
                           className="h-full w-full rounded-xl object-cover"
                         />
@@ -216,6 +230,9 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                     disabled={isSubmitting}
                   />
                   <span className="text-xs text-slate-500">支持 PNG, JPG, GIF (Max 2MB)</span>
+                  {errors.iconUrl && (
+                    <p className="text-xs text-red-500">{errors.iconUrl.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -224,8 +241,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                   <input
                     type="checkbox"
                     id="enabled"
-                    checked={formData.enabled}
-                    onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                    {...register('enabled')}
                     className="h-4 w-4 rounded-sm border border-slate-300 accent-black"
                     disabled={isSubmitting}
                   />

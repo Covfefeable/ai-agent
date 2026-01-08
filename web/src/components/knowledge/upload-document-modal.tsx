@@ -1,10 +1,20 @@
-import { useState } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { knowledgeApi } from '@/api/knowledge';
 import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const uploadSchema = z.object({
+  file: z.instanceof(File, { message: '请选择文件' }),
+  separator: z.string().default('\\n\\n\\n'),
+  maxTokens: z.coerce.number().min(128, '最小 Token 数不能少于 128').default(500),
+});
+
+type UploadFormValues = z.infer<typeof uploadSchema>;
 
 interface UploadDocumentModalProps {
   isOpen: boolean;
@@ -14,33 +24,41 @@ interface UploadDocumentModalProps {
 }
 
 export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: UploadDocumentModalProps) {
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [separator, setSeparator] = useState('\\n\\n\\n');
-  const [maxTokens, setMaxTokens] = useState(500);
-  const [isUploading, setIsUploading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<UploadFormValues>({
+    resolver: zodResolver(uploadSchema) as any,
+    defaultValues: {
+      separator: '\\n\\n\\n',
+      maxTokens: 500,
+    },
+  });
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadFile || !datasetId) return;
+  const uploadFile = watch('file');
+
+  const onSubmit = async (data: UploadFormValues) => {
+    if (!datasetId) return;
 
     try {
-      setIsUploading(true);
-      const actualSeparator = separator.replace(/\\n/g, '\n');
+      const actualSeparator = data.separator.replace(/\\n/g, '\n');
 
-      await knowledgeApi.uploadDocument(datasetId, uploadFile, {
+      await knowledgeApi.uploadDocument(datasetId, data.file, {
         separator: actualSeparator,
-        max_tokens: maxTokens,
+        max_tokens: data.maxTokens,
       });
       
       toast.success('文档上传成功');
-      setUploadFile(null);
+      reset();
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error('上传失败');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -59,6 +77,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">上传文档</h3>
           <button 
+            type="button"
             onClick={onClose}
             className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
@@ -66,7 +85,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
           </button>
         </div>
 
-        <form onSubmit={handleUpload}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="file">选择文件</Label>
@@ -82,10 +101,18 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
                     id="file-upload" 
                     type="file" 
                     className="hidden" 
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setValue('file', file, { shouldValidate: true });
+                      }
+                    }}
                   />
                 </label>
               </div>
+              {errors.file && (
+                <p className="text-xs text-red-500">{errors.file.message}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -93,19 +120,23 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
                 <Label htmlFor="separator">分段标识符</Label>
                 <Input
                   id="separator"
-                  value={separator}
-                  onChange={(e) => setSeparator(e.target.value)}
+                  {...register('separator')}
                   placeholder="\\n\\n\\n"
                 />
+                {errors.separator && (
+                  <p className="text-xs text-red-500">{errors.separator.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="maxTokens">最大分段长度</Label>
                 <Input
                   id="maxTokens"
                   type="number"
-                  value={maxTokens}
-                  onChange={(e) => setMaxTokens(parseInt(e.target.value) || 0)}
+                  {...register('maxTokens')}
                 />
+                {errors.maxTokens && (
+                  <p className="text-xs text-red-500">{errors.maxTokens.message}</p>
+                )}
               </div>
             </div>
           </div>
@@ -115,16 +146,16 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isUploading}
+              disabled={isSubmitting}
             >
               取消
             </Button>
             <Button 
               type="submit" 
               className="bg-black hover:bg-black/80 text-white"
-              disabled={isUploading || !uploadFile}
+              disabled={isSubmitting || !uploadFile}
             >
-              {isUploading ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   上传中...

@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { knowledgeApi } from '@/api/knowledge';
 import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const knowledgeBaseSchema = z.object({
+  name: z.string().min(1, '请输入知识库名称'),
+  description: z.string().optional(),
+});
+
+type KnowledgeBaseFormValues = z.infer<typeof knowledgeBaseSchema>;
 
 interface KnowledgeBaseModalProps {
   isOpen: boolean;
@@ -19,33 +29,44 @@ interface KnowledgeBaseModalProps {
 }
 
 export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialData }: KnowledgeBaseModalProps) {
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<KnowledgeBaseFormValues>({
+    resolver: zodResolver(knowledgeBaseSchema) as any,
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData({
+      reset({
         name: initialData.name || '',
         description: initialData.description || '',
       });
     } else {
-      setFormData({ name: '', description: '' });
+      reset({ name: '', description: '' });
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
+  const onSubmit = async (data: KnowledgeBaseFormValues) => {
     try {
-      setIsSubmitting(true);
-      
       if (mode === 'create') {
-        await knowledgeApi.createDataset(formData);
+        await knowledgeApi.createDataset({
+          name: data.name,
+          description: data.description || '',
+        });
         toast.success('知识库创建成功');
       } else {
         if (initialData?.id) {
-          await knowledgeApi.updateDataset(initialData.id, formData);
+          await knowledgeApi.updateDataset(initialData.id, {
+            name: data.name,
+            description: data.description || '',
+          });
           toast.success('知识库更新成功');
         }
       }
@@ -56,8 +77,6 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
       const msg = error instanceof Error ? error.message : String(error);
       console.error(`Failed to ${mode} knowledge base:`, msg);
       toast.error(mode === 'create' ? '创建失败' : '更新失败');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -78,6 +97,7 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
             {mode === 'create' ? '新建知识库' : '编辑知识库'}
           </h3>
           <button 
+            type="button"
             onClick={onClose}
             className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
@@ -85,28 +105,32 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">名称</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                {...register('name')}
                 placeholder="请输入知识库名称"
                 disabled={isSubmitting}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="description">描述</Label>
               <Input
                 id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                {...register('description')}
                 placeholder="请输入知识库描述"
                 disabled={isSubmitting}
               />
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description.message}</p>
+              )}
             </div>
           </div>
 
