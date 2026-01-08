@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, MessageSquare, Plus } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
@@ -9,6 +9,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { useClickOutside } from '@/hooks/use-click-outside';
+import { HistoryDrawer } from '@/components/HistoryDrawer';
 
 interface Message {
   id: string;
@@ -59,8 +60,10 @@ export function ChatPage() {
   const [hasMore, setHasMore] = useState(false);
   const [lastId, setLastId] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -117,12 +120,6 @@ export function ChatPage() {
     } catch (error) {
       console.error('Failed to delete conversation:', error);
     }
-  };
-
-  const deleteConversation = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDeleteId(id);
   };
 
 
@@ -182,12 +179,20 @@ export function ChatPage() {
     }
   };
 
+  const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isBottom = scrollHeight - scrollTop - clientHeight <= 50;
+    setShouldAutoScroll(isBottom);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   const handleFeedback = async (messageId: string, originalId: string | undefined, rating: 'like' | 'dislike') => {
@@ -298,6 +303,8 @@ export function ChatPage() {
 
   const handleSend = async () => {
     if ((!inputValue.trim() && uploadedFiles.length === 0) || isLoading) return;
+
+    setShouldAutoScroll(true);
 
     const queryText = inputValue;
     const currentFiles = [...uploadedFiles];
@@ -432,7 +439,11 @@ export function ChatPage() {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div 
+        ref={chatContainerRef}
+        onScroll={handleChatScroll}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+      >
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {messages.length === 0 ? (
             <div className="flex h-[40vh] flex-col items-center justify-center text-center">
@@ -541,7 +552,7 @@ export function ChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 pb-6 md:p-8 md:pb-12">
+      <div className="p-4 pb-6 md:p-8 md:pb-6">
         <div className="mx-auto max-w-4xl">
           <div className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition-all focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/10">
             
@@ -724,71 +735,21 @@ export function ChatPage() {
       />
 
       {/* History Drawer */}
-      {isHistoryOpen && (
-        <div className="absolute inset-0 z-50 flex overflow-hidden">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsHistoryOpen(false)}
-          />
-          
-          {/* Drawer Panel */}
-          <div className="relative ml-auto flex h-full w-80 flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <h3 className="font-bold text-slate-800">历史会话</h3>
-              <Button variant="ghost" size="icon" onClick={() => setIsHistoryOpen(false)}>
-                <X className="h-5 w-5 text-slate-500" />
-              </Button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto px-4 py-4" onScroll={handleScroll}>
-              <div className="space-y-1">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className={cn(
-                      "group flex cursor-pointer items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                      conversationId === conv.id
-                        ? "bg-slate-100 text-slate-900 shadow-sm"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    )}
-                    onClick={() => {
-                      if (conversationId !== conv.id) {
-                        navigate(`/?conversation_id=${conv.id}`);
-                        setIsHistoryOpen(false);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <MessageSquare className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        conversationId === conv.id ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
-                      )} />
-                      <span className="truncate">{conv.name || 'New Chat'}</span>
-                    </div>
-                    <button
-                      onClick={(e) => deleteConversation(e, conv.id)}
-                      className="hidden text-slate-400 hover:text-red-600 group-hover:block"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                {conversations.length === 0 && !isLoadingMore && (
-                  <div className="py-8 text-center text-sm text-slate-400">
-                    暂无历史会话
-                  </div>
-                )}
-                {isLoadingMore && (
-                  <div className="py-2 text-center text-xs text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        conversations={conversations}
+        currentConversationId={conversationId}
+        onSelect={(conv) => {
+          if (conversationId !== conv.id) {
+            navigate(`/?conversation_id=${conv.id}`);
+            setIsHistoryOpen(false);
+          }
+        }}
+        onDelete={(id) => setDeleteId(id)}
+        onScroll={handleScroll}
+        isLoadingMore={isLoadingMore}
+      />
     </div>
   );
 }

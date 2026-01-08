@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { LoginPage } from './pages/login';
 import { RegisterPage } from './pages/register';
@@ -15,9 +16,14 @@ import { AgentsSquarePage } from './pages/agents-square';
 import { AgentChatPage } from './pages/agent-chat';
 
 function Layout() {
+  const location = useLocation();
+  const element = useOutlet();
+
   return (
     <DashboardLayout>
-      <Outlet />
+      <AnimatePresence>
+        {element && React.cloneElement(element, { key: location.pathname })}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

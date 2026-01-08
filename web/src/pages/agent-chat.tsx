@@ -1,15 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { agentsApi } from '@/api/agents';
 import { favoritesApi } from '@/api/favorites';
 import { AgentForm, type FormItem, type FormValues } from '@/components/agents/agent-form';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, MessageSquare, Plus, X } from 'lucide-react';
+import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, Plus, ArrowLeft } from 'lucide-react';
 import { cn, getFileType } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { toast } from 'sonner';
+import { HistoryDrawer } from '@/components/HistoryDrawer';
+import { motion } from 'framer-motion';
 
 interface Conversation {
   id: string;
@@ -23,6 +25,8 @@ export function AgentChatPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isFromSquare = location.pathname.startsWith('/agents-square');
   const urlConversationId = searchParams.get('conversation_id');
   
   const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
@@ -64,9 +68,11 @@ export function AgentChatPage() {
   const [hasMore, setHasMore] = useState(false);
   const [lastId, setLastId] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchConversations = async (loadMore = false) => {
@@ -121,12 +127,6 @@ export function AgentChatPage() {
     }
   };
 
-  const deleteConversation = async (e: React.MouseEvent, convId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDeleteId(convId);
-  };
-
   const loadHistory = async (convId: string) => {
     if (!id) return;
     try {
@@ -134,7 +134,7 @@ export function AgentChatPage() {
       const response = await agentsApi.getMessages(id, convId);
       
       const formattedMessages: Array<{ id: string; role: 'user' | 'assistant'; content: string }> = [];
-       response.data.forEach((item: any) => {
+       response.data.forEach((item: { id: string; query: string; answer?: string }) => {
          formattedMessages.push({
            id: item.id + '_user',
            role: 'user',
@@ -173,12 +173,20 @@ export function AgentChatPage() {
     document.title = 'Super Agent - 智能体聊天';
   }, []);
 
+  const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isBottom = scrollHeight - scrollTop - clientHeight <= 50;
+    setShouldAutoScroll(isBottom);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -378,6 +386,7 @@ export function AgentChatPage() {
       return;
     }
     if ((!inputValue.trim() && uploadedFiles.length === 0) || !id || streaming) return;
+    setShouldAutoScroll(true);
     const query = inputValue.trim();
     const userMessage = { id: Date.now().toString(), role: 'user' as const, content: query };
     const assistantId = `assistant-${Date.now()}`;
@@ -524,9 +533,24 @@ export function AgentChatPage() {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
   return (
-    <div className="flex h-full flex-col bg-white">
+    <motion.div layoutId={`agent-card-${id}`} className="absolute inset-0 flex flex-col bg-white">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        transition={{ delay: 0.2 }} 
+        className="flex h-full flex-col"
+      >
       <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-3">
+          {isFromSquare && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/agents-square')}
+              >
+                <ArrowLeft className="h-5 w-5 text-slate-500" />
+              </Button>
+            )}
           {agentIconUrl ? (
             <img src={agentIconUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
           ) : (
@@ -579,7 +603,11 @@ export function AgentChatPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div 
+        ref={chatContainerRef}
+        onScroll={handleChatScroll}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+      >
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {loading ? (
             <div className="flex h-[40vh] items-center justify-center text-slate-400">
@@ -653,7 +681,7 @@ export function AgentChatPage() {
           )}
         </div>
       </div>
-      <div className="p-4 pb-6 md:p-8 md:pb-12">
+      <div className="p-4 pb-6 md:p-8 md:pb-6">
         <div className="mx-auto max-w-4xl">
           {suggestions.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -771,6 +799,7 @@ export function AgentChatPage() {
           )}
         </div>
       </div>
+      </motion.div>
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
@@ -782,71 +811,21 @@ export function AgentChatPage() {
       />
 
       {/* History Drawer */}
-      {isHistoryOpen && (
-        <div className="absolute inset-0 z-50 flex overflow-hidden">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsHistoryOpen(false)}
-          />
-          
-          {/* Drawer Panel */}
-          <div className="relative ml-auto flex h-full w-80 flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <h3 className="font-bold text-slate-800">历史会话</h3>
-              <Button variant="ghost" size="icon" onClick={() => setIsHistoryOpen(false)}>
-                <X className="h-5 w-5 text-slate-500" />
-              </Button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto px-4 py-4" onScroll={handleScroll}>
-              <div className="space-y-1">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className={cn(
-                      "group flex cursor-pointer items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                      conversationId === conv.id
-                        ? "bg-slate-100 text-slate-900 shadow-sm"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    )}
-                    onClick={() => {
-                      if (conversationId !== conv.id) {
-                        navigate(`/chat/${id}?conversation_id=${conv.id}`);
-                        setIsHistoryOpen(false);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <MessageSquare className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        conversationId === conv.id ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
-                      )} />
-                      <span className="truncate">{conv.name || 'New Chat'}</span>
-                    </div>
-                    <button
-                      onClick={(e) => deleteConversation(e, conv.id)}
-                      className="hidden text-slate-400 hover:text-red-600 group-hover:block"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                {conversations.length === 0 && !isLoadingMore && (
-                  <div className="py-8 text-center text-sm text-slate-400">
-                    暂无历史会话
-                  </div>
-                )}
-                {isLoadingMore && (
-                  <div className="py-2 text-center text-xs text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        conversations={conversations}
+        currentConversationId={conversationId}
+        onSelect={(conv) => {
+          if (conversationId !== conv.id) {
+            navigate(`/chat/${id}?conversation_id=${conv.id}`);
+            setIsHistoryOpen(false);
+          }
+        }}
+        onDelete={(id) => setDeleteId(id)}
+        onScroll={handleScroll}
+        isLoadingMore={isLoadingMore}
+      />
+    </motion.div>
   );
 }

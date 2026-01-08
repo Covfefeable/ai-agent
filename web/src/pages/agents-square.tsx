@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, Calendar, Bot } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { format } from 'date-fns';
@@ -7,6 +9,7 @@ import { toast } from 'sonner';
 import { Pagination } from '@/components/ui/pagination';
 
 export function AgentsSquarePage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -44,7 +47,12 @@ export function AgentsSquarePage() {
   }, [searchKeyword, categoryId]);
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <motion.div 
+      className="absolute inset-0 flex flex-col bg-white"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
       <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">智能体广场</h2>
@@ -90,10 +98,11 @@ export function AgentsSquarePage() {
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
               {items.map((ag) => (
-                <div 
+                <motion.div 
+                  layoutId={`agent-card-${ag.id}`}
                   key={ag.id}
                   className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md cursor-pointer"
-                  onClick={() => { window.location.href = `/agents-square/${ag.id}`; }}
+                  onClick={() => navigate(`/agents-square/${ag.id}`)}
                 >
                   {ag.iconUrl && (
                     <div className="absolute inset-0 z-0 pointer-events-none">
@@ -132,7 +141,7 @@ export function AgentsSquarePage() {
                       {ag.isPublic ? '公开' : '私有'}
                     </span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
             <Pagination
@@ -155,6 +164,6 @@ export function AgentsSquarePage() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
