@@ -30,6 +30,15 @@ COPY --from=builder /app/api/dist ./dist
 COPY --from=builder /app/api/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# Copy source and config for migrations
+COPY --from=builder /app/api/src ./src
+COPY --from=builder /app/api/drizzle.config.ts ./
+COPY --from=builder /app/api/tsconfig.json ./
+COPY --from=builder /app/api/entrypoint.sh ./
+
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 3000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "dist/index.js"]
