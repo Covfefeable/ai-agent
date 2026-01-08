@@ -70,6 +70,8 @@ export function ChatPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -490,10 +492,18 @@ export function ChatPage() {
                 )}
               >
                 <div className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm overflow-hidden",
                   msg.role === 'user' ? "bg-slate-900 text-white" : "bg-blue-600 text-white"
                 )}>
-                  {msg.role === 'user' ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                  {msg.role === 'user' ? (
+                    user.avatar ? (
+                      <img src={user.avatar} alt="User Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )
+                  ) : (
+                    <Bot className="h-5 w-5" />
+                  )}
                 </div>
                 <div className={cn(
                   "flex max-w-[85%] flex-col gap-3 group/msg",

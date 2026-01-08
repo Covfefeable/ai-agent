@@ -44,7 +44,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         email,
         password: hashedPassword,
         role,
-      }).returning({ id: users.id, name: users.name, email: users.email, role: users.role });
+      }).returning({ id: users.id, name: users.name, email: users.email, role: users.role, balance: users.balance, avatar: users.avatar });
 
       // Generate token
       const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -79,7 +79,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
       return {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, balance: user.balance, avatar: user.avatar },
         token
       };
     } catch (error) {

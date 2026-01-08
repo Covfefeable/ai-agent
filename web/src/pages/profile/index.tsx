@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { User, Lock } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Lock, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
 import { userApi } from '@/api/user';
+import { toast } from 'sonner';
 
 interface UsageItem {
   id: string;
@@ -17,17 +18,57 @@ interface UsageItem {
 }
 
 export function ProfilePage() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [usageList, setUsageList] = useState<UsageItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetchProfile();
     fetchUsage();
   }, [page]);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await userApi.getProfile();
+      setUser(res);
+      localStorage.setItem('user', JSON.stringify(res));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast.error('图片大小不能超过 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      try {
+        await userApi.updateAvatar(base64);
+        toast.success('头像更新成功');
+        fetchProfile(); // Refresh profile
+      } catch (error) {
+        console.error('Failed to update avatar:', error);
+        toast.error('头像上传失败');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchUsage = async () => {
     setLoading(true);
@@ -67,14 +108,40 @@ export function ProfilePage() {
             </div>
 
             <div className="flex items-center gap-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                <User className="h-10 w-10" />
+              <div 
+                className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-400 overflow-hidden ring-4 ring-white shadow-sm transition-all hover:ring-slate-100"
+                onClick={handleAvatarClick}
+              >
+                {user.avatar ? (
+                  <img src={user.avatar} alt="avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-12 w-12" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Camera className="h-8 w-8 text-white" />
+                </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
               </div>
-              <div className="space-y-1">
-                <div className="text-lg font-semibold text-slate-900">{user.name || '未命名用户'}</div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-slate-900">{user.name || '未命名用户'}</h1>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    user.role === 'owner' ? 'bg-purple-100 text-purple-800' :
+                    user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                    'bg-slate-100 text-slate-800'
+                  }`}>
+                    {user.role === 'owner' ? '所有者' : user.role === 'admin' ? '管理员' : '成员'}
+                  </span>
+                </div>
                 <div className="text-sm text-slate-500">{user.email}</div>
-                <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {user.role === 'owner' ? '所有者' : user.role === 'admin' ? '管理员' : '成员'}
+                <div className="text-sm font-medium text-slate-600 pt-1">
+                  余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '不限制' : `${user.balance?.toLocaleString() || 0} Tokens`}</span>
                 </div>
               </div>
             </div>

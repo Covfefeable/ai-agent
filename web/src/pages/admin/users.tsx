@@ -112,6 +112,7 @@ export function UsersPage() {
                       <th className="px-6 py-4 font-medium">用户</th>
                       <th className="px-6 py-4 font-medium">邮箱</th>
                       <th className="px-6 py-4 font-medium">角色</th>
+                      <th className="px-6 py-4 font-medium">余额</th>
                       <th className="px-6 py-4 font-medium">注册时间</th>
                       <th className="px-6 py-4 font-medium text-right">操作</th>
                     </tr>
@@ -122,6 +123,9 @@ export function UsersPage() {
                         <td className="px-6 py-4 font-medium text-slate-900">{user.name}</td>
                         <td className="px-6 py-4 text-slate-600">{user.email}</td>
                         <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {['owner', 'admin'].includes(user.role) ? '不限制' : user.balance?.toLocaleString()}
+                        </td>
                         <td className="px-6 py-4 text-slate-600">
                           {user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                         </td>

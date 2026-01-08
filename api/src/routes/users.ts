@@ -6,6 +6,31 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
 export async function usersRoutes(fastify: FastifyInstance) {
+  // Get current user info
+  fastify.get('/me', async (request: any, reply) => {
+    try {
+      const userId = request.user.id;
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        balance: users.balance,
+        avatar: users.avatar,
+        createdAt: users.createdAt,
+      }).from(users).where(eq(users.id, userId)).limit(1);
+
+      if (!user) {
+        return reply.status(404).send({ message: 'User not found' });
+      }
+
+      return user;
+    } catch (error) {
+      console.error('Get Me Error:', error);
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
   // Get user usage list
   fastify.get('/me/usage', async (request: any, reply) => {
     try {
@@ -105,6 +130,26 @@ export async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Update avatar
+  fastify.patch('/me/avatar', async (request: any, reply) => {
+    try {
+      const userId = request.user.id;
+      const { avatar } = z.object({ avatar: z.string() }).parse(request.body);
+
+      await db.update(users)
+        .set({ avatar })
+        .where(eq(users.id, userId));
+
+      return { message: 'Avatar updated successfully' };
+    } catch (error) {
+      console.error('Update Avatar Error:', error);
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+      }
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
+
   // Get users list (Owner/Admin only)
   fastify.get('/', async (request: any, reply) => {
     try {
@@ -135,6 +180,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
         name: users.name,
         email: users.email,
         role: users.role,
+        balance: users.balance,
         createdAt: users.createdAt,
       })
       .from(users)

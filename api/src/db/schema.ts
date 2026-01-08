@@ -6,6 +6,8 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(), // 添加密码字段
   role: text('role').notNull().default('member'), // owner, admin, member
+  avatar: text('avatar'), // base64 avatar
+  balance: integer('balance').notNull().default(100000), // 用户余额，单位 token
   createdAt: timestamp('created_at').defaultNow(),
 });
 

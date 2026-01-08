@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { db } from '../db';
-import { agents, categories } from '../db/schema';
+import { agents, categories, users } from '../db/schema';
 import { eq, desc, ilike, or, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createUsageLogStream } from '../lib/usage';
@@ -215,6 +215,21 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row.isPublic) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
+
+      // Check user balance if logged in
+      let userRole = 'guest';
+      const userId = request.user?.id;
+      
+      if (userId) {
+        const [dbUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (dbUser) {
+          userRole = dbUser.role;
+          if (userRole === 'member' && dbUser.balance <= 0) {
+            return reply.status(402).send({ message: '余额不足，请充值' });
+          }
+        }
+      }
+
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const body = request.body || {};
       const response_mode = 'streaming';
@@ -244,7 +259,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       reply.header('Content-Type', 'text/event-stream');
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
-      const logStream = createUsageLogStream((request.user?.id ?? 'web').toString(), id);
+      const logStream = createUsageLogStream((request.user?.id ?? 'web').toString(), userRole, id);
       response.data.pipe(logStream);
       return logStream;
     } catch (error: any) {

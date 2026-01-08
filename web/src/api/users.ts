@@ -6,6 +6,8 @@ export interface User {
   name: string;
   email: string;
   role: 'owner' | 'admin' | 'member';
+  balance?: number;
+  avatar?: string;
   createdAt: string;
 }
 

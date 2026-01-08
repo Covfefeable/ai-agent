@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import axios from 'axios';
 import { db } from '../db';
-import { datasets } from '../db/schema';
+import { datasets, users } from '../db/schema';
 import { inArray, eq, and } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
 
@@ -27,6 +27,15 @@ export async function chatRoutes(fastify: FastifyInstance) {
     try {
       // Get current user from token (middleware should have populated this, but for now we trust auth middleware)
       const user = request.user as any; 
+      
+      // Check balance
+      const [dbUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+      if (!dbUser) {
+        return reply.status(401).send({ message: 'User not found' });
+      }
+      if (dbUser.role === 'member' && dbUser.balance <= 0) {
+        return reply.status(402).send({ message: '余额不足，请充值' });
+      }
       
       console.log('Chat Request Body:', request.body); // Debug Log
 
@@ -95,7 +104,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
       
-      const logStream = createUsageLogStream(user.id, 'super_agent');
+      const logStream = createUsageLogStream(user.id, dbUser.role, 'super_agent');
       response.data.pipe(logStream);
       return logStream;
 

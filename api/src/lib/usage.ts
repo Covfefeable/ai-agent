@@ -1,12 +1,13 @@
 import { PassThrough } from 'stream';
 import { db } from '../db';
-import { userUsage } from '../db/schema';
+import { userUsage, users } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
 
-export function createUsageLogStream(userId: string, source: string) {
+export function createUsageLogStream(userId: string, userRole: string, source: string) {
   const logStream = new PassThrough();
   let buffer = '';
 
-  const processLine = (line: string) => {
+  const processLine = async (line: string) => {
     if (line.startsWith('data: ')) {
       try {
         const jsonStr = line.slice(6);
@@ -16,7 +17,9 @@ export function createUsageLogStream(userId: string, source: string) {
         const data = JSON.parse(jsonStr);
         if (data.event === 'message_end' && data.metadata?.usage) {
           const usage = data.metadata.usage;
-          db.insert(userUsage).values({
+          
+          // Record usage
+          await db.insert(userUsage).values({
             userId,
             source,
             promptTokens: usage.prompt_tokens,
@@ -33,10 +36,19 @@ export function createUsageLogStream(userId: string, source: string) {
             latency: String(usage.latency),
             timeToFirstToken: String(usage.time_to_first_token),
             timeToGenerate: String(usage.time_to_generate),
-          }).catch(err => console.error('Failed to record usage:', err));
+          });
+
+          // Deduct balance for regular members
+          if (userRole === 'member') {
+             await db.update(users)
+               .set({ 
+                 balance: sql`${users.balance} - ${usage.total_tokens}` 
+               })
+               .where(eq(users.id, userId));
+          }
         }
       } catch (e) {
-        // ignore
+        console.error('Error processing usage line:', e);
       }
     }
   };
