@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/logo';
 import { favoritesApi } from '@/api/favorites';
 import { type Agent } from '@/api/agents';
 
@@ -15,7 +16,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Close mobile menu on route change
-    setIsMobileMenuOpen(false);
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  useEffect(() => {
     // Update document title based on route
     if (location.pathname === '/' || location.pathname.startsWith('/chat/')) {
       document.title = 'Super Agent - 对话';
@@ -80,7 +87,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-100">
-          <span className="font-bold text-lg text-slate-900">Super Agent</span>
+          <Link to="/" className="font-bold text-lg text-slate-900">Super Agent</Link>
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
             className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
@@ -88,7 +95,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="hidden md:block p-2"></div>
+        <div className="hidden md:flex px-6 pt-6 pb-2">
+          <Link to="/">
+            <Logo />
+          </Link>
+        </div>
         <nav className="flex-1 space-y-1 px-4 py-2 overflow-y-auto">
           <div className="mb-4 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
             功能列表
