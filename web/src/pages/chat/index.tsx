@@ -12,6 +12,7 @@ import { knowledgeApi } from '@/api/knowledge';
 import { modelsApi, type Model } from '@/api/models';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 interface Message {
   id: string;
@@ -435,7 +436,7 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-white relative">
+    <div className="relative flex h-full flex-col bg-white">
       {/* Header */}
       <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <h2 className="text-lg font-bold text-slate-800">Super Agent 聊天</h2>
@@ -476,11 +477,30 @@ export function ChatPage() {
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {messages.length === 0 ? (
             <div className="flex h-[40vh] flex-col items-center justify-center text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-400"
+              >
                 <Bot className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">有什么可以帮你的吗？</h3>
-              <p className="mt-2 text-sm text-slate-500">你可以发送消息或者上传文件开始对话</p>
+              </motion.div>
+              <motion.h3
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                className="text-xl font-bold text-slate-900"
+              >
+                有什么可以帮你的吗？
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, delay: 0.48, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-2 text-sm text-slate-500"
+              >
+                你可以发送消息或者上传文件开始对话
+              </motion.p>
             </div>
           ) : (
             messages.map((msg) => (
