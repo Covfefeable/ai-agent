@@ -493,8 +493,8 @@ export function ChatPage() {
                 )}
               >
                 <div className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm overflow-hidden",
-                  msg.role === 'user' ? "bg-slate-900 text-white" : "bg-blue-600 text-white"
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden",
+                  msg.role === 'user' ? "bg-transparent text-slate-900" : "bg-blue-600 text-white shadow-sm"
                 )}>
                   {msg.role === 'user' ? (
                     user.avatar ? (

@@ -61,6 +61,8 @@ export function AgentChatPage() {
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string; type: string }>>([]);
   const [openingStatement, setOpeningStatement] = useState('');
   
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
   // History related states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -644,8 +646,12 @@ export function AgentChatPage() {
                         </div>
                       )
                     ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
-                        <User className="h-5 w-5" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-transparent text-slate-900 overflow-hidden">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt="User Avatar" className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-5 w-5" />
+                        )}
                       </div>
                     )}
                     <div className={cn(
