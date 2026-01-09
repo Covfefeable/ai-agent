@@ -5,7 +5,7 @@ import { Loader2, Shield, User as UserIcon, ShieldAlert, Search, Coins } from 'l
 import { Select } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
-import { RechargeModal } from './recharge-modal';
+import { RechargeModal } from '@/components/admin/recharge-modal';
 import { format } from 'date-fns';
 
 export function UsersList({ className }: { className?: string }) {

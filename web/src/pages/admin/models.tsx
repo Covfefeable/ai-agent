@@ -3,7 +3,7 @@ import { modelsApi, type Model } from '@/api/models';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { ModelModal } from './model-modal';
+import { ModelModal } from '@/components/admin/model-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';

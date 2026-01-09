@@ -3,7 +3,7 @@ import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Plus } from 'lucide-react';
-import { CategoryModal } from './category-modal';
+import { CategoryModal } from '@/components/admin/category-modal';
 
 import { Search } from 'lucide-react';
 
