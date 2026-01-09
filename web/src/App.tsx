@@ -7,7 +7,7 @@ import { RegisterPage } from './pages/auth/register';
 import { ChatPage } from './pages/chat';
 import { KnowledgePage } from './pages/knowledge';
 import { KnowledgeDetailPage } from './pages/knowledge/detail';
-import { DashboardLayout } from './components/DashboardLayout';
+import { DashboardLayout } from '@/components/dashboard-layout';
 import { DocumentDetailPage } from './pages/knowledge/document';
 import { UsersPage } from './pages/admin/users';
 import { AdminPage } from './pages/admin';

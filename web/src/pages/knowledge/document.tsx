@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EditSegmentModal } from '@/components/knowledge/edit-segment-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 
 export function DocumentDetailPage() {
   const { datasetId, documentId } = useParams<{ datasetId: string; documentId: string }>();

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Bot, ArrowRight, Database, Cpu, Layers } from 'lucide-react';
 import { authApi } from '@/api/auth';
-import { HomeSkeleton } from '@/components/HomeSkeleton';
+import { HomeSkeleton } from '@/components/home-skeleton';
 
 const loginSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),

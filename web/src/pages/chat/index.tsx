@@ -3,13 +3,13 @@ import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Thumb
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { cn } from '@/lib/utils';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { modelsApi, type Model } from '@/api/models';
-import { HistoryDrawer } from '@/components/HistoryDrawer';
+import { HistoryDrawer } from '@/components/history-drawer';
 import { ModelSelector } from '@/components/chat/model-selector';
 import { KnowledgeBaseSelector } from '@/components/chat/knowledge-base-selector';
 import { type Dataset } from '@/api/knowledge';

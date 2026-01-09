@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, Plus, ArrowLeft } from 'lucide-react';
 import { cn, getFileType } from '@/lib/utils';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { toast } from 'sonner';
-import { HistoryDrawer } from '@/components/HistoryDrawer';
+import { HistoryDrawer } from '@/components/history-drawer';
 import { motion } from 'framer-motion';
 
 interface Conversation {
