@@ -10,11 +10,12 @@ import { KnowledgeDetailPage } from './pages/knowledge/detail';
 import { DashboardLayout } from './components/DashboardLayout';
 import { DocumentDetailPage } from './pages/knowledge/document';
 import { UsersPage } from './pages/admin/users';
+import { AdminPage } from './pages/admin';
 import { AgentsPage } from './pages/agent';
-import { AgentCategoriesPage } from './pages/agent/categories';
+import { AgentCategoriesPage } from './pages/admin/categories';
 import { AgentsSquarePage } from './pages/agent/square';
 import { AgentChatPage } from './pages/agent/chat';
-import { ModelsPage } from './pages/model';
+import { ModelsPage } from './pages/admin/models';
 import { ProfilePage } from './pages/profile';
 
 function Layout() {
@@ -60,6 +61,7 @@ function App() {
           <Route path="/knowledge/:datasetId/document/:documentId"
             element={<DocumentDetailPage />}
           />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agent-categories" element={<AgentCategoriesPage />} />

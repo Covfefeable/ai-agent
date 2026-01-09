@@ -1,4 +1,4 @@
-import { LogOut, User, Users, Package } from 'lucide-react';
+import { LogOut, User, Settings, Bot } from 'lucide-react';
 
 export const routeTitles = [
   { path: '/', title: 'Super Agent - 对话', exact: true },
@@ -11,6 +11,7 @@ export const routeTitles = [
   { path: '/agents', title: 'Super Agent - 智能体管理', exact: true },
   { path: '/agent-categories', title: 'Super Agent - 智能体分类', exact: true },
   { path: '/models', title: 'Super Agent - 模型管理', exact: true },
+  { path: '/admin', title: 'Super Agent - 后台管理', exact: true },
   { path: '/profile', title: 'Super Agent - 个人中心', exact: true },
   { path: '/login', title: 'Super Agent - 登录', exact: true },
   { path: '/register', title: 'Super Agent - 注册', exact: true },
@@ -18,29 +19,22 @@ export const routeTitles = [
 
 export const profileMenuItems = [
   {
-    label: '用户管理',
-    icon: Users,
-    path: '/users',
-    roles: ['owner', 'admin'],
+    label: '个人中心',
+    icon: User,
+    path: '/profile',
     separator: true
   },
   {
     label: '智能体管理',
-    icon: Users,
+    icon: Bot,
     path: '/agents',
     separator: true
   },
   {
-    label: '模型管理',
-    icon: Package,
-    path: '/models',
+    label: '后台管理',
+    icon: Settings,
+    path: '/admin',
     roles: ['owner', 'admin'],
-    separator: true
-  },
-  {
-    label: '个人中心',
-    icon: User,
-    path: '/profile',
     separator: true
   },
   {

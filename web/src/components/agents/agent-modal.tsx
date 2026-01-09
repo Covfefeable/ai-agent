@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
     reset,
     formState: { errors, isSubmitting },
   } = useForm<AgentFormValues>({
-    resolver: zodResolver(agentSchema) as any,
+    resolver: zodResolver(agentSchema) as unknown as Resolver<AgentFormValues>,
     defaultValues: {
       apiKey: '',
       baseUrl: '',

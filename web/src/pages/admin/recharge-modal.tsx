@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { usersApi } from '@/api/users';
@@ -30,7 +30,7 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
     reset,
     formState: { errors, isSubmitting },
   } = useForm<RechargeFormValues>({
-    resolver: zodResolver(rechargeSchema) as any,
+    resolver: zodResolver(rechargeSchema) as unknown as Resolver<RechargeFormValues>,
     defaultValues: {
       amount: 0,
     },
