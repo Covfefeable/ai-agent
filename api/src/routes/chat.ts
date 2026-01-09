@@ -47,12 +47,14 @@ export async function chatRoutes(fastify: FastifyInstance) {
           const kbIds = inputs.knowledge_base_ids as string[];
           
           // Verify ownership and get Dify IDs
-          const userDatasets = await db.select()
+          const userDatasets = await db
+            .select()
             .from(datasets)
-            .where(and(
-              inArray(datasets.id, kbIds),
-              eq(datasets.userId, user.id)
-            ));
+            .where(
+              ['owner', 'admin'].includes(dbUser.role)
+                ? inArray(datasets.id, kbIds)
+                : and(inArray(datasets.id, kbIds), eq(datasets.userId, user.id))
+            );
 
           if (userDatasets.length > 0) {
              const retrievalPromises = userDatasets.map(ds => 
