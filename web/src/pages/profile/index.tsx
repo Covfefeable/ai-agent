@@ -210,7 +210,7 @@ export function ProfilePage() {
                 </div>
                 <div className="text-sm text-slate-500">{user.email}</div>
                 <div className="text-sm font-medium text-slate-600 pt-1">
-                  余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '不限制' : `${user.balance?.toLocaleString() || 0} Tokens`}</span>
+                  余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '∞' : `${user.balance?.toLocaleString() || 0} Tokens`}</span>
                 </div>
               </div>
             </div>

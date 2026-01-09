@@ -130,7 +130,7 @@ export function UsersList({ className }: { className?: string }) {
                         <td className="px-6 py-4 text-slate-600">{user.email}</td>
                         <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
                         <td className="px-6 py-4 text-slate-600">
-                          {['owner', 'admin'].includes(user.role) ? '不限制' : user.balance?.toLocaleString()}
+                          {['owner', 'admin'].includes(user.role) ? '∞' : user.balance?.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
