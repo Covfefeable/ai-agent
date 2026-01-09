@@ -20,10 +20,15 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
+const multipartFileSizeMb = Number(process.env.FASTIFY_MULTIPART_FILE_SIZE_MB || 100);
+const multipartFileSizeBytes = Number.isFinite(multipartFileSizeMb) && multipartFileSizeMb > 0
+  ? multipartFileSizeMb * 1024 * 1024
+  : 100 * 1024 * 1024;
+
 // Register Multipart
 fastify.register(multipart, {
   limits: {
-    fileSize: 50 * 1024 * 1024, // 10MB
+    fileSize: multipartFileSizeBytes,
   }
 });
 
