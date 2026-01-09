@@ -741,7 +741,7 @@ export function ChatPage() {
               {isLoading ? (
                 <Button 
                   onClick={handleStop}
-                  className="h-9 w-9 rounded-full bg-red-600 p-0 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:scale-95"
+                  className="h-9 w-9 shrink-0 rounded-full bg-red-600 p-0 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:scale-95"
                   title="停止生成"
                 >
                   <Square className="h-4 w-4 fill-current" />
@@ -751,7 +751,7 @@ export function ChatPage() {
                   onClick={handleSend} 
                   disabled={!inputValue.trim() && uploadedFiles.length === 0}
                   className={cn(
-                    "h-9 w-9 rounded-full p-0 transition-all",
+                    "h-9 w-9 shrink-0 rounded-full p-0 transition-all",
                     !inputValue.trim() && uploadedFiles.length === 0
                       ? "bg-slate-200 text-slate-400"
                       : "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95"
