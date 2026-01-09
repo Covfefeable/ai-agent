@@ -34,7 +34,7 @@ export interface UploadResponse {
 }
 
 export const chatApi = {
-  getConversations: (last_id?: string, limit: number = 20) => {
+  getConversations: (last_id?: string, limit: number = 30) => {
     return http.get<unknown, { data: Conversation[], has_more: boolean, limit: number }>('/chat/conversations', {
       params: { last_id, limit }
     });

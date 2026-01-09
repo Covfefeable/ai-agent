@@ -550,7 +550,7 @@ export function ChatPage() {
                     </div>
                   )}
                   <div className={cn(
-                    "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm",
+                    "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm overflow-hidden",
                     msg.role === 'user' 
                       ? "bg-slate-900 text-white rounded-tr-none" 
                       : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
