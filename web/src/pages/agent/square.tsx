@@ -6,6 +6,7 @@ import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Pagination } from '@/components/ui/pagination';
 
 export function AgentsSquarePage() {
@@ -139,12 +140,16 @@ export function AgentsSquarePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {ag.multiplier > 1 && (
-                        <span 
-                          className="rounded bg-orange-100 px-2 py-0.5 text-orange-600 cursor-help"
-                          title={`倍率: ${ag.multiplier}x`}
-                        >
-                          {ag.multiplier}x
-                        </span>
+                        <SimpleTooltip
+                          trigger={
+                            <span 
+                              className="rounded bg-orange-100 px-2 py-0.5 text-orange-600 cursor-help"
+                            >
+                              {ag.multiplier}x
+                            </span>
+                          }
+                          content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
+                        />
                       )}
                       <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
                         {ag.isPublic ? '公开' : '私有'}

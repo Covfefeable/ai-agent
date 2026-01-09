@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, Database, X, History, Plus, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, X, History, Plus, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cn } from '@/lib/utils';
@@ -11,6 +10,9 @@ import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { modelsApi, type Model } from '@/api/models';
 import { HistoryDrawer } from '@/components/HistoryDrawer';
+import { ModelSelector } from '@/components/chat/model-selector';
+import { KnowledgeBaseSelector } from '@/components/chat/knowledge-base-selector';
+import { type Dataset } from '@/api/knowledge';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -51,7 +53,7 @@ export function ChatPage() {
   const [webSearch, setWebSearch] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [knowledgeBases, setKnowledgeBases] = useState<Array<{ id: string; name: string }>>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<Dataset[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
   
@@ -677,70 +679,13 @@ export function ChatPage() {
                 <div className="flex items-center gap-2 border-l border-slate-200 pl-4 relative flex-wrap">
                   {/* Model Selector */}
                   <div className="relative">
-                    <Popover open={showModelSelector} onOpenChange={setShowModelSelector}>
-                      <PopoverTrigger asChild>
-                        <button
-                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all"
-                          title="选择模型"
-                        >
-                          {(() => {
-                            const current = models.find(m => m.modelId === selectedModelId);
-                            return (
-                              <>
-                                {current?.iconUrl ? (
-                                  <img src={current.iconUrl} alt="" className="h-3.5 w-3.5 rounded object-cover" />
-                                ) : (
-                                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                                )}
-                                <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
-                                {current?.multiplier && current.multiplier > 1 && (
-                                  <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600" title={`倍率: ${current.multiplier}`}>
-                                    x{current.multiplier}
-                                  </span>
-                                )}
-                                <ChevronDown className="h-3 w-3 text-slate-400" />
-                              </>
-                            );
-                          })()}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 p-1" align="start" side="top" sideOffset={8}>
-                        <div className="max-h-64 overflow-y-auto space-y-0.5">
-                          {models.map(model => (
-                            <button
-                              key={model.id}
-                              onClick={() => {
-                                setSelectedModelId(model.modelId);
-                                setShowModelSelector(false);
-                              }}
-                              className={cn(
-                                "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
-                                selectedModelId === model.modelId 
-                                  ? "bg-blue-50 text-blue-600" 
-                                  : "text-slate-700 hover:bg-slate-50"
-                              )}
-                            >
-                              {model.iconUrl ? (
-                                <img src={model.iconUrl} alt="" className="h-4 w-4 rounded object-cover" />
-                              ) : (
-                                <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100">
-                                  <Bot className="h-3 w-3 text-slate-500" />
-                                </div>
-                              )}
-                              <span className="truncate flex-1">
-                                {model.name}
-                                {model.multiplier > 1 && (
-                                  <span className="ml-1.5 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600" title={`费率倍数: ${model.multiplier}`}>
-                                    x{model.multiplier}
-                                  </span>
-                                )}
-                              </span>
-                              {selectedModelId === model.modelId && <Check className="h-3 w-3" />}
-                            </button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <ModelSelector
+                      models={models}
+                      selectedModelId={selectedModelId}
+                      onModelSelect={setSelectedModelId}
+                      open={showModelSelector}
+                      onOpenChange={setShowModelSelector}
+                    />
                   </div>
 
                   <button
@@ -758,64 +703,21 @@ export function ChatPage() {
                   </button>
 
                   <div className={cn("relative", mobileToolbarExpanded ? "block" : "hidden md:block")}>
-                    <Popover open={showKbSelector} onOpenChange={setShowKbSelector}>
-                      <PopoverTrigger asChild>
-                        <button
-                          className={cn(
-                            "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-                            selectedKbIds.size > 0
-                              ? "bg-blue-50 text-blue-600 hover:bg-blue-100" 
-                              : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                          )}
-                        >
-                          <Database className={cn("h-3.5 w-3.5", selectedKbIds.size > 0 ? "text-blue-600" : "text-slate-400")} />
-                          知识库
-                          {selectedKbIds.size > 0 && (
-                            <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">
-                              {selectedKbIds.size}
-                            </span>
-                          )}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-2" align="start" side="top" sideOffset={8}>
-                         <div className="mb-2 flex items-center justify-between px-2 pb-2 border-b border-slate-50">
-                            <span className="text-xs font-medium text-slate-500">需要引用的知识库</span>
-                            <button onClick={() => setShowKbSelector(false)} className="text-slate-400 hover:text-slate-600">
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                         </div>
-                         <div className="max-h-48 overflow-y-auto space-y-1">
-                           {knowledgeBases.map(kb => (
-                             <div 
-                               key={kb.id}
-                               className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 cursor-pointer"
-                               onClick={() => {
-                                 const newSet = new Set(selectedKbIds);
-                                 if (newSet.has(kb.id)) {
-                                   newSet.delete(kb.id);
-                                 } else {
-                                   newSet.add(kb.id);
-                                 }
-                                 setSelectedKbIds(newSet);
-                               }}
-                             >
-                               <div className={cn(
-                                 "flex h-4 w-4 items-center justify-center rounded border transition-all",
-                                 selectedKbIds.has(kb.id) ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white"
-                               )}>
-                                 {selectedKbIds.has(kb.id) && <Check className="h-3 w-3" />}
-                               </div>
-                               <span className="text-xs text-slate-700 truncate">{kb.name}</span>
-                             </div>
-                           ))}
-                           {knowledgeBases.length === 0 && (
-                             <div className="px-2 py-4 text-center text-xs text-slate-400">
-                               暂无知识库
-                             </div>
-                           )}
-                         </div>
-                      </PopoverContent>
-                    </Popover>
+                    <KnowledgeBaseSelector
+                      knowledgeBases={knowledgeBases}
+                      selectedKbIds={selectedKbIds}
+                      onKbSelect={(kbId) => {
+                        const newSet = new Set(selectedKbIds);
+                        if (newSet.has(kbId)) {
+                          newSet.delete(kbId);
+                        } else {
+                          newSet.add(kbId);
+                        }
+                        setSelectedKbIds(newSet);
+                      }}
+                      open={showKbSelector}
+                      onOpenChange={setShowKbSelector}
+                    />
                   </div>
 
                   <button

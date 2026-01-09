@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EditSegmentModal } from '@/components/knowledge/edit-segment-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 export function DocumentDetailPage() {
   const { datasetId, documentId } = useParams<{ datasetId: string; documentId: string }>();
@@ -125,8 +126,11 @@ export function DocumentDetailPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
-                    {segment.content}
+                  <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+                    <MarkdownRenderer 
+                      content={segment.content} 
+                      className="prose prose-sm max-w-none prose-slate prose-pre:bg-slate-200 prose-pre:text-slate-900"
+                    />
                   </div>
 
                   {segment.keywords && segment.keywords.length > 0 && (

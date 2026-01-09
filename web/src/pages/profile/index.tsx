@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, Lock, Camera, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Pagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
@@ -155,7 +156,7 @@ export function ProfilePage() {
                   onChange={handleFileChange}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-3">
                   {isEditingName ? (
                     <div className="flex items-center gap-2">
@@ -177,12 +178,19 @@ export function ProfilePage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 group/name">
-                      <h1 className="text-2xl font-bold text-slate-900">{user.name || '未命名用户'}</h1>
+                    <div className="flex items-center gap-2 group/name min-w-0">
+                      <SimpleTooltip 
+                        trigger={
+                          <h1 className="text-2xl font-bold text-slate-900 truncate cursor-default max-w-full">
+                            {user.name || '未命名用户'}
+                          </h1>
+                        }
+                        content={<p>{user.name || '未命名用户'}</p>}
+                      />
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-6 w-6 hidden group-hover/name:inline-flex text-slate-400 hover:text-slate-600"
+                        className="h-6 w-6 shrink-0 text-slate-400 hover:text-slate-600"
                         onClick={handleStartEditName}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -191,7 +199,7 @@ export function ProfilePage() {
                   )}
                   
                   {!isEditingName && (
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 ${
                       user.role === 'owner' ? 'bg-purple-100 text-purple-800' :
                       user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
                       'bg-slate-100 text-slate-800'
