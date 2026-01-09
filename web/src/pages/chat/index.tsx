@@ -392,24 +392,32 @@ export function ChatPage() {
           }
         },
         onmessage: (msg) => {
+          let data;
           try {
-            const data = JSON.parse(msg.data);
-            if (data.event === 'message') {
-              if (data.task_id && !currentTaskId) {
-                setCurrentTaskId(data.task_id);
-              }
-              if (data.conversation_id && !conversationId) {
-                setConversationId(data.conversation_id);
-              }
-              currentResponse += data.answer;
-              setMessages(prev => prev.map(m => 
-                m.id === assistantMessageId 
-                  ? { ...m, content: currentResponse, originalId: data.message_id || data.id, taskId: data.task_id }
-                  : m
-              ));
+            data = JSON.parse(msg.data);
+          } catch {
+            return;
+          }
+
+          if (data.event === 'message') {
+            if (data.task_id && !currentTaskId) {
+              setCurrentTaskId(data.task_id);
             }
-          } catch (error) {
-            console.error('Error processing message:', error);
+            if (data.conversation_id && !conversationId) {
+              setConversationId(data.conversation_id);
+            }
+            currentResponse += data.answer;
+            setMessages(prev => prev.map(m => 
+              m.id === assistantMessageId 
+                ? { ...m, content: currentResponse, originalId: data.message_id || data.id, taskId: data.task_id }
+                : m
+            ));
+          } else if (data.event === 'workflow_finished') {
+            if (data.data?.status === 'failed') {
+              throw new Error(data.data.error || '执行失败');
+            }
+          } else if (data.event === 'error') {
+            throw new Error(data.message || '请求错误');
           }
         },
         onerror(err) {
@@ -425,7 +433,7 @@ export function ChatPage() {
         toast.error(errorMessage);
         setMessages(prev => prev.map(m => 
           m.id === assistantMessageId 
-            ? { ...m, content: m.content + `\n\n**[Error: ${errorMessage}]**` }
+            ? { ...m, content: (m.content || '') + `\n\n(错误: ${errorMessage})` }
             : m
         ));
       }
@@ -532,7 +540,7 @@ export function ChatPage() {
                   msg.role === 'user' ? "items-end" : "items-start"
                 )}>
                   {msg.files && msg.files.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className={cn("flex flex-wrap gap-2", msg.role === 'user' && "order-last")}>
                       {msg.files.map(f => (
                         <div key={f.id} className="group relative flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-100">
                           <FileIcon className="h-4 w-4 text-slate-400" />

@@ -29,7 +29,12 @@ export function AgentChatPage() {
   const isFromSquare = location.pathname.startsWith('/agents-square');
   const urlConversationId = searchParams.get('conversation_id');
   
-  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ 
+    id: string; 
+    role: 'user' | 'assistant'; 
+    content: string;
+    files?: Array<{ id: string; name: string; type: string }>;
+  }>>([]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [formItems, setFormItems] = useState<FormItem[]>([]);
@@ -393,10 +398,17 @@ export function AgentChatPage() {
     if ((!inputValue.trim() && uploadedFiles.length === 0) || !id || streaming) return;
     setShouldAutoScroll(true);
     const query = inputValue.trim();
-    const userMessage = { id: Date.now().toString(), role: 'user' as const, content: query };
+    const currentFiles = [...uploadedFiles];
+    const userMessage = { 
+      id: Date.now().toString(), 
+      role: 'user' as const, 
+      content: query,
+      files: currentFiles.length > 0 ? currentFiles : undefined
+    };
     const assistantId = `assistant-${Date.now()}`;
     setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '' }]);
     setInputValue('');
+    setUploadedFiles([]);
     const token = localStorage.getItem('token') || '';
     const controller = new AbortController();
     abortRef.current = controller;
@@ -452,29 +464,46 @@ export function AgentChatPage() {
           }
         },
         onmessage: (msg) => {
+          let data;
           try {
-            const data = JSON.parse(msg.data);
-            if (data.event === 'message') {
-              if (data.conversation_id && !conversationId) {
-                setConversationId(data.conversation_id);
-              }
-              const answerChunk = data.answer || '';
-              setMessages(prev => prev.map(m => 
-                m.id === assistantId 
-                  ? { ...m, content: (m.content || '') + answerChunk }
-                  : m
-              ));
-            }
+            data = JSON.parse(msg.data);
           } catch {
-            // 忽略解析错误
+            return;
+          }
+
+          if (data.event === 'message') {
+            if (data.conversation_id && !conversationId) {
+              setConversationId(data.conversation_id);
+            }
+            const answerChunk = data.answer || '';
+            setMessages(prev => prev.map(m => 
+              m.id === assistantId 
+                ? { ...m, content: (m.content || '') + answerChunk }
+                : m
+            ));
+          } else if (data.event === 'workflow_finished') {
+            if (data.data?.status === 'failed') {
+              throw new Error(data.data.error || '执行失败');
+            }
+          } else if (data.event === 'error') {
+            throw new Error(data.message || '请求错误');
           }
         },
         onerror(err) {
           throw err;
         }
       });
-    } catch {
-      toast.error('发送消息失败，请重试');
+    } catch (err: unknown) {
+      let errorMessage = '发送消息失败，请重试';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      toast.error(errorMessage);
+      setMessages(prev => prev.map(m => 
+        m.id === assistantId 
+          ? { ...m, content: (m.content || '') + `\n\n(错误: ${errorMessage})` }
+          : m
+      ));
     } finally {
       setStreaming(false);
       abortRef.current = null;
@@ -656,11 +685,21 @@ export function AgentChatPage() {
                     )}
                     <div className={cn(
                       "flex max-w-[85%] flex-col gap-3",
-                      msg.role === 'user' ? "items-end" : "items-start"
-                    )}>
-                      <div className={cn(
-                        "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm",
-                        msg.role === 'user' 
+                  msg.role === 'user' ? "items-end" : "items-start"
+                )}>
+                  {msg.files && msg.files.length > 0 && (
+                    <div className={cn("flex flex-wrap gap-2", msg.role === 'user' && "order-last")}>
+                      {msg.files.map(f => (
+                        <div key={f.id} className="group relative flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-100">
+                          <FileIcon className="h-4 w-4 text-slate-400" />
+                          {f.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className={cn(
+                    "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm",
+                    msg.role === 'user' 
                           ? "bg-slate-900 text-white rounded-tr-none" 
                           : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
                       )}>
