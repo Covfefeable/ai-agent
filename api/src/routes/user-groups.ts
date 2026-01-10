@@ -230,4 +230,49 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       reply.status(500).send({ message: 'Internal Server Error' });
     }
   });
+
+  // Batch update users in group (add and remove)
+  fastify.put('/:id/users', async (request: any, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const schema = z.object({
+        add: z.array(z.string().uuid()).default([]),
+        remove: z.array(z.string().uuid()).default([]),
+      });
+      const { add, remove } = schema.parse(request.body);
+
+      if (add.length === 0 && remove.length === 0) {
+        return { message: 'No changes' };
+      }
+
+      await db.transaction(async (tx) => {
+        if (remove.length > 0) {
+          await tx.delete(userGroupMembers)
+            .where(and(
+              eq(userGroupMembers.groupId, id),
+              inArray(userGroupMembers.userId, remove)
+            ));
+        }
+
+        if (add.length > 0) {
+           const values = add.map(userId => ({
+            userId,
+            groupId: id,
+          }));
+          await tx.insert(userGroupMembers)
+            .values(values)
+            .onConflictDoNothing()
+            .execute();
+        }
+      });
+
+      return { message: 'Group users updated successfully' };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+      }
+      console.error('Update Group Users Error:', error);
+      reply.status(500).send({ message: 'Internal Server Error' });
+    }
+  });
 }

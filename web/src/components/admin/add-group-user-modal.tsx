@@ -20,7 +20,8 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [addedUserIds, setAddedUserIds] = useState<Set<string>>(new Set());
+  const [removedUserIds, setRemovedUserIds] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const pageSize = 10;
 
@@ -43,7 +44,8 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
       setPage(1);
       setKeyword('');
       setDebouncedKeyword('');
-      setSelectedUserIds(new Set());
+      setAddedUserIds(new Set());
+      setRemovedUserIds(new Set());
     }
   }, [isOpen]);
 
@@ -65,42 +67,78 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
     // No-op, handled by debounce
   };
 
-  const toggleSelect = (userId: string) => {
-    const newSet = new Set(selectedUserIds);
-    if (newSet.has(userId)) {
-      newSet.delete(userId);
-    } else {
-      newSet.add(userId);
+  const isUserChecked = (user: GroupUser) => {
+    if (user.isMember) {
+      return !removedUserIds.has(user.id);
     }
-    setSelectedUserIds(newSet);
+    return addedUserIds.has(user.id);
+  };
+
+  const toggleSelect = (user: GroupUser) => {
+    if (user.isMember) {
+      const newRemoved = new Set(removedUserIds);
+      if (newRemoved.has(user.id)) {
+        newRemoved.delete(user.id); // Re-check (cancel removal)
+      } else {
+        newRemoved.add(user.id); // Uncheck (mark for removal)
+      }
+      setRemovedUserIds(newRemoved);
+    } else {
+      const newAdded = new Set(addedUserIds);
+      if (newAdded.has(user.id)) {
+        newAdded.delete(user.id); // Uncheck (cancel addition)
+      } else {
+        newAdded.add(user.id); // Check (mark for addition)
+      }
+      setAddedUserIds(newAdded);
+    }
   };
 
   const toggleSelectAll = () => {
-    const newSet = new Set(selectedUserIds);
-    const availableUsers = users.filter(user => !user.isMember);
-    const allSelected = availableUsers.every(user => newSet.has(user.id));
+    const allSelected = users.every(user => isUserChecked(user));
+    
+    const newAdded = new Set(addedUserIds);
+    const newRemoved = new Set(removedUserIds);
 
     if (allSelected) {
-      availableUsers.forEach(user => newSet.delete(user.id));
+      // Uncheck all on current page
+      users.forEach(user => {
+        if (user.isMember) {
+          newRemoved.add(user.id);
+        } else {
+          newAdded.delete(user.id);
+        }
+      });
     } else {
-      availableUsers.forEach(user => newSet.add(user.id));
+      // Check all on current page
+      users.forEach(user => {
+        if (user.isMember) {
+          newRemoved.delete(user.id);
+        } else {
+          newAdded.add(user.id);
+        }
+      });
     }
-    setSelectedUserIds(newSet);
+    setAddedUserIds(newAdded);
+    setRemovedUserIds(newRemoved);
   };
 
-  const isAllSelected = users.length > 0 && users.filter(user => !user.isMember).every(user => selectedUserIds.has(user.id));
+  const isAllSelected = users.length > 0 && users.every(user => isUserChecked(user));
 
   const handleSubmit = async () => {
-    if (selectedUserIds.size === 0) return;
+    if (addedUserIds.size === 0 && removedUserIds.size === 0) return;
     setSubmitting(true);
     try {
-      await userGroupsApi.addUsers(groupId, Array.from(selectedUserIds));
-      toast.success('添加用户成功');
+      await userGroupsApi.updateUsers(groupId, {
+        add: Array.from(addedUserIds),
+        remove: Array.from(removedUserIds),
+      });
+      toast.success('保存成功');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Add users error', error);
-      toast.error('添加用户失败');
+      console.error('Save users error', error);
+      toast.error('保存失败');
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +184,6 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      disabled={users.every(user => user.isMember)}
                       className="h-4 w-4 rounded border-slate-300 accent-black disabled:opacity-50"
                     />
                   </th>
@@ -162,9 +199,8 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        checked={selectedUserIds.has(user.id)}
-                        onChange={() => toggleSelect(user.id)}
-                        disabled={user.isMember}
+                        checked={isUserChecked(user)}
+                        onChange={() => toggleSelect(user)}
                         className="h-4 w-4 rounded border-slate-300 accent-black disabled:opacity-50"
                       />
                     </td>
@@ -223,9 +259,9 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
               />
             <div className="flex gap-2">
                 <Button variant="outline" onClick={onClose} disabled={submitting}>取消</Button>
-                <Button onClick={handleSubmit} disabled={submitting || selectedUserIds.size === 0}>
+                <Button onClick={handleSubmit} disabled={submitting || (addedUserIds.size === 0 && removedUserIds.size === 0)}>
                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    确定添加 ({selectedUserIds.size})
+                    保存
                 </Button>
             </div>
         </div>

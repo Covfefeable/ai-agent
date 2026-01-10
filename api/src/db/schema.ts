@@ -73,9 +73,19 @@ export const models = pgTable('models', {
   enabled: boolean('enabled').notNull().default(true),
   iconUrl: text('icon_url'),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
+  visibility: text('visibility').notNull().default('public'), // 'public', 'selected_groups'
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const modelUserGroups = pgTable('model_user_groups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  modelId: uuid('model_id').references(() => models.id, { onDelete: 'cascade' }).notNull(),
+  groupId: uuid('group_id').references(() => userGroups.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => ({
+  uniqueModelGroup: unique().on(t.modelId, t.groupId),
+}));
 
 export const userUsage = pgTable('user_usage', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
-import { models } from '../db/schema';
-import { eq, desc, ilike, or, and, sql, asc } from 'drizzle-orm';
+import { models, modelUserGroups, userGroupMembers } from '../db/schema';
+import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
 export async function modelsRoutes(fastify: FastifyInstance) {
@@ -12,12 +12,51 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       const pageNum = Number(page);
       const limitNum = Number(limit);
       const offset = (pageNum - 1) * limitNum;
+      const user = request.user;
 
       const conditions = [];
 
       if (keyword) {
         const k = `%${keyword}%`;
         conditions.push(or(ilike(models.name, k), ilike(models.modelId, k)));
+      }
+
+      // Visibility filter for non-admin users
+      if (!['owner', 'admin'].includes(user.role)) {
+        // Get user's groups
+        const userGroupsList = await db
+          .select({ groupId: userGroupMembers.groupId })
+          .from(userGroupMembers)
+          .where(eq(userGroupMembers.userId, user.id));
+        
+        const groupIds = userGroupsList.map(g => g.groupId);
+
+        // Filter: public OR (selected_groups AND model_id IN (allowed_models))
+        // Since we can't easily do subqueries in complex ORs with Drizzle sometimes, 
+        // let's fetch allowed private models first if user has groups.
+        
+        let allowedModelIds: string[] = [];
+        if (groupIds.length > 0) {
+          const allowed = await db
+            .select({ modelId: modelUserGroups.modelId })
+            .from(modelUserGroups)
+            .where(inArray(modelUserGroups.groupId, groupIds));
+          allowedModelIds = allowed.map(m => m.modelId);
+        }
+
+        if (allowedModelIds.length > 0) {
+           conditions.push(
+            or(
+              eq(models.visibility, 'public'),
+              and(
+                eq(models.visibility, 'selected_groups'),
+                inArray(models.id, allowedModelIds)
+              )
+            )
+          );
+        } else {
+          conditions.push(eq(models.visibility, 'public'));
+        }
       }
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -37,8 +76,24 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         .limit(limitNum)
         .offset(offset);
 
+      // If user is admin/owner, fetch associated groups for each model
+      // Or maybe just fetch for all to be consistent, but hide if not needed.
+      // Ideally, we return groupIds for the UI to show.
+      
+      const listWithGroups = await Promise.all(list.map(async (model) => {
+        let groupIds: string[] = [];
+        if (model.visibility === 'selected_groups') {
+           const groups = await db
+             .select({ groupId: modelUserGroups.groupId })
+             .from(modelUserGroups)
+             .where(eq(modelUserGroups.modelId, model.id));
+           groupIds = groups.map(g => g.groupId);
+        }
+        return { ...model, groupIds };
+      }));
+
       return { 
-        data: list,
+        data: listWithGroups,
         total,
         page: pageNum,
         limit: limitNum
@@ -81,6 +136,8 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         enabled: z.boolean().optional().default(true),
         iconUrl: z.string().optional(),
         multiplier: z.number().min(0).default(1.0),
+        visibility: z.enum(['public', 'selected_groups']).default('public'),
+        groupIds: z.array(z.string()).optional(),
       });
 
       const data = bodySchema.parse(request.body);
@@ -98,7 +155,17 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         enabled: data.enabled,
         iconUrl: data.iconUrl || null,
         multiplier: data.multiplier,
+        visibility: data.visibility,
       }).returning();
+
+      if (data.visibility === 'selected_groups' && data.groupIds && data.groupIds.length > 0) {
+        await db.insert(modelUserGroups).values(
+          data.groupIds.map(groupId => ({
+            modelId: created.id,
+            groupId,
+          }))
+        );
+      }
 
       return { data: created };
     } catch (error: any) {
@@ -126,6 +193,8 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         enabled: z.boolean().optional(),
         iconUrl: z.string().optional(),
         multiplier: z.number().min(0).optional(),
+        visibility: z.enum(['public', 'selected_groups']).optional(),
+        groupIds: z.array(z.string()).optional(),
       });
 
       const data = bodySchema.parse(request.body);
@@ -142,13 +211,37 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Prepare update data, excluding groupIds
+      const { groupIds, ...updateData } = data;
+
       const [updated] = await db.update(models)
         .set({
-          ...data,
+          ...updateData,
           updatedAt: new Date(),
         })
         .where(eq(models.id, id))
         .returning();
+
+      // Handle group relations if visibility or groupIds provided
+      if (data.visibility !== undefined || data.groupIds !== undefined) {
+        const newVisibility = data.visibility ?? existing.visibility;
+        
+        // Always clear existing relations first if we are updating groups or switching to public
+        if (newVisibility === 'public') {
+           await db.delete(modelUserGroups).where(eq(modelUserGroups.modelId, id));
+        } else if (newVisibility === 'selected_groups' && data.groupIds) {
+           // Replace groups
+           await db.delete(modelUserGroups).where(eq(modelUserGroups.modelId, id));
+           if (data.groupIds.length > 0) {
+             await db.insert(modelUserGroups).values(
+               data.groupIds.map(groupId => ({
+                 modelId: id,
+                 groupId,
+               }))
+             );
+           }
+        }
+      }
 
       return { data: updated };
     } catch (error: any) {

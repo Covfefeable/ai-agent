@@ -43,4 +43,7 @@ export const userGroupsApi = {
   addUsers: (id: string, userIds: string[]) => {
     return http.post(`/user-groups/${id}/users`, { userIds });
   },
+  updateUsers: (id: string, params: { add: string[]; remove: string[] }) => {
+    return http.put(`/user-groups/${id}/users`, params);
+  },
 };
