@@ -156,7 +156,7 @@ export function AgentsPage() {
                         ? (categories.find(c => c.id === it.categoryId)?.name || '-')
                         : '-'}
                     </td>
-                    <td className="px-6 py-4">{it.multiplier || 1.0}</td>
+                    <td className="px-6 py-4">{it.multiplier ?? 1.0}</td>
                     <td className="px-6 py-4">{it.isPublic ? '公开' : '私有'}</td>
                     <td className="px-6 py-4 text-slate-600">
                       {it.createdAt ? format(new Date(it.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
@@ -170,7 +170,7 @@ export function AgentsPage() {
                           setFormBaseUrl('');
                           setFormIsPublic(!!it.isPublic);
                           setFormCategoryId(it.categoryId || '');
-                          setFormMultiplier(it.multiplier || 1.0);
+                          setFormMultiplier(it.multiplier ?? 1.0);
                           setIsFetchingDetail(true);
                           setModalOpen(true);
                           try {
@@ -179,7 +179,7 @@ export function AgentsPage() {
                             setFormBaseUrl(res.data.baseUrl || '');
                             setFormIsPublic(!!res.data.isPublic);
                             setFormCategoryId(res.data.categoryId || '');
-                            setFormMultiplier(res.data.multiplier || 1.0);
+                            setFormMultiplier(res.data.multiplier ?? 1.0);
                           } catch {
                             toast.error('获取智能体详情失败');
                           } finally {

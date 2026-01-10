@@ -15,7 +15,7 @@ const modelSchema = z.object({
   sort: z.coerce.number().default(0),
   enabled: z.boolean().default(true),
   iconUrl: z.string().min(1, '请上传模型Logo'),
-  multiplier: z.coerce.number().min(1, '倍率最小为 1').default(1.0),
+  multiplier: z.coerce.number().min(0, '倍率最小为 0').default(1.0),
 });
 
 type ModelFormValues = z.infer<typeof modelSchema>;
@@ -67,7 +67,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
         sort: initialData.sort,
         enabled: initialData.enabled,
         iconUrl: initialData.iconUrl || '',
-        multiplier: initialData.multiplier || 1.0,
+        multiplier: initialData.multiplier ?? 1.0,
       });
     } else if (isOpen) {
       reset({
@@ -186,9 +186,9 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                   id="multiplier"
                   type="number"
                   step="0.1"
-                  min="1"
+                  min="0"
                   {...register('multiplier')}
-                  placeholder="最小为 1"
+                  placeholder="最小为 0"
                   disabled={isSubmitting}
                 />
                 {errors.multiplier && (

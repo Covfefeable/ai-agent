@@ -424,7 +424,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
-        multiplier: z.number().min(1).optional(),
+        multiplier: z.number().min(0).optional(),
       });
       const { apiKey, baseUrl: inputBaseUrl, isPublic, categoryId, multiplier } = bodySchema.parse(request.body);
 
@@ -461,7 +461,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         iconUrl: iconBase64 || iconUrl || null,
         isPublic: !!isPublic,
         categoryId: catId,
-        multiplier: multiplier || 1.0,
+        multiplier: multiplier ?? 1.0,
       }).returning();
 
       return { data: created };
@@ -528,7 +528,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         baseUrl: z.string().optional(),
         isPublic: z.boolean().optional(),
         categoryId: z.string().uuid().optional(),
-        multiplier: z.number().min(1).optional(),
+        multiplier: z.number().min(0).optional(),
       });
       const parsed = bodySchema.safeParse(request.body || {});
       const inputApiKey = parsed.success ? parsed.data.apiKey : undefined;
@@ -564,7 +564,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (inputApiKey) {
         updateFields.apiKey = inputApiKey;
       }
-      if (inputMultiplier) {
+      if (inputMultiplier !== undefined) {
         updateFields.multiplier = inputMultiplier;
       }
       if (inputBaseUrl !== undefined) {

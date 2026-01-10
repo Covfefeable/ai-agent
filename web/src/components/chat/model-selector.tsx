@@ -34,15 +34,21 @@ export function ModelSelector({
             <Sparkles className="h-3.5 w-3.5 text-blue-600" />
           )}
           <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
-          {current?.multiplier && current.multiplier > 1 && (
-            <SimpleTooltip
-              trigger={
-                <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
-                  {current.multiplier}x
-                </span>
-              }
-              content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
-            />
+          {current?.multiplier !== undefined && (
+            current.multiplier <= 0 ? (
+              <span className="rounded bg-green-100 px-1 text-[10px] font-bold text-green-600">
+                Free
+              </span>
+            ) : current.multiplier > 1 ? (
+              <SimpleTooltip
+                trigger={
+                  <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
+                    {current.multiplier}x
+                  </span>
+                }
+                content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
+              />
+            ) : null
           )}
           <ChevronDown className="h-3 w-3 text-slate-400" />
         </button>
@@ -72,7 +78,11 @@ export function ModelSelector({
               )}
               <span className="truncate flex-1">
                 {model.name}
-                {model.multiplier > 1 && (
+                {model.multiplier <= 0 ? (
+                  <span className="ml-1.5 inline-flex items-center rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-600">
+                    Free
+                  </span>
+                ) : model.multiplier > 1 ? (
                   <SimpleTooltip
                     trigger={
                       <span className="ml-1.5 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
@@ -81,7 +91,7 @@ export function ModelSelector({
                     }
                     content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
                   />
-                )}
+                ) : null}
               </span>
               {selectedModelId === model.modelId && <Check className="h-3 w-3" />}
             </button>

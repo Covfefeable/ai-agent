@@ -32,7 +32,7 @@ interface ChatMessage {
   feedback?: {
     rating: 'like' | 'dislike' | null;
   };
-  files?: Array<{ id: string; name: string; type: string }>;
+  files?: Array<{ id: string; name: string; type: string; url?: string }>;
 }
 
 export function AgentChatPage() {
@@ -208,7 +208,7 @@ export function AgentChatPage() {
           content: item.query,
           files: (item.message_files || [])
             .filter(f => f.belongs_to === 'user')
-            .map(f => ({ id: f.id, name: f.name, type: f.type }))
+            .map(f => ({ id: f.id, name: f.name || f.filename || 'Unknown File', type: f.type, url: f.url }))
         });
         if (item.answer) {
           formattedMessages.push({
@@ -219,7 +219,7 @@ export function AgentChatPage() {
             feedback: { rating: item.feedback?.rating ?? null },
             files: (item.message_files || [])
               .filter(f => f.belongs_to === 'assistant')
-              .map(f => ({ id: f.id, name: f.name, type: f.type }))
+              .map(f => ({ id: f.id, name: f.name || f.filename || 'Unknown File', type: f.type, url: f.url }))
           });
         }
       });

@@ -79,7 +79,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
       const data = list.map(item => ({
         ...item,
         agentName: item.source === 'super_agent' ? 'Super Agent' : (agentMap[item.source] || '未知智能体'),
-        calculatedTotalTokens: Math.ceil((item.totalTokens || 0) * (item.multiplier || 1.0)),
+        calculatedTotalTokens: Math.ceil((item.totalTokens || 0) * (item.multiplier ?? 1.0)),
       }));
 
       return {

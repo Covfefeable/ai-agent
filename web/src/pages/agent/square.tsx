@@ -139,7 +139,7 @@ export function AgentsSquarePage() {
                       <span>{format(new Date(ag.createdAt), 'yyyy-MM-dd')}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {ag.multiplier > 1 && (
+                      {ag.multiplier > 1 ? (
                         <SimpleTooltip
                           trigger={
                             <span 
@@ -150,7 +150,13 @@ export function AgentsSquarePage() {
                           }
                           content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
                         />
-                      )}
+                      ) : ag.multiplier <= 0 ? (
+                        <span 
+                          className="rounded bg-green-100 px-2 py-0.5 text-green-600"
+                        >
+                          Free
+                        </span>
+                      ) : null}
                       <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
                         {ag.isPublic ? '公开' : '私有'}
                       </span>

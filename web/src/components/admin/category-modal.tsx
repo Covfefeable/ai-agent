@@ -98,7 +98,7 @@ export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }:
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sort">排序 (数字越小越靠前)</Label>
+              <Label htmlFor="sort">排序</Label>
               <Input
                 id="sort"
                 type="number"

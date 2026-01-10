@@ -31,6 +31,7 @@ interface Message {
     id: string;
     name: string;
     type: string;
+    url?: string;
   }>;
 }
 
@@ -198,7 +199,7 @@ export function ChatPage() {
            originalId: item.id,
            role: 'user',
            content: item.query,
-           files: item.message_files?.filter((f) => f.belongs_to === 'user').map((f) => ({ id: f.id, name: f.name, type: f.type }))
+           files: item.message_files?.filter((f) => f.belongs_to === 'user').map((f) => ({ id: f.id, name: f.name || f.filename || 'Unknown File', type: f.type, url: f.url }))
          });
          if (item.answer) {
            formattedMessages.push({
@@ -207,7 +208,7 @@ export function ChatPage() {
              role: 'assistant',
              content: item.answer,
              feedback: item.feedback,
-             files: item.message_files?.filter((f) => f.belongs_to === 'assistant').map((f) => ({ id: f.id, name: f.name, type: f.type }))
+             files: item.message_files?.filter((f) => f.belongs_to === 'assistant').map((f) => ({ id: f.id, name: f.name || f.filename || 'Unknown File', type: f.type, url: f.url }))
            });
          }
        });

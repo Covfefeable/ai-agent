@@ -16,7 +16,7 @@ const agentSchema = z.object({
   baseUrl: z.string().optional(),
   isPublic: z.boolean().default(false),
   categoryId: z.string().optional(),
-  multiplier: z.coerce.number().min(1, '倍率最小为 1'),
+  multiplier: z.coerce.number().min(0, '倍率最小为 0'),
 });
 
 type AgentFormValues = z.infer<typeof agentSchema>;
@@ -63,7 +63,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         baseUrl: initialData.baseUrl || '',
         isPublic: !!initialData.isPublic,
         categoryId: initialData.categoryId || '',
-        multiplier: initialData.multiplier || 1.0,
+        multiplier: initialData.multiplier ?? 1.0,
       });
     } else if (isOpen) {
       reset({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '', multiplier: 1.0 });
@@ -181,8 +181,8 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                   id="multiplier"
                   type="number"
                   step="0.1"
-                  min="1"
-                  placeholder="最小为 1"
+                  min="0"
+                  placeholder="最小为 0"
                   disabled={isSubmitting}
                   {...register('multiplier')}
                 />

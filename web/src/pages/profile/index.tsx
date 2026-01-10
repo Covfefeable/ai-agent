@@ -248,7 +248,7 @@ export function ProfilePage() {
                       {item.totalTokens}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-900">
-                      {item.calculatedTotalTokens || item.totalTokens}
+                      {item.calculatedTotalTokens ?? item.totalTokens}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {Number(item.latency).toFixed(2)}s

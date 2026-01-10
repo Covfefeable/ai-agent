@@ -18,7 +18,9 @@ export interface Message {
   message_files?: Array<{
     id: string;
     name: string;
+    filename?: string;
     type: string;
+    url?: string;
     belongs_to: 'user' | 'assistant';
   }>;
 }
