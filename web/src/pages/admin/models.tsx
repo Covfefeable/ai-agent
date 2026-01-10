@@ -7,6 +7,7 @@ import { ModelModal } from '@/components/admin/model-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 export function ModelsList({ className }: { className?: string }) {
@@ -112,7 +113,7 @@ export function ModelsList({ className }: { className?: string }) {
                   <th className="px-6 py-4 font-medium">模型ID</th>
                   <th className="px-6 py-4 font-medium">倍率</th>
                   <th className="px-6 py-4 font-medium">排序</th>
-                  <th className="px-6 py-4 font-medium">可见性</th>
+                  <th className="px-6 py-4 font-medium">可见范围</th>
                   <th className="px-6 py-4 font-medium">是否启用</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
                 </tr>
@@ -133,11 +134,26 @@ export function ModelsList({ className }: { className?: string }) {
                     <td className="px-6 py-4 text-slate-600">{it.sort}</td>
                     <td className="px-6 py-4">
                       {it.visibility === 'public' ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">公开</span>
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">公开</span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700">
-                          指定用户组 {it.groupIds?.length ? `(${it.groupIds.length})` : ''}
-                        </span>
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 cursor-default">
+                                指定用户组 ({it.groups ? it.groups.split(',').length : 0})
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[300px]">
+                              <div className="flex flex-wrap gap-1">
+                                {it.groups?.split(',').map((group, idx) => (
+                                  <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                    {group}
+                                  </span>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </td>
                     <td className="px-6 py-4">

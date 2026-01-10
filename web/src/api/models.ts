@@ -10,6 +10,7 @@ export interface Model {
   multiplier: number;
   visibility: 'public' | 'selected_groups';
   groupIds?: string[];
+  groups?: string;
   createdAt: string;
   updatedAt: string;
 }

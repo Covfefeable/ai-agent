@@ -63,9 +63,6 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
     }
   };
 
-  const handleSearch = () => {
-    // No-op, handled by debounce
-  };
 
   const isUserChecked = (user: GroupUser) => {
     if (user.isMember) {
@@ -149,7 +146,7 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-4xl flex flex-col max-h-[85vh] rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-4xl flex flex-col h-[600px] rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b p-6 pb-4">
           <h3 className="text-lg font-bold text-slate-900">添加用户</h3>
           <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">

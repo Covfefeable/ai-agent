@@ -50,11 +50,20 @@ export const agents = pgTable('agents', {
   apiKey: text('api_key').notNull(),
   baseUrl: text('base_url'),
   iconUrl: text('icon_url'),
-  isPublic: boolean('is_public').notNull().default(false),
+  visibility: text('visibility').notNull().default('public'), // 'public', 'selected_groups', 'private'
   categoryId: uuid('category_id').references(() => categories.id),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const agentUserGroups = pgTable('agent_user_groups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'cascade' }).notNull(),
+  groupId: uuid('group_id').references(() => userGroups.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => ({
+  uniqueAgentGroup: unique().on(t.agentId, t.groupId),
+}));
 
 export const userFavoriteAgents = pgTable('user_favorite_agents', {
   id: uuid('id').defaultRandom().primaryKey(),

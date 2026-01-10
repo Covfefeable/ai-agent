@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { db } from '../db';
-import { agents, categories, users } from '../db/schema';
-import { eq, desc, ilike, or, and, sql } from 'drizzle-orm';
+import { agents, categories, users, agentUserGroups, userGroupMembers, userGroups } from '../db/schema';
+import { eq, desc, ilike, or, and, sql, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { createUsageLogStream } from '../lib/usage';
 
@@ -17,6 +17,26 @@ async function fetchImageAsBase64(url: string | null): Promise<string | null> {
     console.error(`Failed to fetch icon image from ${url}:`, error);
     return null;
   }
+}
+
+async function verifyAgentAccess(agent: any, userId: string, userRole: string) {
+  if (['owner', 'admin'].includes(userRole)) return true;
+  if (agent.userId === userId) return true;
+  if (agent.visibility === 'public') return true;
+
+  if (agent.visibility === 'selected_groups') {
+    const [match] = await db.select({ id: agentUserGroups.id })
+      .from(agentUserGroups)
+      .innerJoin(userGroupMembers, eq(agentUserGroups.groupId, userGroupMembers.groupId))
+      .where(and(
+        eq(agentUserGroups.agentId, agent.id),
+        eq(userGroupMembers.userId, userId)
+      ))
+      .limit(1);
+    return !!match;
+  }
+  
+  return false;
 }
 
 export async function agentsRoutes(fastify: FastifyInstance) {
@@ -57,9 +77,9 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         title: agents.title,
         description: agents.description,
         iconUrl: agents.iconUrl,
-        isPublic: agents.isPublic,
         categoryId: agents.categoryId,
         multiplier: agents.multiplier,
+        visibility: agents.visibility,
         createdAt: agents.createdAt,
       })
       .from(agents)
@@ -68,8 +88,34 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       .limit(limitNum)
       .offset(offset);
 
+      // Fetch groups for selected_groups agents
+      const agentIds = list.map(a => a.id);
+      const agentGroupsMap: Record<string, string[]> = {};
+      
+      if (agentIds.length > 0) {
+        const groups = await db.select({
+          agentId: agentUserGroups.agentId,
+          groupName: userGroups.name
+        })
+        .from(agentUserGroups)
+        .innerJoin(userGroups, eq(agentUserGroups.groupId, userGroups.id))
+        .where(inArray(agentUserGroups.agentId, agentIds));
+
+        groups.forEach(g => {
+            if (!agentGroupsMap[g.agentId]) {
+                agentGroupsMap[g.agentId] = [];
+            }
+            agentGroupsMap[g.agentId].push(g.groupName);
+        });
+      }
+
+      const listWithGroups = list.map(item => ({
+        ...item,
+        groups: agentGroupsMap[item.id]?.join(',') || undefined
+      }));
+
       return { 
-        data: list,
+        data: listWithGroups,
         total,
         page: pageNum,
         limit: limitNum
@@ -92,9 +138,22 @@ export async function agentsRoutes(fastify: FastifyInstance) {
 
       const conditions = [];
 
-      // Access control: Admin/Owner see all, others see public OR own
+      // Access control: Admin/Owner see all, others see public OR own OR visible via group
       if (!['owner', 'admin'].includes(userRole)) {
-        conditions.push(or(eq(agents.isPublic, true), eq(agents.userId, userId)));
+        const userGroupsSubquery = db
+          .select({ id: agentUserGroups.agentId })
+          .from(agentUserGroups)
+          .innerJoin(userGroupMembers, eq(agentUserGroups.groupId, userGroupMembers.groupId))
+          .where(eq(userGroupMembers.userId, userId));
+
+        conditions.push(or(
+          eq(agents.userId, userId),
+          eq(agents.visibility, 'public'),
+          and(
+            eq(agents.visibility, 'selected_groups'),
+            inArray(agents.id, userGroupsSubquery)
+          )
+        ));
       }
 
       if (keyword) {
@@ -121,7 +180,6 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         title: agents.title,
         description: agents.description,
         iconUrl: agents.iconUrl,
-        isPublic: agents.isPublic,
         categoryId: agents.categoryId,
         multiplier: agents.multiplier,
         createdAt: agents.createdAt,
@@ -151,7 +209,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
@@ -180,7 +238,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ message: 'Not Found' });
       }
       
-      if (!row.isPublic && row.userId !== request.user.id && request.user.role !== 'admin' && request.user.role !== 'owner') {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
 
@@ -214,7 +272,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
 
@@ -281,7 +339,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
@@ -313,7 +371,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
@@ -353,7 +411,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
 
@@ -388,7 +446,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      if (!row.isPublic) {
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
         return reply.status(403).send({ message: 'Forbidden' });
       }
       const data = await request.file();
@@ -422,11 +480,30 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const bodySchema = z.object({
         apiKey: z.string().min(1),
         baseUrl: z.string().optional(),
-        isPublic: z.boolean().optional(),
+        visibility: z.enum(['public', 'private', 'selected_groups']).optional(),
+        groupIds: z.array(z.string().uuid()).optional(),
         categoryId: z.string().uuid().optional(),
         multiplier: z.number().min(0).optional(),
       });
-      const { apiKey, baseUrl: inputBaseUrl, isPublic, categoryId, multiplier } = bodySchema.parse(request.body);
+      const parsed = bodySchema.parse(request.body);
+      const { apiKey, baseUrl: inputBaseUrl, categoryId, multiplier, groupIds } = parsed;
+      
+      let visibility = parsed.visibility;
+      if (!visibility) visibility = 'public'; // Default
+
+      // Validate visibility and groups
+      if (visibility === 'selected_groups') {
+        if (!groupIds || groupIds.length === 0) {
+           return reply.status(400).send({ message: '请选择可见用户组' });
+        }
+        if (userRole === 'member') {
+           // Check membership
+           const members = await db.select().from(userGroupMembers).where(and(eq(userGroupMembers.userId, userId), inArray(userGroupMembers.groupId, groupIds)));
+           if (members.length !== groupIds.length) {
+              return reply.status(403).send({ message: '您只能选择自己加入的用户组' });
+           }
+        }
+      }
 
       const baseUrl = inputBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.get(`${baseUrl}/site`, {
@@ -459,10 +536,19 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         apiKey,
         baseUrl: inputBaseUrl || null,
         iconUrl: iconBase64 || iconUrl || null,
-        isPublic: !!isPublic,
+        visibility,
         categoryId: catId,
         multiplier: multiplier ?? 1.0,
       }).returning();
+
+      if (visibility === 'selected_groups' && groupIds && groupIds.length > 0) {
+        await db.insert(agentUserGroups).values(
+          groupIds.map(groupId => ({
+            agentId: created.id,
+            groupId
+          }))
+        );
+      }
 
       return { data: created };
     } catch (error: any) {
@@ -506,13 +592,19 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ message: 'Not Found' });
       }
 
-      if (!['owner', 'admin'].includes(userRole)) {
-        if (row.userId !== request.user.id) {
-           return reply.status(403).send({ message: 'Forbidden' });
-        }
+      if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
+        return reply.status(403).send({ message: 'Forbidden' });
       }
 
-      return { data: row };
+      let groupIds: string[] = [];
+      if (row.visibility === 'selected_groups') {
+         const groups = await db.select({ groupId: agentUserGroups.groupId })
+           .from(agentUserGroups)
+           .where(eq(agentUserGroups.agentId, row.id));
+         groupIds = groups.map(g => g.groupId);
+      }
+
+      return { data: { ...row, groupIds } };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent detail error');
       reply.status(500).send({ message: 'Internal Server Error' });
@@ -526,16 +618,15 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const bodySchema = z.object({
         apiKey: z.string().min(1).optional(),
         baseUrl: z.string().optional(),
-        isPublic: z.boolean().optional(),
+        visibility: z.enum(['public', 'private', 'selected_groups']).optional(),
+        groupIds: z.array(z.string().uuid()).optional(),
         categoryId: z.string().uuid().optional(),
         multiplier: z.number().min(0).optional(),
       });
       const parsed = bodySchema.safeParse(request.body || {});
-      const inputApiKey = parsed.success ? parsed.data.apiKey : undefined;
-      const inputBaseUrl = parsed.success ? parsed.data.baseUrl : undefined;
-      const inputIsPublic = parsed.success ? parsed.data.isPublic : undefined;
-      const inputCategoryId = parsed.success ? parsed.data.categoryId : undefined;
-      const inputMultiplier = parsed.success ? parsed.data.multiplier : undefined;
+      if (!parsed.success) return reply.status(400).send({ message: 'Invalid input', errors: parsed.error });
+
+      const { apiKey: inputApiKey, baseUrl: inputBaseUrl, categoryId: inputCategoryId, multiplier: inputMultiplier, visibility: inputVisibility, groupIds: inputGroupIds } = parsed.data;
 
       let targetApiKey = inputApiKey;
       let targetBaseUrl = inputBaseUrl;
@@ -552,6 +643,20 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Determine new visibility
+      let newVisibility = inputVisibility;
+
+      if (newVisibility === 'selected_groups' && (!inputGroupIds && record.visibility !== 'selected_groups')) {
+         return reply.status(400).send({ message: '请选择可见用户组' });
+      }
+
+      if (inputGroupIds && userRole === 'member') {
+         const members = await db.select().from(userGroupMembers).where(and(eq(userGroupMembers.userId, request.user.id), inArray(userGroupMembers.groupId, inputGroupIds)));
+         if (members.length !== inputGroupIds.length) {
+            return reply.status(403).send({ message: '您只能选择自己加入的用户组' });
+         }
+      }
+
       if (!targetApiKey) {
         targetApiKey = record.apiKey;
       }
@@ -559,7 +664,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         targetBaseUrl = record.baseUrl || undefined;
       }
 
-      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; isPublic: boolean; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number }> = {};
+      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; visibility: string; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number }> = {};
       
       if (inputApiKey) {
         updateFields.apiKey = inputApiKey;
@@ -570,8 +675,8 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       if (inputBaseUrl !== undefined) {
         updateFields.baseUrl = inputBaseUrl || null;
       }
-      if (typeof inputIsPublic === 'boolean') {
-        updateFields.isPublic = inputIsPublic;
+      if (newVisibility) {
+        updateFields.visibility = newVisibility;
       }
       if (typeof inputCategoryId === 'string') {
         if (inputCategoryId) {
@@ -612,6 +717,16 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         .set(updateFields)
         .where(eq(agents.id, id))
         .returning();
+
+      if (inputGroupIds) {
+        await db.transaction(async (tx) => {
+           await tx.delete(agentUserGroups).where(eq(agentUserGroups.agentId, id));
+           if (inputGroupIds.length > 0) {
+             await tx.insert(agentUserGroups).values(inputGroupIds.map(gid => ({ agentId: id, groupId: gid })));
+           }
+        });
+      }
+
       return { data: updated };
     } catch (error: any) {
       fastify.log.error({ error }, 'Update agent error');

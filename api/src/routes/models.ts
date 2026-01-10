@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
-import { models, modelUserGroups, userGroupMembers } from '../db/schema';
+import { models, modelUserGroups, userGroupMembers, userGroups } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -76,20 +76,40 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         .limit(limitNum)
         .offset(offset);
 
-      // If user is admin/owner, fetch associated groups for each model
-      // Or maybe just fetch for all to be consistent, but hide if not needed.
-      // Ideally, we return groupIds for the UI to show.
-      
-      const listWithGroups = await Promise.all(list.map(async (model) => {
-        let groupIds: string[] = [];
-        if (model.visibility === 'selected_groups') {
-           const groups = await db
-             .select({ groupId: modelUserGroups.groupId })
-             .from(modelUserGroups)
-             .where(eq(modelUserGroups.modelId, model.id));
-           groupIds = groups.map(g => g.groupId);
-        }
-        return { ...model, groupIds };
+      // Fetch groups for selected_groups models
+      const modelIds = list.map(m => m.id);
+      const modelGroupsMap: Record<string, string[]> = {};
+      const modelGroupIdsMap: Record<string, string[]> = {};
+
+      if (modelIds.length > 0) {
+        const groups = await db.select({
+          modelId: modelUserGroups.modelId,
+          groupId: modelUserGroups.groupId,
+          groupName: userGroups.name
+        })
+        .from(modelUserGroups)
+        .innerJoin(userGroups, eq(modelUserGroups.groupId, userGroups.id))
+        .where(inArray(modelUserGroups.modelId, modelIds));
+
+        groups.forEach(g => {
+            // Map names
+            if (!modelGroupsMap[g.modelId]) {
+                modelGroupsMap[g.modelId] = [];
+            }
+            modelGroupsMap[g.modelId].push(g.groupName);
+
+            // Map IDs (for existing logic compatibility if needed)
+            if (!modelGroupIdsMap[g.modelId]) {
+                modelGroupIdsMap[g.modelId] = [];
+            }
+            modelGroupIdsMap[g.modelId].push(g.groupId);
+        });
+      }
+
+      const listWithGroups = list.map(model => ({
+        ...model,
+        groupIds: modelGroupIdsMap[model.id] || [],
+        groups: modelGroupsMap[model.id]?.join(',') || undefined
       }));
 
       return { 
@@ -114,7 +134,15 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ message: 'Not Found' });
       }
 
-      return { data: row };
+      let groupIds: string[] = [];
+      if (row.visibility === 'selected_groups') {
+        const groups = await db.select({ groupId: modelUserGroups.groupId })
+          .from(modelUserGroups)
+          .where(eq(modelUserGroups.modelId, row.id));
+        groupIds = groups.map(g => g.groupId);
+      }
+
+      return { data: { ...row, groupIds } };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get model detail error');
       reply.status(500).send({ message: 'Internal Server Error' });

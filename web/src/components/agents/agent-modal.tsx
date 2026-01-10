@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Loader2, Check, Search } from 'lucide-react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,12 +9,15 @@ import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import type { AgentCategory } from '@/api/agentCategories';
 import { agentsApi } from '@/api/agents';
+import { userGroupsApi, type UserGroup } from '@/api/user-groups';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const agentSchema = z.object({
   apiKey: z.string().min(1, '请输入 API Key'),
   baseUrl: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  visibility: z.enum(['public', 'private', 'selected_groups']).default('public'),
+  groupIds: z.array(z.string()).optional(),
   categoryId: z.string().optional(),
   multiplier: z.coerce.number().min(0, '倍率最小为 0'),
 });
@@ -32,43 +35,83 @@ interface AgentModalProps {
     id?: string;
     apiKey?: string;
     baseUrl?: string;
-    isPublic?: boolean;
+    visibility?: 'public' | 'private' | 'selected_groups';
+    groupIds?: string[];
     categoryId?: string | null;
     multiplier?: number;
   };
 }
 
 export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData, isLoading }: AgentModalProps) {
+  const [availableGroups, setAvailableGroups] = useState<UserGroup[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupSearch, setGroupSearch] = useState('');
+  const [debouncedGroupSearch, setDebouncedGroupSearch] = useState('');
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AgentFormValues>({
     resolver: zodResolver(agentSchema) as unknown as Resolver<AgentFormValues>,
     defaultValues: {
       apiKey: '',
       baseUrl: '',
-      isPublic: false,
+      visibility: 'public',
+      groupIds: [],
       categoryId: '',
       multiplier: 1.0,
     },
   });
+
+  const visibility = watch('visibility');
+  const selectedGroupIds = watch('groupIds') || [];
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedGroupSearch(groupSearch);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [groupSearch]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLoadingGroups(true);
+      userGroupsApi.list(1, 100, debouncedGroupSearch)
+        .then(res => setAvailableGroups(res.data))
+        .catch(() => toast.error('获取用户组列表失败'))
+        .finally(() => setLoadingGroups(false));
+    }
+  }, [isOpen, debouncedGroupSearch]);
 
   useEffect(() => {
     if (isOpen && initialData) {
       reset({
         apiKey: initialData.apiKey || '',
         baseUrl: initialData.baseUrl || '',
-        isPublic: !!initialData.isPublic,
+        visibility: initialData.visibility || 'public',
+        groupIds: initialData.groupIds || [],
         categoryId: initialData.categoryId || '',
         multiplier: initialData.multiplier ?? 1.0,
       });
     } else if (isOpen) {
-      reset({ apiKey: '', baseUrl: '', isPublic: false, categoryId: '', multiplier: 1.0 });
+      reset({ apiKey: '', baseUrl: '', visibility: 'public', groupIds: [], categoryId: '', multiplier: 1.0 });
     }
   }, [isOpen, initialData, reset]);
+
+  const toggleGroup = (groupId: string) => {
+    const current = selectedGroupIds;
+    if (current.includes(groupId)) {
+      setValue('groupIds', current.filter(id => id !== groupId));
+    } else {
+      setValue('groupIds', [...current, groupId]);
+    }
+  };
 
   const onSubmit = async (data: AgentFormValues) => {
     try {
@@ -76,7 +119,8 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         await agentsApi.create({
           apiKey: data.apiKey,
           baseUrl: data.baseUrl,
-          isPublic: data.isPublic,
+          visibility: data.visibility,
+          groupIds: data.groupIds,
           categoryId: data.categoryId || undefined,
           multiplier: data.multiplier,
         });
@@ -85,7 +129,8 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
         const id = initialData?.id;
         if (!id) return;
         await agentsApi.update(id, {
-          isPublic: data.isPublic,
+          visibility: data.visibility,
+          groupIds: data.groupIds,
           baseUrl: data.baseUrl,
           categoryId: data.categoryId || null,
           multiplier: data.multiplier,
@@ -105,8 +150,8 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-6 flex items-center justify-between">
+      <div className="relative w-full max-w-md flex flex-col h-[600px] rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-4 border-b">
           <h3 className="text-lg font-bold text-slate-900">
             {mode === 'create' ? '新建智能体' : '编辑智能体'}
           </h3>
@@ -115,13 +160,93 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {isLoading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-            </div>
-          ) : (
-            <div className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+              <div className="space-y-3">
+                <Label>可见范围</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="public"
+                      {...register('visibility')}
+                      className="h-4 w-4 border-slate-300 accent-black"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm text-slate-700">公开</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="private"
+                      {...register('visibility')}
+                      className="h-4 w-4 border-slate-300 accent-black"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm text-slate-700">私有</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="selected_groups"
+                      {...register('visibility')}
+                      className="h-4 w-4 border-slate-300 accent-black"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm text-slate-700">指定用户组</span>
+                  </label>
+                </div>
+
+                {visibility === 'selected_groups' && (
+                  <div className="mt-2 rounded-lg border border-slate-200 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="text-xs font-medium text-slate-500">选择用户组</div>
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          value={groupSearch}
+                          onChange={(e) => setGroupSearch(e.target.value)}
+                          placeholder="搜索用户组..."
+                          className="h-7 w-40 rounded-md border border-slate-200 bg-slate-50 pl-7 pr-2 text-xs outline-none focus:border-black focus:ring-1 focus:ring-black"
+                        />
+                      </div>
+                    </div>
+                    {loadingGroups ? (
+                      <div className="py-4 text-center text-sm text-slate-400">加载中...</div>
+                    ) : availableGroups.length === 0 ? (
+                      <div className="py-4 text-center text-sm text-slate-400">暂无用户组</div>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {availableGroups.map(group => (
+                          <div
+                            key={group.id}
+                            onClick={() => toggleGroup(group.id)}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-slate-50"
+                          >
+                            <div className={cn(
+                              "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                              selectedGroupIds.includes(group.id)
+                                ? "border-black bg-black text-white"
+                                : "border-slate-300 bg-white"
+                            )}>
+                              {selectedGroupIds.includes(group.id) && <Check className="h-3 w-3" />}
+                            </div>
+                            <span className="text-sm text-slate-700">{group.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="baseUrl">API Base URL <span className="text-xs text-slate-400 font-normal ml-1">（选填）</span></Label>
                 <Input
@@ -191,22 +316,12 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="isPublic" className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    id="isPublic"
-                    type="checkbox"
-                    className="h-4 w-4 rounded-sm border border-slate-300 accent-black"
-                    disabled={isSubmitting}
-                    {...register('isPublic')}
-                  />
-                  <span className="text-sm text-slate-700">是否公开</span>
-                </label>
-              </div>
+
             </div>
           )}
+          </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="p-6 border-t bg-white flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               取消
             </Button>

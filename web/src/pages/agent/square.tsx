@@ -158,7 +158,7 @@ export function AgentsSquarePage() {
                         </span>
                       ) : null}
                       <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">
-                        {ag.isPublic ? '公开' : '私有'}
+                        {ag.visibility === 'public' ? '公开' : ag.visibility === 'private' ? '私有' : '指定用户组'}
                       </span>
                     </div>
                   </div>

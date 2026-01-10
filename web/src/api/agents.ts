@@ -7,10 +7,11 @@ export interface Agent {
   description: string | null;
   iconUrl: string | null;
   baseUrl: string | null;
-  isPublic: boolean;
+  visibility: 'public' | 'private' | 'selected_groups';
   categoryId?: string | null;
   multiplier: number;
   createdAt: string;
+  groups?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -32,7 +33,7 @@ export const agentsApi = {
     });
   },
   get: (id: string) => {
-    return http.get<unknown, { data: Agent & { apiKey: string } }>(`/agents/${id}`);
+    return http.get<unknown, { data: Agent & { apiKey: string; groupIds?: string[] } }>(`/agents/${id}`);
   },
   parameters: (id: string) => {
     return http.get<unknown, {
@@ -85,10 +86,10 @@ export const agentsApi = {
       },
     });
   },
-  create: (params: { apiKey: string; baseUrl?: string; isPublic?: boolean; categoryId?: string; multiplier?: number }) => {
+  create: (params: { apiKey: string; baseUrl?: string; visibility?: 'public' | 'private' | 'selected_groups'; groupIds?: string[]; categoryId?: string; multiplier?: number }) => {
     return http.post('/agents', params);
   },
-  update: (id: string, params?: { apiKey?: string; baseUrl?: string; isPublic?: boolean; categoryId?: string | null; multiplier?: number }) => {
+  update: (id: string, params?: { apiKey?: string; baseUrl?: string; visibility?: 'public' | 'private' | 'selected_groups'; groupIds?: string[]; categoryId?: string | null; multiplier?: number }) => {
     return http.patch(`/agents/${id}`, params || {});
   },
   remove: (id: string) => {

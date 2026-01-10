@@ -9,6 +9,7 @@ import { AgentModal } from '@/components/agents/agent-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AgentsPage() {
   const getErrMsg = (e: unknown, fallback: string) => {
@@ -35,7 +36,8 @@ export function AgentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formApiKey, setFormApiKey] = useState('');
   const [formBaseUrl, setFormBaseUrl] = useState('');
-  const [formIsPublic, setFormIsPublic] = useState(false);
+  const [formVisibility, setFormVisibility] = useState<'public' | 'private' | 'selected_groups'>('public');
+  const [formGroupIds, setFormGroupIds] = useState<string[]>([]);
   const [formCategoryId, setFormCategoryId] = useState<string | ''>('');
   const [formMultiplier, setFormMultiplier] = useState(1.0);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
@@ -105,7 +107,8 @@ export function AgentsPage() {
             setEditingId(null);
             setFormApiKey('');
             setFormBaseUrl('');
-            setFormIsPublic(false);
+            setFormVisibility('public');
+            setFormGroupIds([]);
             setFormCategoryId('');
             setFormMultiplier(1.0);
             setModalOpen(true);
@@ -134,7 +137,7 @@ export function AgentsPage() {
                   <th className="px-6 py-4 font-medium">图标</th>
                   <th className="px-6 py-4 font-medium">分类</th>
                   <th className="px-6 py-4 font-medium">倍率</th>
-                  <th className="px-6 py-4 font-medium">是否公开</th>
+                  <th className="px-6 py-4 font-medium">可见范围</th>
                   <th className="px-6 py-4 font-medium">创建时间</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
                 </tr>
@@ -157,7 +160,32 @@ export function AgentsPage() {
                         : '-'}
                     </td>
                     <td className="px-6 py-4">{it.multiplier ?? 1.0}</td>
-                    <td className="px-6 py-4">{it.isPublic ? '公开' : '私有'}</td>
+                    <td className="px-6 py-4">
+                      {it.visibility === 'public' ? (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">公开</span>
+                      ) : it.visibility === 'private' ? (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">私有</span>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 cursor-default">
+                                指定用户组 ({it.groups ? it.groups.split(',').length : 0})
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[300px]">
+                              <div className="flex flex-wrap gap-1">
+                                {it.groups?.split(',').map((group, idx) => (
+                                  <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                    {group}
+                                  </span>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-slate-600">
                       {it.createdAt ? format(new Date(it.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                     </td>
@@ -168,7 +196,8 @@ export function AgentsPage() {
                           setEditingId(it.id);
                           setFormApiKey('');
                           setFormBaseUrl('');
-                          setFormIsPublic(!!it.isPublic);
+                          setFormVisibility(it.visibility);
+                          setFormGroupIds([]);
                           setFormCategoryId(it.categoryId || '');
                           setFormMultiplier(it.multiplier ?? 1.0);
                           setIsFetchingDetail(true);
@@ -177,9 +206,10 @@ export function AgentsPage() {
                             const res = await agentsApi.get(it.id);
                             setFormApiKey(res.data.apiKey || '');
                             setFormBaseUrl(res.data.baseUrl || '');
-                            setFormIsPublic(!!res.data.isPublic);
+                            setFormVisibility(res.data.visibility);
                             setFormCategoryId(res.data.categoryId || '');
                             setFormMultiplier(res.data.multiplier ?? 1.0);
+                            if (res.data.groupIds) setFormGroupIds(res.data.groupIds);
                           } catch {
                             toast.error('获取智能体详情失败');
                           } finally {
@@ -221,7 +251,7 @@ export function AgentsPage() {
         isOpen={modalOpen}
         mode={modalMode}
         categories={categories}
-        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, isPublic: formIsPublic, categoryId: formCategoryId || '', multiplier: formMultiplier } : undefined}
+        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, visibility: formVisibility, groupIds: formGroupIds, categoryId: formCategoryId || '', multiplier: formMultiplier } : undefined}
         onClose={() => { setModalOpen(false); setEditingId(null); }}
         onSuccess={fetchData}
         isLoading={isFetchingDetail}
