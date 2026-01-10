@@ -247,7 +247,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       <>
         <div
           ref={containerRef}
-          className={cn("[&_img]:cursor-zoom-in", className)}
+          className={cn("[&_img]:cursor-zoom-in [&_img]:max-h-[600px] [&_img]:w-auto", className)}
           dangerouslySetInnerHTML={{ __html: marked(parts[0].content || '') as string }}
         />
         <ImagePreview
@@ -261,7 +261,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
 
   return (
     <>
-      <div ref={containerRef} className={cn("[&_img]:cursor-zoom-in", className)}>
+      <div ref={containerRef} className={cn("[&_img]:cursor-zoom-in [&_img]:max-h-[600px] [&_img]:w-auto", className)}>
         {parts.map((part, index) => {
           if (part.type === 'think') {
             return <ThinkBlock key={index} content={part.content} />;
