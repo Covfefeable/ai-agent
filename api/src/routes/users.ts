@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '../db';
-import { users, userUsage, agents } from '../db/schema';
+import { users, userUsage, agents, userGroupMembers, userGroups } from '../db/schema';
 import { eq, desc, not, ilike, or, sql, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -207,6 +207,12 @@ export async function usersRoutes(fastify: FastifyInstance) {
         role: users.role,
         balance: users.balance,
         createdAt: users.createdAt,
+        groups: sql<string>`(
+          SELECT string_agg(ug.name, ',')
+          FROM ${userGroupMembers} ugm
+          JOIN ${userGroups} ug ON ug.id = ugm.group_id
+          WHERE ugm.user_id = "users"."id"
+        )`.as('groups'),
       })
       .from(users)
       .$dynamic();

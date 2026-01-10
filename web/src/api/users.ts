@@ -9,6 +9,7 @@ export interface User {
   balance?: number;
   avatar?: string;
   createdAt: string;
+  groups?: string;
 }
 
 export const usersApi = {

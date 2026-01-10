@@ -7,6 +7,8 @@ import { Pagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { RechargeModal } from '@/components/admin/recharge-modal';
 import { format } from 'date-fns';
+import { UserGroupsDisplay } from '@/components/admin/user-groups-display';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 
 export function UsersList({ className }: { className?: string }) {
   const [users, setUsers] = useState<User[]>([]);
@@ -118,7 +120,8 @@ export function UsersList({ className }: { className?: string }) {
                       <th className="px-6 py-4 font-medium">用户</th>
                       <th className="px-6 py-4 font-medium">邮箱</th>
                       <th className="px-6 py-4 font-medium">角色</th>
-                      <th className="px-6 py-4 font-medium">余额</th>
+                <th className="px-6 py-4 font-medium">用户组</th>
+                <th className="px-6 py-4 font-medium">余额</th>
                       <th className="px-6 py-4 font-medium">注册时间</th>
                       <th className="px-6 py-4 font-medium text-right">操作</th>
                     </tr>
@@ -126,9 +129,22 @@ export function UsersList({ className }: { className?: string }) {
                   <tbody className="divide-y divide-slate-100">
                     {users.map((user) => (
                       <tr key={user.id} className="hover:bg-slate-50/50">
-                        <td className="px-6 py-4 font-medium text-slate-900">{user.name}</td>
+                        <td className="px-6 py-4 font-medium text-slate-900">
+                          <SimpleTooltip
+                            delayDuration={300}
+                            trigger={
+                              <div className="max-w-[150px] truncate cursor-default">
+                                {user.name}
+                              </div>
+                            }
+                            content={user.name}
+                          />
+                        </td>
                         <td className="px-6 py-4 text-slate-600">{user.email}</td>
                         <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
+                        <td className="px-6 py-4">
+                          <UserGroupsDisplay groups={user.groups} />
+                        </td>
                         <td className="px-6 py-4 text-slate-600">
                           {['owner', 'admin'].includes(user.role) ? '∞' : user.balance?.toLocaleString()}
                         </td>

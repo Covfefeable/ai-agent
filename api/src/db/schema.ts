@@ -11,6 +11,21 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const userGroups = pgTable('user_groups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const userGroupMembers = pgTable('user_group_members', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  groupId: uuid('group_id').references(() => userGroups.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => ({
+  uniqueUserGroup: unique().on(t.userId, t.groupId),
+}));
+
 export const datasets = pgTable('datasets', {
   id: uuid('id').defaultRandom().primaryKey(),
   difyId: text('dify_id').notNull(), // Dify 返回的 dataset id
