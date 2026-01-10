@@ -7,6 +7,7 @@ import { users } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const INITIAL_BALANCE = parseInt(process.env.INITIAL_BALANCE || '100000', 10);
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -44,6 +45,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         email,
         password: hashedPassword,
         role,
+        balance: INITIAL_BALANCE,
       }).returning({ id: users.id, name: users.name, email: users.email, role: users.role, balance: users.balance, avatar: users.avatar });
 
       // Generate token
