@@ -182,6 +182,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         iconUrl: agents.iconUrl,
         categoryId: agents.categoryId,
         multiplier: agents.multiplier,
+        visibility: agents.visibility,
         createdAt: agents.createdAt,
       })
       .from(agents)

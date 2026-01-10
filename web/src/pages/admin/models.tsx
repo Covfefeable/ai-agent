@@ -135,6 +135,8 @@ export function ModelsList({ className }: { className?: string }) {
                     <td className="px-6 py-4">
                       {it.visibility === 'public' ? (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">公开</span>
+                      ) : it.visibility === 'private' ? (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">私有</span>
                       ) : (
                         <TooltipProvider>
                           <Tooltip delayDuration={0}>

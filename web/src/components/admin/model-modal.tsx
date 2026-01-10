@@ -18,7 +18,7 @@ const modelSchema = z.object({
   enabled: z.boolean().default(true),
   iconUrl: z.string().min(1, '请上传模型Logo'),
   multiplier: z.coerce.number().min(0, '倍率最小为 0').default(1.0),
-  visibility: z.enum(['public', 'selected_groups']).default('public'),
+  visibility: z.enum(['public', 'private', 'selected_groups']).default('public'),
   groupIds: z.array(z.string()).optional(),
 });
 
@@ -35,7 +35,7 @@ interface ModelModalProps {
     enabled: boolean;
     iconUrl: string | null;
     multiplier: number;
-    visibility?: 'public' | 'selected_groups';
+    visibility?: 'public' | 'private' | 'selected_groups';
     groupIds?: string[];
   };
   onClose: () => void;
@@ -201,6 +201,15 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
                         className="h-4 w-4 border-slate-300 accent-black"
                       />
                       <span className="text-sm text-slate-700">公开</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="private"
+                        {...register('visibility')}
+                        className="h-4 w-4 border-slate-300 accent-black"
+                      />
+                      <span className="text-sm text-slate-700">私有</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input

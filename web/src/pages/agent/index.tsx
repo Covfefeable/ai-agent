@@ -28,18 +28,11 @@ export function AgentsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
-  // const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [categories, setCategories] = useState<AgentCategory[]>([]);
   // 统一弹窗替代原有新增/编辑状态
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formApiKey, setFormApiKey] = useState('');
-  const [formBaseUrl, setFormBaseUrl] = useState('');
-  const [formVisibility, setFormVisibility] = useState<'public' | 'private' | 'selected_groups'>('public');
-  const [formGroupIds, setFormGroupIds] = useState<string[]>([]);
-  const [formCategoryId, setFormCategoryId] = useState<string | ''>('');
-  const [formMultiplier, setFormMultiplier] = useState(1.0);
+  const [editingData, setEditingData] = useState<any>(null);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -104,13 +97,7 @@ export function AgentsPage() {
         <Button
           onClick={() => {
             setModalMode('create');
-            setEditingId(null);
-            setFormApiKey('');
-            setFormBaseUrl('');
-            setFormVisibility('public');
-            setFormGroupIds([]);
-            setFormCategoryId('');
-            setFormMultiplier(1.0);
+            setEditingData(null);
             setModalOpen(true);
           }}
           className="gap-2 px-3 md:px-4"
@@ -193,23 +180,21 @@ export function AgentsPage() {
                       <button
                         onClick={async () => {
                           setModalMode('edit');
-                          setEditingId(it.id);
-                          setFormApiKey('');
-                          setFormBaseUrl('');
-                          setFormVisibility(it.visibility);
-                          setFormGroupIds([]);
-                          setFormCategoryId(it.categoryId || '');
-                          setFormMultiplier(it.multiplier ?? 1.0);
+                          // 先设置列表已有的数据，避免闪烁
+                          setEditingData({
+                            id: it.id,
+                            visibility: it.visibility,
+                            categoryId: it.categoryId,
+                            multiplier: it.multiplier,
+                            apiKey: '',
+                            baseUrl: '',
+                            groupIds: []
+                          });
                           setIsFetchingDetail(true);
                           setModalOpen(true);
                           try {
                             const res = await agentsApi.get(it.id);
-                            setFormApiKey(res.data.apiKey || '');
-                            setFormBaseUrl(res.data.baseUrl || '');
-                            setFormVisibility(res.data.visibility);
-                            setFormCategoryId(res.data.categoryId || '');
-                            setFormMultiplier(res.data.multiplier ?? 1.0);
-                            if (res.data.groupIds) setFormGroupIds(res.data.groupIds);
+                            setEditingData(res.data);
                           } catch {
                             toast.error('获取智能体详情失败');
                           } finally {
@@ -251,8 +236,8 @@ export function AgentsPage() {
         isOpen={modalOpen}
         mode={modalMode}
         categories={categories}
-        initialData={editingId ? { id: editingId, apiKey: formApiKey, baseUrl: formBaseUrl, visibility: formVisibility, groupIds: formGroupIds, categoryId: formCategoryId || '', multiplier: formMultiplier } : undefined}
-        onClose={() => { setModalOpen(false); setEditingId(null); }}
+        initialData={editingData || undefined}
+        onClose={() => { setModalOpen(false); setEditingData(null); }}
         onSuccess={fetchData}
         isLoading={isFetchingDetail}
       />

@@ -128,10 +128,33 @@ export async function modelsRoutes(fastify: FastifyInstance) {
   fastify.get('/:id', async (request: any, reply) => {
     try {
       const id = request.params.id as string;
+      const userRole = request.user.role;
+      const userId = request.user.id;
+
       const [row] = await db.select().from(models).where(eq(models.id, id)).limit(1);
       
       if (!row) {
         return reply.status(404).send({ message: 'Not Found' });
+      }
+
+      // Access control
+      if (!['owner', 'admin'].includes(userRole)) {
+        if (row.visibility === 'private') {
+           return reply.status(403).send({ message: 'Forbidden' });
+        }
+        if (row.visibility === 'selected_groups') {
+           const [match] = await db.select({ id: modelUserGroups.id })
+             .from(modelUserGroups)
+             .innerJoin(userGroupMembers, eq(modelUserGroups.groupId, userGroupMembers.groupId))
+             .where(and(
+               eq(modelUserGroups.modelId, row.id),
+               eq(userGroupMembers.userId, userId)
+             ))
+             .limit(1);
+           if (!match) {
+             return reply.status(403).send({ message: 'Forbidden' });
+           }
+        }
       }
 
       let groupIds: string[] = [];
@@ -221,7 +244,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
         enabled: z.boolean().optional(),
         iconUrl: z.string().optional(),
         multiplier: z.number().min(0).optional(),
-        visibility: z.enum(['public', 'selected_groups']).optional(),
+        visibility: z.enum(['public', 'private', 'selected_groups']).optional(),
         groupIds: z.array(z.string()).optional(),
       });
 
@@ -254,8 +277,8 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       if (data.visibility !== undefined || data.groupIds !== undefined) {
         const newVisibility = data.visibility ?? existing.visibility;
         
-        // Always clear existing relations first if we are updating groups or switching to public
-        if (newVisibility === 'public') {
+        // Always clear existing relations first if we are updating groups or switching to public/private
+        if (newVisibility === 'public' || newVisibility === 'private') {
            await db.delete(modelUserGroups).where(eq(modelUserGroups.modelId, id));
         } else if (newVisibility === 'selected_groups' && data.groupIds) {
            // Replace groups

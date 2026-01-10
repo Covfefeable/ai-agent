@@ -8,7 +8,7 @@ export interface Model {
   enabled: boolean;
   iconUrl: string | null;
   multiplier: number;
-  visibility: 'public' | 'selected_groups';
+  visibility: 'public' | 'private' | 'selected_groups';
   groupIds?: string[];
   groups?: string;
   createdAt: string;
@@ -38,7 +38,7 @@ export const modelsApi = {
     enabled: boolean; 
     iconUrl?: string; 
     multiplier?: number;
-    visibility: 'public' | 'selected_groups';
+    visibility: 'public' | 'private' | 'selected_groups';
     groupIds?: string[];
   }) => {
     return http.post('/models', params);
@@ -50,7 +50,7 @@ export const modelsApi = {
     enabled?: boolean; 
     iconUrl?: string; 
     multiplier?: number;
-    visibility?: 'public' | 'selected_groups';
+    visibility?: 'public' | 'private' | 'selected_groups';
     groupIds?: string[];
   }) => {
     return http.patch(`/models/${id}`, params);
