@@ -17,6 +17,13 @@ const createDatasetSchema = z.object({
   embedding_model_provider: z.string().optional()
 });
 
+const createDocumentByTextSchema = z.object({
+  name: z.string().min(1),
+  text: z.string().min(1),
+  indexing_technique: z.enum(['high_quality', 'economy']).optional().default('high_quality'),
+  doc_form: z.string().optional().default('text_model'),
+});
+
 export async function knowledgeRoutes(fastify: FastifyInstance) {
   // Create dataset
   fastify.post('/datasets', async (request: any, reply) => {
@@ -367,6 +374,57 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error: any) {
       console.error('Upload Document Error:', error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
+  fastify.post('/datasets/:id/documents/create-by-text', async (request: any, reply) => {
+    try {
+      const { id } = request.params;
+      const userId = request.user.id;
+      const userRole = request.user.role;
+      const body = createDocumentByTextSchema.parse(request.body);
+
+      const conditions = [eq(datasets.id, id)];
+      if (!['owner', 'admin'].includes(userRole)) {
+        conditions.push(eq(datasets.userId, userId));
+      }
+
+      const [dataset] = await db.select()
+        .from(datasets)
+        .where(and(...conditions))
+        .limit(1);
+
+      if (!dataset) {
+        return reply.status(404).send({ message: 'Dataset not found' });
+      }
+
+      const response = await axios.post(
+        `${process.env.DIFY_BASE_URL}/datasets/${dataset.difyId}/document/create-by-text`,
+        {
+          name: body.name,
+          text: body.text,
+          indexing_technique: body.indexing_technique,
+          doc_form: body.doc_form,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.DIFY_KNOWLEDGE_API_KEY}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        reply.status(400).send({ message: 'Validation Error', errors: error.issues });
+        return;
+      }
+
+      console.error('Create Document By Text Error:', error.response?.data || error.message);
       const status = error.response?.status || 500;
       const message = error.response?.data?.message || 'Internal Server Error';
       reply.status(status).send({ message });

@@ -139,6 +139,10 @@ export const knowledgeApi = {
     return http.post<unknown, unknown>(`/knowledge/datasets/${id}/documents/upload`, formData);
   },
 
+  createDocumentByText: (id: string, data: { name: string; text: string }) => {
+    return http.post<unknown, unknown>(`/knowledge/datasets/${id}/documents/create-by-text`, data);
+  },
+
   deleteDocument: (datasetId: string, documentId: string) => {
     return http.delete(`/knowledge/datasets/${datasetId}/documents/${documentId}`);
   },

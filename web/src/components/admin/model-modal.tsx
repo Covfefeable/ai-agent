@@ -5,7 +5,7 @@ import { X, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -48,7 +48,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ModelFormValues>({
-    resolver: zodResolver(modelSchema) as any,
+    resolver: zodResolver(modelSchema) as Resolver<ModelFormValues>,
     defaultValues: {
       name: '',
       modelId: '',

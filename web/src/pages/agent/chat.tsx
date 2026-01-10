@@ -3,6 +3,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { agentsApi } from '@/api/agents';
 import { favoritesApi } from '@/api/favorites';
+import { knowledgeApi, type Dataset } from '@/api/knowledge';
 import { AgentForm, type FormItem, type FormValues } from '@/components/agents/agent-form';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -12,6 +13,8 @@ import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { toast } from 'sonner';
 import { HistoryDrawer } from '@/components/history-drawer';
 import { motion } from 'framer-motion';
+import { SaveToKnowledgeBaseModal } from '@/components/knowledge/save-to-knowledge-base-modal';
+import { MessageActionBar } from '@/components/chat/message-action-bar';
 
 interface Conversation {
   id: string;
@@ -19,6 +22,17 @@ interface Conversation {
   inputs: unknown;
   status: string;
   created_at: number;
+}
+
+interface ChatMessage {
+  id: string;
+  originalId?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  feedback?: {
+    rating: 'like' | 'dislike' | null;
+  };
+  files?: Array<{ id: string; name: string; type: string }>;
 }
 
 export function AgentChatPage() {
@@ -29,12 +43,7 @@ export function AgentChatPage() {
   const isFromSquare = location.pathname.startsWith('/agents-square');
   const urlConversationId = searchParams.get('conversation_id');
   
-  const [messages, setMessages] = useState<Array<{ 
-    id: string; 
-    role: 'user' | 'assistant'; 
-    content: string;
-    files?: Array<{ id: string; name: string; type: string }>;
-  }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [formItems, setFormItems] = useState<FormItem[]>([]);
@@ -76,6 +85,11 @@ export function AgentChatPage() {
   const [lastId, setLastId] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [knowledgeBases, setKnowledgeBases] = useState<Dataset[]>([]);
+  const [saveKbOpen, setSaveKbOpen] = useState(false);
+  const [saveKbText, setSaveKbText] = useState('');
+  const [saveKbDefaultName, setSaveKbDefaultName] = useState('');
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -113,6 +127,18 @@ export function AgentChatPage() {
     fetchConversations();
   }, [id]);
 
+  useEffect(() => {
+    const fetchKbs = async () => {
+      try {
+        const res = await knowledgeApi.getDatasets();
+        setKnowledgeBases(res.data);
+      } catch (error) {
+        console.error('Failed to fetch knowledge bases:', error);
+      }
+    };
+    fetchKbs();
+  }, []);
+
   const confirmDelete = async () => {
     if (!deleteId || !id) return;
 
@@ -134,27 +160,61 @@ export function AgentChatPage() {
     }
   };
 
+  const handleFeedback = async (messageId: string, originalId: string | undefined, rating: 'like' | 'dislike') => {
+    if (!id || !originalId) return;
+
+    let prevRating: 'like' | 'dislike' | null = null;
+    let nextRating: 'like' | 'dislike' | null = null;
+
+    setMessages(prev => prev.map(msg => {
+      if (msg.id !== messageId) return msg;
+      prevRating = msg.feedback?.rating ?? null;
+      nextRating = prevRating === rating ? null : rating;
+      return { ...msg, feedback: { rating: nextRating } };
+    }));
+
+    try {
+      await agentsApi.sendFeedback(id, originalId, nextRating);
+    } catch {
+      setMessages(prev => prev.map(msg => (
+        msg.id === messageId ? { ...msg, feedback: { rating: prevRating } } : msg
+      )));
+      toast.error('反馈失败，请重试');
+      if (conversationId) {
+        loadHistory(conversationId);
+      }
+    }
+  };
+
   const loadHistory = async (convId: string) => {
     if (!id) return;
     try {
       setLoading(true);
       const response = await agentsApi.getMessages(id, convId);
       
-      const formattedMessages: Array<{ id: string; role: 'user' | 'assistant'; content: string }> = [];
-       response.data.forEach((item: { id: string; query: string; answer?: string }) => {
-         formattedMessages.push({
-           id: item.id + '_user',
-           role: 'user',
-           content: item.query,
-         });
-         if (item.answer) {
-           formattedMessages.push({
-             id: item.id + '_assistant',
-             role: 'assistant',
-             content: item.answer,
-           });
-         }
-       });
+      const formattedMessages: ChatMessage[] = [];
+      response.data.forEach((item) => {
+        formattedMessages.push({
+          id: `${item.id}_user`,
+          role: 'user',
+          content: item.query,
+          files: (item.message_files || [])
+            .filter(f => f.belongs_to === 'user')
+            .map(f => ({ id: f.id, name: f.name, type: f.type }))
+        });
+        if (item.answer) {
+          formattedMessages.push({
+            id: `${item.id}_assistant`,
+            originalId: item.id,
+            role: 'assistant',
+            content: item.answer,
+            feedback: { rating: item.feedback?.rating ?? null },
+            files: (item.message_files || [])
+              .filter(f => f.belongs_to === 'assistant')
+              .map(f => ({ id: f.id, name: f.name, type: f.type }))
+          });
+        }
+      });
 
       setMessages(formattedMessages);
     } catch (error) {
@@ -399,14 +459,18 @@ export function AgentChatPage() {
     setShouldAutoScroll(true);
     const query = inputValue.trim();
     const currentFiles = [...uploadedFiles];
-    const userMessage = { 
+    const userMessage: ChatMessage = { 
       id: Date.now().toString(), 
       role: 'user' as const, 
       content: query,
       files: currentFiles.length > 0 ? currentFiles : undefined
     };
     const assistantId = `assistant-${Date.now()}`;
-    setMessages(prev => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '' }]);
+    setMessages(prev => [
+      ...prev,
+      userMessage,
+      { id: assistantId, role: 'assistant', content: '', feedback: { rating: null } }
+    ]);
     setInputValue('');
     setUploadedFiles([]);
     const token = localStorage.getItem('token') || '';
@@ -476,11 +540,16 @@ export function AgentChatPage() {
               setConversationId(data.conversation_id);
             }
             const answerChunk = data.answer || '';
-            setMessages(prev => prev.map(m => 
-              m.id === assistantId 
-                ? { ...m, content: (m.content || '') + answerChunk }
-                : m
-            ));
+            setMessages(prev => prev.map(m => {
+              if (m.id !== assistantId) return m;
+              const nextOriginalId = typeof data.message_id === 'string' ? data.message_id : m.originalId;
+              return {
+                ...m,
+                originalId: nextOriginalId,
+                feedback: m.feedback ?? { rating: null },
+                content: (m.content || '') + answerChunk
+              };
+            }));
           } else if (data.event === 'workflow_finished') {
             if (data.data?.status === 'failed') {
               throw new Error(data.data.error || '执行失败');
@@ -566,14 +635,33 @@ export function AgentChatPage() {
   const removeFile = (id: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
+
+  const handleCopy = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
+
+  const openSaveToKb = (text: string) => {
+    const normalized = text.trim().replace(/\s+/g, ' ');
+    const suggestedName = normalized ? normalized.slice(0, 24) : '';
+    setSaveKbText(text);
+    setSaveKbDefaultName(suggestedName);
+    setSaveKbOpen(true);
+  };
+
+  const closeSaveToKb = () => {
+    setSaveKbOpen(false);
+    setSaveKbText('');
+    setSaveKbDefaultName('');
+  };
   return (
     <motion.div layoutId={`agent-card-${id}`} className="absolute inset-0 flex flex-col bg-white">
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        transition={{ delay: 0.2 }} 
-        className="flex h-full flex-col"
-      >
+      <motion.div className="flex h-full flex-col">
       <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
         <div className="flex items-center gap-3">
           {isFromSquare && (
@@ -684,7 +772,7 @@ export function AgentChatPage() {
                       </div>
                     )}
                     <div className={cn(
-                      "flex max-w-[85%] flex-col gap-3",
+                      "flex max-w-[85%] flex-col gap-3 group/msg",
                   msg.role === 'user' ? "items-end" : "items-start"
                 )}>
                   {msg.files && msg.files.length > 0 && (
@@ -716,10 +804,33 @@ export function AgentChatPage() {
                               <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
                             </div>
                           )
-                        ) : (
+                      ) : (
                           <div className="break-words">{msg.content}</div>
                         )}
                       </div>
+                      {msg.role === 'assistant' && (
+                        <MessageActionBar
+                          className={
+                            msg.feedback?.rating
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover/msg:opacity-100'
+                          }
+                          feedbackRating={msg.feedback?.rating ?? null}
+                          onLike={
+                            msg.originalId
+                              ? () => handleFeedback(msg.id, msg.originalId, 'like')
+                              : undefined
+                          }
+                          onDislike={
+                            msg.originalId
+                              ? () => handleFeedback(msg.id, msg.originalId, 'dislike')
+                              : undefined
+                          }
+                          onCopy={() => handleCopy(msg.content, msg.id)}
+                          copied={copiedMessageId === msg.id}
+                          onSaveToKb={() => openSaveToKb(msg.content)}
+                        />
+                      )}
                     </div>
                   </div>
                 ))
@@ -856,6 +967,14 @@ export function AgentChatPage() {
         description="确定要删除这个会话吗？此操作无法撤销。"
         confirmText="删除"
         variant="destructive"
+      />
+      <SaveToKnowledgeBaseModal
+        isOpen={saveKbOpen}
+        onClose={closeSaveToKb}
+        knowledgeBases={knowledgeBases}
+        text={saveKbText}
+        defaultName={saveKbDefaultName}
+        defaultDatasetId={knowledgeBases[0]?.id || ''}
       />
 
       {/* History Drawer */}

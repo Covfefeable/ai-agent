@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, ThumbsUp, ThumbsDown, Square, Globe, Copy, Check, X, History, Plus, MoreHorizontal } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Square, Globe, X, History, Plus, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
@@ -12,9 +12,11 @@ import { modelsApi, type Model } from '@/api/models';
 import { HistoryDrawer } from '@/components/history-drawer';
 import { ModelSelector } from '@/components/chat/model-selector';
 import { KnowledgeBaseSelector } from '@/components/chat/knowledge-base-selector';
+import { MessageActionBar } from '@/components/chat/message-action-bar';
 import { type Dataset } from '@/api/knowledge';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { SaveToKnowledgeBaseModal } from '@/components/knowledge/save-to-knowledge-base-modal';
 
 interface Message {
   id: string;
@@ -71,6 +73,9 @@ export function ChatPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
+  const [saveKbText, setSaveKbText] = useState('');
+  const [saveKbOpen, setSaveKbOpen] = useState(false);
+  const [saveKbDefaultName, setSaveKbDefaultName] = useState('');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -284,6 +289,20 @@ export function ChatPage() {
     } catch (err) {
       console.error('Failed to copy text:', err);
     }
+  };
+
+  const openSaveToKb = (text: string) => {
+    const normalized = text.trim().replace(/\s+/g, ' ');
+    const suggestedName = normalized ? normalized.slice(0, 24) : '';
+    setSaveKbText(text);
+    setSaveKbDefaultName(suggestedName);
+    setSaveKbOpen(true);
+  };
+
+  const closeSaveToKb = () => {
+    setSaveKbOpen(false);
+    setSaveKbText('');
+    setSaveKbDefaultName('');
   };
 
   const getFileType = (file: File): string => {
@@ -571,44 +590,28 @@ export function ChatPage() {
                       </div>
                     )}
                   </div>
-                  {msg.role === 'assistant' && msg.originalId && (
-                    <div className={cn(
-                      "flex items-center gap-2 px-2 transition-opacity duration-200",
-                      // Show if hovered OR if there is already a rating
-                      msg.feedback?.rating ? "opacity-100" : "opacity-0 group-hover/msg:opacity-100"
-                    )}>
-                      <button
-                        onClick={() => handleFeedback(msg.id, msg.originalId, 'like')}
-                        className={cn(
-                          "flex items-center gap-1 rounded p-1 text-xs transition-colors hover:bg-slate-100",
-                          msg.feedback?.rating === 'like' ? "text-green-600" : "text-slate-400"
-                        )}
-                        title="Like"
-                      >
-                        <ThumbsUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleFeedback(msg.id, msg.originalId, 'dislike')}
-                        className={cn(
-                          "flex items-center gap-1 rounded p-1 text-xs transition-colors hover:bg-slate-100",
-                          msg.feedback?.rating === 'dislike' ? "text-red-600" : "text-slate-400"
-                        )}
-                        title="Dislike"
-                      >
-                        <ThumbsDown className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleCopy(msg.content, msg.id)}
-                        className="flex items-center gap-1 rounded p-1 text-xs text-slate-400 transition-colors hover:bg-slate-100"
-                        title="Copy"
-                      >
-                        {copiedMessageId === msg.id ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
+                  {msg.role === 'assistant' && (
+                    <MessageActionBar
+                      className={
+                        msg.feedback?.rating
+                          ? 'opacity-100'
+                          : 'opacity-0 group-hover/msg:opacity-100'
+                      }
+                      feedbackRating={msg.feedback?.rating ?? null}
+                      onLike={
+                        msg.originalId
+                          ? () => handleFeedback(msg.id, msg.originalId, 'like')
+                          : undefined
+                      }
+                      onDislike={
+                        msg.originalId
+                          ? () => handleFeedback(msg.id, msg.originalId, 'dislike')
+                          : undefined
+                      }
+                      onCopy={() => handleCopy(msg.content, msg.id)}
+                      copied={copiedMessageId === msg.id}
+                      onSaveToKb={() => openSaveToKb(msg.content)}
+                    />
                   )}
                 </div>
               </div>
@@ -775,6 +778,14 @@ export function ChatPage() {
         description="确定要删除这个会话吗？此操作无法撤销。"
         confirmText="删除"
         variant="destructive"
+      />
+      <SaveToKnowledgeBaseModal
+        isOpen={saveKbOpen}
+        onClose={closeSaveToKb}
+        knowledgeBases={knowledgeBases}
+        text={saveKbText}
+        defaultName={saveKbDefaultName}
+        defaultDatasetId={knowledgeBases[0]?.id || ''}
       />
 
       {/* History Drawer */}

@@ -3,7 +3,7 @@ import { X, Loader2, Lock, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { userApi } from '@/api/user';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -30,7 +30,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordFormValues>({
-    resolver: zodResolver(changePasswordSchema) as any,
+    resolver: zodResolver(changePasswordSchema) as Resolver<ChangePasswordFormValues>,
     defaultValues: {
       oldPassword: '',
       newPassword: '',
@@ -56,9 +56,11 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
       });
       toast.success('密码修改成功');
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      toast.error(error.response?.data?.message || '密码修改失败');
+      const resp = (error as { response?: { data?: { message?: string } } })?.response;
+      const msg = resp?.data?.message;
+      toast.error(typeof msg === 'string' ? msg : '密码修改失败');
     }
   };
 

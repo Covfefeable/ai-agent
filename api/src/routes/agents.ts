@@ -340,6 +340,47 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/:id/messages/:message_id/feedbacks', async (request: any, reply) => {
+    try {
+      const id = request.params.id as string;
+      const { message_id } = request.params as { message_id: string };
+      const bodySchema = z.object({
+        rating: z.enum(['like', 'dislike']).nullable(),
+      });
+      const { rating } = bodySchema.parse(request.body);
+
+      const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+      if (!row) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      if (!row.isPublic) {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+
+      const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+      const user = (request.user?.id ?? 'web').toString();
+
+      const response = await axios.post(
+        `${baseUrl}/messages/${message_id}/feedbacks`,
+        { rating, user },
+        {
+          headers: {
+            Authorization: `Bearer ${row.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000,
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      fastify.log.error({ error }, 'Agent message feedback error');
+      const status = error?.response?.status || 500;
+      const message = error?.response?.data?.message || 'Internal Server Error';
+      reply.status(status).send({ message });
+    }
+  });
+
   fastify.post('/:id/files/upload', async (request: any, reply) => {
     try {
       const id = request.params.id as string;

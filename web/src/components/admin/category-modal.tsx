@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }:
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema) as any,
+    resolver: zodResolver(categorySchema) as Resolver<CategoryFormValues>,
     defaultValues: {
       name: '',
       sort: 0,

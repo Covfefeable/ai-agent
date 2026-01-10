@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { knowledgeApi } from '@/api/knowledge';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -35,7 +35,7 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
     reset,
     formState: { errors, isSubmitting },
   } = useForm<KnowledgeBaseFormValues>({
-    resolver: zodResolver(knowledgeBaseSchema) as any,
+    resolver: zodResolver(knowledgeBaseSchema) as Resolver<KnowledgeBaseFormValues>,
     defaultValues: {
       name: '',
       description: '',

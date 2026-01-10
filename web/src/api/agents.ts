@@ -107,4 +107,7 @@ export const agentsApi = {
       params: { conversation_id: conversationId },
     });
   },
+  sendFeedback: (id: string, messageId: string, rating: 'like' | 'dislike' | null) => {
+    return http.post(`/agents/${id}/messages/${messageId}/feedbacks`, { rating });
+  },
 };
