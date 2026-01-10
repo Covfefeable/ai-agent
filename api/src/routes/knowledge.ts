@@ -21,7 +21,9 @@ const createDocumentByTextSchema = z.object({
   name: z.string().min(1),
   text: z.string().min(1),
   indexing_technique: z.enum(['high_quality', 'economy']).optional().default('high_quality'),
-  doc_form: z.string().optional().default('text_model'),
+  doc_form: z.string().optional().default('hierarchical_model'),
+  separator: z.string().optional().default('\n\n\n'),
+  max_tokens: z.coerce.number().int().min(128).optional().default(1024),
 });
 
 export async function knowledgeRoutes(fastify: FastifyInstance) {
@@ -312,7 +314,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       let filename = '';
       let mimetype = '';
       let separator = '\n\n\n';
-      let max_tokens = 500;
+      let max_tokens = 1024;
 
       for await (const part of parts) {
         if (part.type === 'file') {
@@ -324,7 +326,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
             separator = part.value as string;
           } else if (part.fieldname === 'max_tokens') {
             const val = part.value as string;
-            max_tokens = parseInt(val) || 500;
+            max_tokens = parseInt(val) || 1024;
           }
         }
       }
@@ -336,22 +338,25 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       const form = new FormData();
       const dataPayload = {
         indexing_technique: "high_quality",
+        doc_form: "hierarchical_model",
         process_rule: {
-          mode: "custom",
+          mode: "hierarchical",
           rules: {
             pre_processing_rules: [
               {
                 id: "remove_extra_spaces",
                 enabled: true
               },
-              {
-                id: "remove_urls_emails",
-                enabled: true
-              }
             ],
             segmentation: {
               separator: separator,
               max_tokens: max_tokens
+            },
+            parent_mode: "paragraph",
+            subchunk_segmentation: {
+              separator: "\n",
+              max_tokens: 100,
+              chunk_overlap: 10
             }
           }
         }
@@ -408,6 +413,24 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
           text: body.text,
           indexing_technique: body.indexing_technique,
           doc_form: body.doc_form,
+          process_rule: {
+            mode: "hierarchical",
+            rules: {
+              pre_processing_rules: [
+                { id: "remove_extra_spaces", enabled: true },
+              ],
+              segmentation: {
+                separator: body.separator,
+                max_tokens: body.max_tokens
+              },
+              parent_mode: "paragraph",
+              subchunk_segmentation: {
+                separator: "\n",
+                max_tokens: 100,
+                chunk_overlap: 10,
+              },
+            }
+          }
         },
         {
           headers: {

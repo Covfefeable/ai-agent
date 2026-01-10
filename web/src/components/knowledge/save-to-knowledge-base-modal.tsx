@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { knowledgeApi, type Dataset } from '@/api/knowledge';
+import { useForm, type Resolver } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const saveToKnowledgeBaseSchema = z.object({
+  name: z.string().min(1, '请输入文档名称'),
+  datasetId: z.string().min(1, '请选择知识库'),
+  separator: z.string().default('\\n\\n\\n'),
+  maxTokens: z.coerce.number().int().min(128, '最大分段长度不能小于 128').default(1024),
+});
+
+type SaveToKnowledgeBaseFormValues = z.infer<typeof saveToKnowledgeBaseSchema>;
 
 interface SaveToKnowledgeBaseModalProps {
   isOpen: boolean;
@@ -24,9 +36,25 @@ export function SaveToKnowledgeBaseModal({
   defaultName,
   defaultDatasetId,
 }: SaveToKnowledgeBaseModalProps) {
-  const [name, setName] = useState('');
-  const [datasetId, setDatasetId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SaveToKnowledgeBaseFormValues>({
+    resolver: zodResolver(saveToKnowledgeBaseSchema) as Resolver<SaveToKnowledgeBaseFormValues>,
+    defaultValues: {
+      name: '',
+      datasetId: '',
+      separator: '\\n\\n\\n',
+      maxTokens: 1024,
+    },
+  });
+
+  const datasetId = watch('datasetId');
+  const submitting = isSubmitting;
 
   const options = useMemo(
     () => knowledgeBases.map((kb) => ({ label: kb.name, value: kb.id })),
@@ -36,43 +64,37 @@ export function SaveToKnowledgeBaseModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    setName(defaultName || '');
-    setDatasetId(() => {
-      if (defaultDatasetId) return defaultDatasetId;
-      return knowledgeBases[0]?.id || '';
+    reset({
+      name: defaultName || '',
+      datasetId: defaultDatasetId || knowledgeBases[0]?.id || '',
+      separator: '\\n\\n\\n',
+      maxTokens: 1024,
     });
-  }, [isOpen, defaultName, defaultDatasetId, knowledgeBases]);
+  }, [isOpen, defaultName, defaultDatasetId, knowledgeBases, reset]);
 
   const close = () => {
     if (submitting) return;
     onClose();
   };
 
-  const submit = async () => {
-    const trimmedName = name.trim();
+  const onSubmit = async (data: SaveToKnowledgeBaseFormValues) => {
     const trimmedText = text.trim();
-
-    if (!trimmedName) {
-      toast.error('请输入文档名称');
-      return;
-    }
-    if (!datasetId) {
-      toast.error('请选择知识库');
-      return;
-    }
     if (!trimmedText) {
       toast.error('内容为空，无法保存');
       return;
     }
 
     try {
-      setSubmitting(true);
-      await knowledgeApi.createDocumentByText(datasetId, { name: trimmedName, text });
+      const actualSeparator = data.separator.replace(/\\n/g, '\n');
+      await knowledgeApi.createDocumentByText(data.datasetId, {
+        name: data.name.trim(),
+        text,
+        separator: actualSeparator,
+        max_tokens: data.maxTokens,
+      });
       toast.success('已保存到知识库');
-      setSubmitting(false);
       onClose();
     } catch (e) {
-      setSubmitting(false);
       console.error('Save to knowledge base failed:', e);
       toast.error('保存失败');
     }
@@ -98,49 +120,83 @@ export function SaveToKnowledgeBaseModal({
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="save-kb-name">文档名称</Label>
-            <Input
-              id="save-kb-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="请输入文档名称"
-              disabled={submitting}
-            />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="save-kb-name">文档名称</Label>
+              <Input
+                id="save-kb-name"
+                {...register('name')}
+                placeholder="请输入文档名称"
+                disabled={submitting}
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="save-kb-dataset">选择知识库</Label>
+              <Select
+                options={options}
+                value={datasetId}
+                onChange={(nextValue) =>
+                  setValue('datasetId', nextValue, { shouldDirty: true, shouldValidate: true })
+                }
+                placeholder={knowledgeBases.length === 0 ? '暂无知识库' : '请选择知识库'}
+                disabled={submitting || knowledgeBases.length === 0}
+              />
+              {errors.datasetId && (
+                <p className="text-xs text-red-500">{errors.datasetId.message}</p>
+              )}
+              {knowledgeBases.length === 0 && (
+                <p className="text-xs text-slate-500">请先在「知识库」页面创建知识库</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="save-kb-separator">分段标识符</Label>
+                <Input
+                  id="save-kb-separator"
+                  {...register('separator')}
+                  placeholder="\\n\\n\\n"
+                  disabled={submitting}
+                />
+                {errors.separator && (
+                  <p className="text-xs text-red-500">{errors.separator.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="save-kb-maxTokens">最大分段长度</Label>
+                <Input
+                  id="save-kb-maxTokens"
+                  type="number"
+                  {...register('maxTokens')}
+                  disabled={submitting}
+                />
+                {errors.maxTokens && (
+                  <p className="text-xs text-red-500">{errors.maxTokens.message}</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="save-kb-dataset">选择知识库</Label>
-            <Select
-              options={options}
-              value={datasetId}
-              onChange={setDatasetId}
-              placeholder={knowledgeBases.length === 0 ? '暂无知识库' : '请选择知识库'}
+          <div className="mt-6 flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={close} disabled={submitting}>
+              取消
+            </Button>
+            <Button
+              type="submit"
+              className="bg-black hover:bg-black/80 text-white"
               disabled={submitting || knowledgeBases.length === 0}
-            />
-            {knowledgeBases.length === 0 && (
-              <p className="text-xs text-slate-500">请先在「知识库」页面创建知识库</p>
-            )}
+            >
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              保存
+            </Button>
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={close} disabled={submitting}>
-            取消
-          </Button>
-          <Button
-            type="button"
-            className="bg-black hover:bg-black/80 text-white"
-            onClick={submit}
-            disabled={submitting || knowledgeBases.length === 0}
-          >
-            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            保存
-          </Button>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
-

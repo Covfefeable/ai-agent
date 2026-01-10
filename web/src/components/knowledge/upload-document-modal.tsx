@@ -11,7 +11,7 @@ import * as z from 'zod';
 const uploadSchema = z.object({
   file: z.instanceof(File, { message: '请选择文件' }),
   separator: z.string().default('\\n\\n\\n'),
-  maxTokens: z.coerce.number().min(128, '最小 Token 数不能少于 128').default(500),
+  maxTokens: z.coerce.number().min(128, '最小 Token 数不能少于 128').default(1024),
 });
 
 type UploadFormValues = z.infer<typeof uploadSchema>;
@@ -35,7 +35,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
     resolver: zodResolver(uploadSchema) as Resolver<UploadFormValues>,
     defaultValues: {
       separator: '\\n\\n\\n',
-      maxTokens: 500,
+      maxTokens: 1024,
     },
   });
 
