@@ -75,7 +75,6 @@ export function ChatPage() {
   const [mobileToolbarExpanded, setMobileToolbarExpanded] = useState(false);
   const [saveKbText, setSaveKbText] = useState('');
   const [saveKbOpen, setSaveKbOpen] = useState(false);
-  const [saveKbDefaultName, setSaveKbDefaultName] = useState('');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -292,17 +291,13 @@ export function ChatPage() {
   };
 
   const openSaveToKb = (text: string) => {
-    const normalized = text.trim().replace(/\s+/g, ' ');
-    const suggestedName = normalized ? normalized.slice(0, 24) : '';
     setSaveKbText(text);
-    setSaveKbDefaultName(suggestedName);
     setSaveKbOpen(true);
   };
 
   const closeSaveToKb = () => {
     setSaveKbOpen(false);
     setSaveKbText('');
-    setSaveKbDefaultName('');
   };
 
   const getFileType = (file: File): string => {
@@ -784,7 +779,6 @@ export function ChatPage() {
         onClose={closeSaveToKb}
         knowledgeBases={knowledgeBases}
         text={saveKbText}
-        defaultName={saveKbDefaultName}
         defaultDatasetId={knowledgeBases[0]?.id || ''}
       />
 

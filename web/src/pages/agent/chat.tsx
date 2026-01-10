@@ -89,7 +89,6 @@ export function AgentChatPage() {
   const [knowledgeBases, setKnowledgeBases] = useState<Dataset[]>([]);
   const [saveKbOpen, setSaveKbOpen] = useState(false);
   const [saveKbText, setSaveKbText] = useState('');
-  const [saveKbDefaultName, setSaveKbDefaultName] = useState('');
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -647,17 +646,13 @@ export function AgentChatPage() {
   };
 
   const openSaveToKb = (text: string) => {
-    const normalized = text.trim().replace(/\s+/g, ' ');
-    const suggestedName = normalized ? normalized.slice(0, 24) : '';
     setSaveKbText(text);
-    setSaveKbDefaultName(suggestedName);
     setSaveKbOpen(true);
   };
 
   const closeSaveToKb = () => {
     setSaveKbOpen(false);
     setSaveKbText('');
-    setSaveKbDefaultName('');
   };
   return (
     <motion.div layoutId={`agent-card-${id}`} className="absolute inset-0 flex flex-col bg-white">
@@ -973,7 +968,6 @@ export function AgentChatPage() {
         onClose={closeSaveToKb}
         knowledgeBases={knowledgeBases}
         text={saveKbText}
-        defaultName={saveKbDefaultName}
         defaultDatasetId={knowledgeBases[0]?.id || ''}
       />
 
