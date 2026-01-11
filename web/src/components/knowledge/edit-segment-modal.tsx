@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { toast } from 'sonner';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type Resolver, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -30,7 +30,7 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<SegmentFormValues>({
@@ -51,7 +51,7 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
     }
   }, [isOpen, segment, reset]);
 
-  const keywords = watch('keywords');
+  const keywords = useWatch<SegmentFormValues>({ control, name: 'keywords' }) as string[];
 
   if (!isOpen) return null;
 

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import type { AgentCategory } from '@/api/agentCategories';
-import { agentsApi } from '@/api/agents';
+import { agentsApi, type AgentDetail } from '@/api/agents';
 import { userGroupsApi, type UserGroup } from '@/api/user-groups';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -31,15 +31,7 @@ interface AgentModalProps {
   mode: 'create' | 'edit';
   categories: AgentCategory[];
   isLoading?: boolean;
-  initialData?: {
-    id?: string;
-    apiKey?: string;
-    baseUrl?: string;
-    visibility?: 'public' | 'private' | 'selected_groups';
-    groupIds?: string[];
-    categoryId?: string | null;
-    multiplier?: number;
-  };
+  initialData?: Partial<AgentDetail>;
 }
 
 export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initialData, isLoading }: AgentModalProps) {
@@ -103,6 +95,13 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
       reset({ apiKey: '', baseUrl: '', visibility: 'public', groupIds: [], categoryId: '', multiplier: 1.0 });
     }
   }, [isOpen, initialData, reset]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setGroupSearch('');
+      setDebouncedGroupSearch('');
+    }
+  }, [isOpen]);
 
   const toggleGroup = (groupId: string) => {
     const current = selectedGroupIds;

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { knowledgeApi } from '@/api/knowledge';
 import { toast } from 'sonner';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -28,7 +28,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<UploadFormValues>({
@@ -39,7 +39,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
     },
   });
 
-  const uploadFile = watch('file');
+  const uploadFile = useWatch<UploadFormValues>({ control, name: 'file' }) as File | undefined;
 
   const onSubmit = async (data: UploadFormValues) => {
     if (!datasetId) return;

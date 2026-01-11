@@ -118,6 +118,13 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     }
   }, [isOpen, initialData, reset]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setGroupSearch('');
+      setDebouncedGroupSearch('');
+    }
+  }, [isOpen]);
+
   const toggleGroup = (groupId: string) => {
     const current = selectedGroupIds;
     if (current.includes(groupId)) {

@@ -163,7 +163,7 @@ export function AgentChatPage() {
         }
       }
       setDeleteId(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
     }
   };

@@ -14,6 +14,12 @@ export interface Agent {
   groups?: string;
 }
 
+export interface AgentDetail extends Omit<Agent, 'groups'> {
+  apiKey: string;
+  groupIds: string[];
+  userId: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -33,7 +39,7 @@ export const agentsApi = {
     });
   },
   get: (id: string) => {
-    return http.get<unknown, { data: Agent & { apiKey: string; groupIds?: string[] } }>(`/agents/${id}`);
+    return http.get<unknown, { data: AgentDetail }>(`/agents/${id}`);
   },
   parameters: (id: string) => {
     return http.get<unknown, {

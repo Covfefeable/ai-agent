@@ -243,16 +243,20 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
         </div>
 
         <div className="border-t p-4 flex justify-between items-center">
-             <Pagination
-                currentPage={page}
-                totalItems={total}
-                pageSize={pageSize}
-                onPageChange={(p) => {
-                  setPage(p);
-                  fetchUsers(p, keyword);
-                }}
-              />
-            <div className="flex gap-2">
+             <div className="flex-1">
+             {users.length > 0 && (
+                <Pagination
+                  currentPage={page}
+                  totalItems={total}
+                  pageSize={pageSize}
+                  onPageChange={(p) => {
+                    setPage(p);
+                    fetchUsers(p, keyword);
+                  }}
+                />
+              )}
+             </div>
+            <div className="flex gap-2 shrink-0">
                 <Button variant="outline" onClick={onClose} disabled={submitting}>取消</Button>
                 <Button onClick={handleSubmit} disabled={submitting || (addedUserIds.size === 0 && removedUserIds.size === 0)}>
                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

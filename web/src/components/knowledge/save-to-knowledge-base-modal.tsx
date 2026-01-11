@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { knowledgeApi, type Dataset } from '@/api/knowledge';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type Resolver, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -41,7 +41,7 @@ export function SaveToKnowledgeBaseModal({
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<SaveToKnowledgeBaseFormValues>({
     resolver: zodResolver(saveToKnowledgeBaseSchema) as Resolver<SaveToKnowledgeBaseFormValues>,
@@ -53,7 +53,7 @@ export function SaveToKnowledgeBaseModal({
     },
   });
 
-  const datasetId = watch('datasetId');
+  const datasetId = useWatch<SaveToKnowledgeBaseFormValues>({ control, name: 'datasetId' }) as string;
   const submitting = isSubmitting;
 
   const options = useMemo(

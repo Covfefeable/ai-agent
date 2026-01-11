@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { agentsApi, type Agent } from '@/api/agents';
+import { agentsApi, type Agent, type AgentDetail } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -26,7 +26,7 @@ export function AgentsPage() {
   // 统一弹窗替代原有新增/编辑状态
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [editingData, setEditingData] = useState<any>(null);
+  const [editingData, setEditingData] = useState<Partial<AgentDetail> | null>(null);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
