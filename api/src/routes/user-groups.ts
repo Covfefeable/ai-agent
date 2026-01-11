@@ -9,7 +9,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request: any, reply) => {
     const userRole = request.user?.role;
     if (!['owner', 'admin'].includes(userRole)) {
-      return reply.status(403).send({ message: 'Forbidden' });
+      return reply.status(403).send({ message: '无权访问' });
     }
   });
 
@@ -56,7 +56,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       console.error('Get User Groups Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -64,7 +64,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
   fastify.post('/', async (request: any, reply) => {
     try {
       const schema = z.object({
-        name: z.string().min(1, 'Group name is required'),
+        name: z.string().min(1, '请输入用户组名称'),
       });
       const { name } = schema.parse(request.body);
 
@@ -73,10 +73,10 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       return group;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       console.error('Create User Group Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -85,7 +85,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string };
       const schema = z.object({
-        name: z.string().min(1, 'Group name is required'),
+        name: z.string().min(1, '请输入用户组名称'),
       });
       const { name } = schema.parse(request.body);
 
@@ -96,16 +96,16 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
         .returning();
 
       if (!group) {
-        return reply.status(404).send({ message: 'User group not found' });
+        return reply.status(404).send({ message: '用户组不存在' });
       }
 
       return group;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       console.error('Update User Group Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -121,13 +121,13 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       const [group] = await db.delete(userGroups).where(eq(userGroups.id, id)).returning();
 
       if (!group) {
-        return reply.status(404).send({ message: 'User group not found' });
+        return reply.status(404).send({ message: '用户组不存在' });
       }
 
-      return { message: 'User group deleted successfully' };
+      return { message: '用户组删除成功' };
     } catch (error) {
       console.error('Delete User Group Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -184,7 +184,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       console.error('Get Group Users Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -198,13 +198,13 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       const { userIds } = schema.parse(request.body);
 
       if (userIds.length === 0) {
-        return { message: 'No users selected' };
+        return { message: '未选择用户' };
       }
 
       // Check if group exists
       const [group] = await db.select().from(userGroups).where(eq(userGroups.id, id));
       if (!group) {
-        return reply.status(404).send({ message: 'User group not found' });
+        return reply.status(404).send({ message: '用户组不存在' });
       }
 
       // Filter out users already in the group to avoid duplicate key errors
@@ -221,13 +221,13 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
         .onConflictDoNothing()
         .execute();
 
-      return { message: 'Users added successfully' };
+      return { message: '用户添加成功' };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       console.error('Add Group Users Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -242,7 +242,7 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       const { add, remove } = schema.parse(request.body);
 
       if (add.length === 0 && remove.length === 0) {
-        return { message: 'No changes' };
+        return { message: '无变更' };
       }
 
       await db.transaction(async (tx) => {
@@ -266,13 +266,13 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
         }
       });
 
-      return { message: 'Group users updated successfully' };
+      return { message: '用户组用户更新成功' };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       console.error('Update Group Users Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 }

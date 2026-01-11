@@ -96,7 +96,6 @@ export function SaveToKnowledgeBaseModal({
       onClose();
     } catch (e) {
       console.error('Save to knowledge base failed:', e);
-      toast.error('保存失败');
     }
   };
 

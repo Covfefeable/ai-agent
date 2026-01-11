@@ -36,8 +36,7 @@ export function DocumentDetailPage() {
       setSegments(response.data);
       setTotalItems(response.total);
     } catch (error) {
-      console.error('Failed to fetch segments:', error);
-      toast.error('获取文档分段失败');
+      console.error('Failed to fetch documents:', error);
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +54,7 @@ export function DocumentDetailPage() {
       setDeletingSegmentId(null);
       fetchSegments();
     } catch (error) {
-      console.error('Delete segment failed:', error);
-      toast.error('删除失败');
+      console.error('Delete document failed:', error);
     } finally {
       setIsDeleting(false);
     }

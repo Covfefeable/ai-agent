@@ -28,7 +28,7 @@ export async function favoritesRoutes(fastify: FastifyInstance) {
       return { success: true };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ message: 'Internal Server Error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -46,7 +46,7 @@ export async function favoritesRoutes(fastify: FastifyInstance) {
       return { success: true };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ message: 'Internal Server Error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -67,7 +67,7 @@ export async function favoritesRoutes(fastify: FastifyInstance) {
       return { isFavorite: existing.length > 0 };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ message: 'Internal Server Error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -87,7 +87,7 @@ export async function favoritesRoutes(fastify: FastifyInstance) {
       return { data: favorites.map(f => ({ ...f.agent, favoritedAt: f.favoritedAt })) };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ message: 'Internal Server Error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 }

@@ -41,7 +41,6 @@ export function KnowledgePage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to fetch knowledge bases:', msg);
-      toast.error('获取知识库列表失败');
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +77,6 @@ export function KnowledgePage() {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to delete knowledge base:', msg);
-      toast.error('删除知识库失败');
     }
   };
 

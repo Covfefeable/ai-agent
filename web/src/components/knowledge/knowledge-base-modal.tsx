@@ -76,7 +76,6 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(`Failed to ${mode} knowledge base:`, msg);
-      toast.error(mode === 'create' ? '创建失败' : '更新失败');
     }
   };
 

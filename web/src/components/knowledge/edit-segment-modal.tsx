@@ -66,7 +66,6 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
       onClose();
     } catch (error) {
       console.error('Update segment failed:', error);
-      toast.error('更新失败');
     }
   };
 

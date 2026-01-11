@@ -63,8 +63,8 @@ export function CategoryModal({ isOpen, onClose, onSuccess, mode, initialData }:
       }
       onSuccess();
       onClose();
-    } catch {
-      toast.error(mode === 'create' ? '创建失败' : '更新失败');
+    } catch (error) {
+      console.error(mode === 'create' ? 'Create category failed' : 'Update category failed', error);
     }
   };
 

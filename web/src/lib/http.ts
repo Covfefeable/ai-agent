@@ -37,13 +37,13 @@ http.interceptors.response.use(
           }
           break;
         case 403:
-          toast.error('没有权限执行此操作');
+          toast.error(response.data?.message || '没有权限执行此操作');
           break;
         case 404:
-          toast.error('请求的资源不存在');
+          toast.error(response.data?.message || '请求的资源不存在');
           break;
         case 500:
-          toast.error('服务器内部错误，请稍后重试');
+          toast.error(response.data?.message || '服务器内部错误，请稍后重试');
           break;
         default:
           toast.error(response.data?.message || '请求失败，请稍后重试');

@@ -48,7 +48,7 @@ fastify.decorate('authenticate', async function (request: any, reply: any) {
     const decoded = jwt.verify(token, JWT_SECRET);
     request.user = decoded;
   } catch (err) {
-    reply.status(401).send({ message: 'Unauthorized' });
+    reply.status(401).send({ message: '请先登录' });
   }
 });
 

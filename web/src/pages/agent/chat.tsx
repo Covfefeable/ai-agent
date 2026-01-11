@@ -163,8 +163,8 @@ export function AgentChatPage() {
         }
       }
       setDeleteId(null);
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
+    } catch (error: any) {
+      console.error(error);
     }
   };
 
@@ -451,14 +451,7 @@ export function AgentChatPage() {
 
   const handleSend = async () => {
     const formRequired = formItems.length > 0;
-    const isValid = formItems.every(i => {
-      if (!i.required) return true;
-      const v = formValues[i.variable];
-      if (i.type === 'checkbox') return typeof v === 'boolean';
-      if (i.type === 'number') return typeof v === 'number';
-      return !!(v && String(v).trim());
-    });
-    if (formRequired && !isValid) {
+    if (formRequired && !isFormValid()) {
       toast.error('请先填写必填表单');
       return;
     }
@@ -574,7 +567,7 @@ export function AgentChatPage() {
       if (err instanceof Error) {
         errorMessage = err.message;
       }
-      toast.error(errorMessage);
+      // toast.error(errorMessage);
       setMessages(prev => prev.map(m => 
         m.id === assistantId 
           ? { ...m, content: (m.content || '') + `\n\n(错误: ${errorMessage})` }

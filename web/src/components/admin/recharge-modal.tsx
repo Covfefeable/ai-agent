@@ -51,7 +51,6 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Recharge failed:', msg);
-      toast.error('充值失败');
     }
   };
 

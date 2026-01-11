@@ -122,7 +122,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agents error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -199,7 +199,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get public agents error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -208,10 +208,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const id = request.params.id as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const resp = await axios.get(`${baseUrl}/parameters`, {
@@ -224,7 +224,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent parameters error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -236,11 +236,11 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
@@ -261,7 +261,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent conversations error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -271,10 +271,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const id = request.params.id as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       // Check user balance if logged in
@@ -304,7 +304,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         auto_generate_name: true,
       };
       if (!payload.query) {
-        return reply.status(400).send({ message: 'query is required' });
+        return reply.status(400).send({ message: 'query 参数必填' });
       }
       const response = await axios.post(
         `${baseUrl}/chat-messages`,
@@ -326,7 +326,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Chat messages proxy error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -338,10 +338,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const conversationId = request.params.conversationId as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const user = (request.user?.id ?? 'web').toString();
@@ -358,7 +358,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Delete agent conversation error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -370,10 +370,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
       const user = (request.user?.id ?? 'web').toString();
@@ -394,7 +394,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent messages error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -410,10 +410,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
 
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       const baseUrl = row.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
@@ -435,7 +435,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Agent message feedback error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -445,14 +445,14 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const id = request.params.id as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const data = await request.file();
       if (!data) {
-        return reply.status(400).send({ message: 'No file uploaded' });
+        return reply.status(400).send({ message: '未上传文件' });
       }
       const buffer = await data.toBuffer();
       const blob = new Blob([buffer], { type: data.mimetype });
@@ -469,7 +469,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       return resp.data;
     } catch (error: any) {
       fastify.log.error({ error }, 'Agent file upload error');
-      reply.status(500).send({ message: 'Upload failed' });
+      reply.status(500).send({ message: '上传失败' });
     }
   });
   fastify.post('/', async (request: any, reply) => {
@@ -561,7 +561,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Create agent error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -573,20 +573,20 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
 
       if (!['owner', 'admin'].includes(userRole)) {
         if (row.userId !== request.user.id) {
-          return reply.status(403).send({ message: 'Forbidden' });
+          return reply.status(403).send({ message: '无权限' });
         }
       }
 
       await db.delete(agents).where(eq(agents.id, id));
-      return { message: 'Deleted' };
+      return { message: '已删除' };
     } catch (error: any) {
       fastify.log.error({ error }, 'Delete agent error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -596,11 +596,11 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const id = request.params.id as string;
       const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '智能体不存在' });
       }
 
       if (!(await verifyAgentAccess(row, request.user?.id, request.user?.role))) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       let groupIds: string[] = [];
@@ -614,7 +614,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       return { data: { ...row, groupIds } };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get agent detail error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -631,7 +631,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         multiplier: z.number().min(0).optional(),
       });
       const parsed = bodySchema.safeParse(request.body || {});
-      if (!parsed.success) return reply.status(400).send({ message: 'Invalid input', errors: parsed.error });
+      if (!parsed.success) return reply.status(400).send({ message: '输入无效', errors: parsed.error });
 
       const { apiKey: inputApiKey, baseUrl: inputBaseUrl, categoryId: inputCategoryId, multiplier: inputMultiplier, visibility: inputVisibility, groupIds: inputGroupIds } = parsed.data;
 
@@ -641,12 +641,12 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       // Check DB if needed
       const [record] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!record) {
-         return reply.status(404).send({ message: 'Not Found' });
+         return reply.status(404).send({ message: '智能体不存在' });
       }
 
       if (!['owner', 'admin'].includes(userRole)) {
         if (record.userId !== request.user.id) {
-           return reply.status(403).send({ message: 'Forbidden' });
+           return reply.status(403).send({ message: '无权限' });
         }
       }
 
@@ -744,7 +744,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Update agent error');
       const status = error?.response?.status || 500;
-      const message = error?.response?.data?.message || 'Internal Server Error';
+      const message = error?.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });

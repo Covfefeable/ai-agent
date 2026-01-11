@@ -68,14 +68,14 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       return { ...difyDataset, localId: newDataset.id };
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        reply.status(400).send({ message: 'Validation Error', errors: error.issues });
+        reply.status(400).send({ message: '验证错误', errors: error.issues });
         return;
       }
       
       console.error('Dify API Error:', error.response?.data || error.message);
       
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       
       reply.status(status).send({ message });
     }
@@ -129,7 +129,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       };
     } catch (error: any) {
       console.error('Get Datasets Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -152,7 +152,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Delete from Dify
@@ -179,10 +179,10 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       await db.delete(datasets)
         .where(eq(datasets.id, id));
 
-      return { message: 'Dataset deleted successfully' };
+      return { message: '知识库删除成功' };
     } catch (error: any) {
       console.error('Delete Dataset Error:', error);
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -195,7 +195,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       const { name, description } = request.body;
 
       if (!name) {
-        return reply.status(400).send({ message: 'Name is required' });
+        return reply.status(400).send({ message: '名称必填' });
       }
 
       const conditions = [eq(datasets.id, id)];
@@ -210,7 +210,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Update Dify
@@ -242,7 +242,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Update Dataset Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -267,7 +267,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Get documents from Dify
@@ -282,7 +282,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Get Documents Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -306,7 +306,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       const parts = request.parts();
@@ -332,7 +332,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       }
 
       if (!fileBuffer) {
-        return reply.status(400).send({ message: 'File is required' });
+        return reply.status(400).send({ message: '文件必填' });
       }
 
       const form = new FormData();
@@ -380,7 +380,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Upload Document Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -403,7 +403,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       const response = await axios.post(
@@ -443,13 +443,13 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        reply.status(400).send({ message: 'Validation Error', errors: error.issues });
+        reply.status(400).send({ message: '验证错误', errors: error.issues });
         return;
       }
 
       console.error('Create Document By Text Error:', error.response?.data || error.message);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -473,7 +473,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       const response = await axios.delete(
@@ -489,7 +489,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Delete Document Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -514,7 +514,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Get segments from Dify
@@ -532,7 +532,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Get Segments Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -557,7 +557,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Update segment in Dify
@@ -575,7 +575,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Update Segment Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -599,7 +599,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       // Delete segment in Dify
@@ -616,7 +616,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Delete Segment Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });
@@ -641,7 +641,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
         .limit(1);
 
       if (!dataset) {
-        return reply.status(404).send({ message: 'Dataset not found' });
+        return reply.status(404).send({ message: '知识库不存在' });
       }
 
       const response = await axios.post(
@@ -660,7 +660,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       console.error('Retrieve Error:', error);
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Internal Server Error';
+      const message = error.response?.data?.message || '服务器内部错误';
       reply.status(status).send({ message });
     }
   });

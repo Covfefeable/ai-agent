@@ -84,7 +84,7 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
       setLoadingGroups(true);
       userGroupsApi.list(1, 100, debouncedGroupSearch)
         .then(res => setAvailableGroups(res.data))
-        .catch(() => toast.error('获取用户组列表失败'))
+        .catch(() => console.error('获取用户组列表失败'))
         .finally(() => setLoadingGroups(false));
     }
   }, [isOpen, debouncedGroupSearch]);

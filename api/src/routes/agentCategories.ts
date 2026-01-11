@@ -11,7 +11,7 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
       return { data: list };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get categories error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -19,7 +19,7 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const bodySchema = z.object({ 
         name: z.string().min(1),
@@ -30,7 +30,7 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
       return { data: created };
     } catch (error: any) {
       fastify.log.error({ error }, 'Create category error');
-      reply.status(500).send({ message: error?.response?.data?.message || 'Internal Server Error' });
+      reply.status(500).send({ message: error?.response?.data?.message || '服务器内部错误' });
     }
   });
 
@@ -38,7 +38,7 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const { id } = request.params as { id: string };
       const bodySchema = z.object({ 
@@ -52,14 +52,14 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
       if (sort !== undefined) updateData.sort = sort;
 
       if (Object.keys(updateData).length === 0) {
-        return reply.status(400).send({ message: 'No data to update' });
+        return reply.status(400).send({ message: '无更新数据' });
       }
 
       const [updated] = await db.update(categories).set(updateData).where(eq(categories.id, id)).returning();
       return { data: updated };
     } catch (error: any) {
       fastify.log.error({ error }, 'Update category error');
-      reply.status(500).send({ message: error?.response?.data?.message || 'Internal Server Error' });
+      reply.status(500).send({ message: error?.response?.data?.message || '服务器内部错误' });
     }
   });
 
@@ -67,14 +67,14 @@ export async function agentCategoriesRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
       const { id } = request.params as { id: string };
       await db.delete(categories).where(eq(categories.id, id));
-      return { message: 'Deleted' };
+      return { message: '已删除' };
     } catch (error: any) {
       fastify.log.error({ error }, 'Delete category error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 }

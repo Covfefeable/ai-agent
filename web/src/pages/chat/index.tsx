@@ -14,7 +14,6 @@ import { ModelSelector } from '@/components/chat/model-selector';
 import { KnowledgeBaseSelector } from '@/components/chat/knowledge-base-selector';
 import { MessageActionBar } from '@/components/chat/message-action-bar';
 import { type Dataset } from '@/api/knowledge';
-import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { SaveToKnowledgeBaseModal } from '@/components/knowledge/save-to-knowledge-base-modal';
 
@@ -216,7 +215,6 @@ export function ChatPage() {
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Failed to load history:', error);
-      toast.error('加载历史记录失败');
     } finally {
       setIsLoading(false);
     }
@@ -454,7 +452,7 @@ export function ChatPage() {
       } else {
         console.error('Error in fetchEventSource:', error);
         const errorMessage = error instanceof Error ? error.message : '发送消息失败，请重试';
-        toast.error(errorMessage);
+        // toast.error(errorMessage);
         setMessages(prev => prev.map(m => 
           m.id === assistantMessageId 
             ? { ...m, content: (m.content || '') + `\n\n(错误: ${errorMessage})` }

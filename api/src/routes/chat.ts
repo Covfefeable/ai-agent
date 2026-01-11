@@ -31,7 +31,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       // Check balance
       const [dbUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
       if (!dbUser) {
-        return reply.status(401).send({ message: 'User not found' });
+        return reply.status(401).send({ message: '用户不存在' });
       }
       if (dbUser.role === 'member' && dbUser.balance <= 0) {
         return reply.status(402).send({ message: '余额不足，请充值' });
@@ -120,10 +120,10 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Internal server error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -131,7 +131,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
   fastify.post('/upload', async (request, reply) => {
     const data = await request.file();
     if (!data) {
-      return reply.status(400).send({ message: 'No file uploaded' });
+      return reply.status(400).send({ message: '未上传文件' });
     }
 
     try {
@@ -161,7 +161,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Upload failed' });
+      return reply.status(500).send({ message: '上传失败' });
     }
   });
 
@@ -185,7 +185,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Failed to fetch conversations' });
+      return reply.status(500).send({ message: '获取会话列表失败' });
     }
   });
 
@@ -208,7 +208,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Failed to delete conversation' });
+      return reply.status(500).send({ message: '删除会话失败' });
     }
   });
 
@@ -233,7 +233,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Failed to fetch messages' });
+      return reply.status(500).send({ message: '获取消息失败' });
     }
   });
 
@@ -261,7 +261,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Failed to submit feedback' });
+      return reply.status(500).send({ message: '提交反馈失败' });
     }
   });
 
@@ -287,7 +287,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return response.data;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Failed to stop generation' });
+      return reply.status(500).send({ message: '停止生成失败' });
     }
   });
 }

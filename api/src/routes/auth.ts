@@ -28,7 +28,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Check if user exists
       const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
       if (existingUser.length > 0) {
-        return reply.status(400).send({ message: 'User already exists' });
+        return reply.status(400).send({ message: '用户已存在' });
       }
 
       // Hash password
@@ -54,10 +54,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       return { user: newUser, token };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Internal server error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -68,13 +68,13 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Find user
       const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
       if (!user) {
-        return reply.status(401).send({ message: 'Invalid credentials' });
+        return reply.status(401).send({ message: '用户名或密码错误' });
       }
 
       // Verify password
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
-        return reply.status(401).send({ message: 'Invalid credentials' });
+        return reply.status(401).send({ message: '用户名或密码错误' });
       }
 
       // Generate token
@@ -86,10 +86,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Validation error', errors: (error as any).errors });
+        return reply.status(400).send({ message: '验证错误', errors: (error as any).errors });
       }
       fastify.log.error(error);
-      return reply.status(500).send({ message: 'Internal server error' });
+      return reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 }

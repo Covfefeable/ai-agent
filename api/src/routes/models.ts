@@ -120,7 +120,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get models error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -134,13 +134,13 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       const [row] = await db.select().from(models).where(eq(models.id, id)).limit(1);
       
       if (!row) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '模型不存在' });
       }
 
       // Access control
       if (!['owner', 'admin'].includes(userRole)) {
         if (row.visibility === 'private') {
-           return reply.status(403).send({ message: 'Forbidden' });
+           return reply.status(403).send({ message: '无权限' });
         }
         if (row.visibility === 'selected_groups') {
            const [match] = await db.select({ id: modelUserGroups.id })
@@ -152,7 +152,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
              ))
              .limit(1);
            if (!match) {
-             return reply.status(403).send({ message: 'Forbidden' });
+             return reply.status(403).send({ message: '无权限' });
            }
         }
       }
@@ -168,7 +168,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       return { data: { ...row, groupIds } };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get model detail error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -177,7 +177,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       const bodySchema = z.object({
@@ -222,9 +222,9 @@ export async function modelsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Create model error');
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Invalid input', errors: error.issues });
+        return reply.status(400).send({ message: '输入无效', errors: error.issues });
       }
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -233,7 +233,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       const id = request.params.id as string;
@@ -252,7 +252,7 @@ export async function modelsRoutes(fastify: FastifyInstance) {
 
       const [existing] = await db.select().from(models).where(eq(models.id, id)).limit(1);
       if (!existing) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '模型不存在' });
       }
 
       if (data.modelId && data.modelId !== existing.modelId) {
@@ -298,9 +298,9 @@ export async function modelsRoutes(fastify: FastifyInstance) {
     } catch (error: any) {
       fastify.log.error({ error }, 'Update model error');
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: 'Invalid input', errors: error.issues });
+        return reply.status(400).send({ message: '输入无效', errors: error.issues });
       }
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 
@@ -309,21 +309,21 @@ export async function modelsRoutes(fastify: FastifyInstance) {
     try {
       const userRole = request.user.role;
       if (!['owner', 'admin'].includes(userRole)) {
-        return reply.status(403).send({ message: 'Forbidden' });
+        return reply.status(403).send({ message: '无权限' });
       }
 
       const id = request.params.id as string;
       
       const [existing] = await db.select().from(models).where(eq(models.id, id)).limit(1);
       if (!existing) {
-        return reply.status(404).send({ message: 'Not Found' });
+        return reply.status(404).send({ message: '模型不存在' });
       }
 
       await db.delete(models).where(eq(models.id, id));
-      return { message: 'Deleted' };
+      return { message: '已删除' };
     } catch (error: any) {
       fastify.log.error({ error }, 'Delete model error');
-      reply.status(500).send({ message: 'Internal Server Error' });
+      reply.status(500).send({ message: '服务器内部错误' });
     }
   });
 }

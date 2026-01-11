@@ -58,7 +58,6 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess, datasetId }: U
       onClose();
     } catch (error) {
       console.error('Upload failed:', error);
-      toast.error('上传失败');
     }
   };
 
