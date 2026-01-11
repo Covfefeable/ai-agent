@@ -140,8 +140,9 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
       }
       onSuccess();
       onClose();
-    } catch {
-      toast.error(mode === 'create' ? '创建失败' : '更新失败');
+    } catch (error) {
+      // 错误已由全局拦截器处理
+      console.error(mode === 'create' ? 'Create agent failed' : 'Update agent failed', error);
     }
   };
 

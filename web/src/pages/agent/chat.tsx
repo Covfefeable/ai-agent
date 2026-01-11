@@ -187,7 +187,6 @@ export function AgentChatPage() {
       setMessages(prev => prev.map(msg => (
         msg.id === messageId ? { ...msg, feedback: { rating: prevRating } } : msg
       )));
-      toast.error('反馈失败，请重试');
       if (conversationId) {
         loadHistory(conversationId);
       }
@@ -415,8 +414,8 @@ export function AgentChatPage() {
         toast.success('已添加到我的智能体');
       }
       window.dispatchEvent(new Event('refreshFavorites'));
-    } catch {
-      toast.error('操作失败');
+    } catch (e) {
+      console.error('Toggle favorite failed', e);
     }
   };
 

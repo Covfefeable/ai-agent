@@ -12,12 +12,6 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AgentsPage() {
-  const getErrMsg = (e: unknown, fallback: string) => {
-    const resp = (e as { response?: { data?: { message?: string } } })?.response;
-    const msg = resp?.data?.message;
-    return typeof msg === 'string' ? msg : fallback;
-  };
-
   const [items, setItems] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,7 +40,7 @@ export function AgentsPage() {
       setTotalItems(agentsRes.total || agentsRes.data?.length || 0);
       setCategories(catsRes.data);
     } catch (e) {
-      toast.error(getErrMsg(e, '获取智能体列表失败'));
+      console.error('Get agents list failed', e);
     } finally {
       setIsLoading(false);
     }
@@ -70,8 +64,8 @@ export function AgentsPage() {
       toast.success('已删除');
       setDeleteId(null);
       fetchData();
-    } catch {
-      toast.error('删除失败');
+    } catch (e) {
+      console.error('Remove agent failed', e);
     }
   };
 
@@ -195,8 +189,8 @@ export function AgentsPage() {
                           try {
                             const res = await agentsApi.get(it.id);
                             setEditingData(res.data);
-                          } catch {
-                            toast.error('获取智能体详情失败');
+                          } catch (e) {
+                            console.error('Get agent detail failed', e);
                           } finally {
                             setIsFetchingDetail(false);
                           }

@@ -58,9 +58,6 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
       onClose();
     } catch (error: unknown) {
       console.error(error);
-      const resp = (error as { response?: { data?: { message?: string } } })?.response;
-      const msg = resp?.data?.message;
-      toast.error(typeof msg === 'string' ? msg : '密码修改失败');
     }
   };
 

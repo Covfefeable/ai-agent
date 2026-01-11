@@ -37,7 +37,6 @@ export function UserGroupsList({ className }: { className?: string }) {
       setTotal(res.total);
     } catch (error) {
       console.error('Fetch groups error', error);
-      toast.error('加载用户组失败');
     } finally {
       setLoading(false);
     }
@@ -82,7 +81,6 @@ export function UserGroupsList({ className }: { className?: string }) {
       fetchGroups();
     } catch (error) {
       console.error('Delete group error', error);
-      toast.error('删除用户组失败');
     } finally {
       setDeleting(false);
     }

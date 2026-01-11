@@ -11,12 +11,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 
 export function ModelsList({ className }: { className?: string }) {
-  const getErrMsg = (e: unknown, fallback: string) => {
-    const resp = (e as { response?: { data?: { message?: string } } })?.response;
-    const msg = resp?.data?.message;
-    return typeof msg === 'string' ? msg : fallback;
-  };
-
   const [items, setItems] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,7 +33,7 @@ export function ModelsList({ className }: { className?: string }) {
       setItems(res.data);
       setTotalItems(res.total || res.data?.length || 0);
     } catch (e) {
-      toast.error(getErrMsg(e, '获取模型列表失败'));
+      console.error('Get models list failed', e);
     } finally {
       setIsLoading(false);
     }
@@ -61,8 +55,8 @@ export function ModelsList({ className }: { className?: string }) {
       toast.success('已删除');
       setDeleteId(null);
       fetchData();
-    } catch {
-      toast.error('删除失败');
+    } catch (e) {
+      console.error('Remove model failed', e);
     }
   };
 
@@ -176,8 +170,8 @@ export function ModelsList({ className }: { className?: string }) {
                                 ...res.data,
                                 iconUrl: res.data.iconUrl || ''
                             });
-                          } catch {
-                            toast.error('获取模型详情失败');
+                          } catch (e) {
+                            console.error('Get model detail failed', e);
                             setModalOpen(false); // 获取失败关闭弹窗
                           } finally {
                             setIsFetchingDetail(false);

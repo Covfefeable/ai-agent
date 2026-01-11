@@ -507,12 +507,18 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       }
 
       const baseUrl = inputBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
-      const resp = await axios.get(`${baseUrl}/site`, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-        timeout: 10000,
-      });
+      let resp;
+      try {
+        resp = await axios.get(`${baseUrl}/site`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          timeout: 10000,
+        });
+      } catch (error) {
+        fastify.log.warn({ error }, 'Validate agent failed');
+        return reply.status(400).send({ message: '智能体不存在' });
+      }
 
       const data = resp.data || {};
       const title: string = data.title || '未命名智能体';
@@ -693,12 +699,18 @@ export async function agentsRoutes(fastify: FastifyInstance) {
 
       if (targetApiKey) {
         const verifyUrl = targetBaseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
-        const resp = await axios.get(`${verifyUrl}/site`, {
-          headers: {
-            Authorization: `Bearer ${targetApiKey}`,
-          },
-          timeout: 10000,
-        });
+        let resp;
+        try {
+          resp = await axios.get(`${verifyUrl}/site`, {
+            headers: {
+              Authorization: `Bearer ${targetApiKey}`,
+            },
+            timeout: 10000,
+          });
+        } catch (error) {
+          fastify.log.warn({ error }, 'Validate agent failed during update');
+          return reply.status(400).send({ message: '智能体不存在' });
+        }
 
         const data = resp.data || {};
         const title: string = data.title || '未命名智能体';

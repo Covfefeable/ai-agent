@@ -44,7 +44,6 @@ export function UsersList({ className }: { className?: string }) {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Failed to fetch users:', msg);
-      toast.error('获取用户列表失败');
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +57,6 @@ export function UsersList({ className }: { className?: string }) {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Update role failed:', msg);
-      toast.error('角色更新失败');
     }
   };
 

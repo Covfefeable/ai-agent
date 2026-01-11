@@ -70,7 +70,6 @@ export function ProfilePage() {
         fetchProfile(); // Refresh profile
       } catch (error) {
         console.error('Failed to update avatar:', error);
-        toast.error('头像上传失败');
       }
     };
     reader.readAsDataURL(file);
@@ -98,7 +97,6 @@ export function ProfilePage() {
       fetchProfile();
     } catch (error) {
       console.error('Failed to update name:', error);
-      toast.error('昵称修改失败');
     }
   };
 

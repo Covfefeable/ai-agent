@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Pagination } from '@/components/ui/pagination';
 
@@ -30,8 +29,8 @@ export function AgentsSquarePage() {
       setItems(agentsRes.data);
       setTotalItems(agentsRes.total || agentsRes.data?.length || 0);
       setCategories(catsRes.data);
-    } catch {
-      toast.error('获取智能体广场数据失败');
+    } catch (e) {
+      console.error('Get agent square data failed', e);
     } finally {
       setIsLoading(false);
     }

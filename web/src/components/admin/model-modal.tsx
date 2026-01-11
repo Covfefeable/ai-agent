@@ -87,7 +87,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
       setLoadingGroups(true);
       userGroupsApi.list(1, 100, debouncedGroupSearch)
         .then(res => setAvailableGroups(res.data))
-        .catch(() => toast.error('获取用户组列表失败'))
+        .catch((e) => console.error('Get user groups failed', e))
         .finally(() => setLoadingGroups(false));
     }
   }, [isOpen, debouncedGroupSearch]);
@@ -162,8 +162,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
       onSuccess();
       onClose();
     } catch (e) {
-      const resp = (e as { response?: { data?: { message?: string } } })?.response;
-      toast.error(resp?.data?.message || (mode === 'create' ? '创建失败' : '更新失败'));
+      console.error(mode === 'create' ? 'Create model failed' : 'Update model failed', e);
     }
   };
 

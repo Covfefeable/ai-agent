@@ -64,7 +64,6 @@ export function UserGroupModal({ isOpen, mode, initialData, onClose, onSuccess }
       onClose();
     } catch (error) {
       console.error('Submit User Group Error:', error);
-      toast.error('操作失败');
     }
   };
 

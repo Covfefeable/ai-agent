@@ -22,8 +22,8 @@ export function CategoriesList({ className }: { className?: string }) {
       const res = await agentCategoriesApi.list();
       setItems(res.data);
       setFilteredItems(res.data);
-    } catch {
-      toast.error('获取分类失败');
+    } catch (e) {
+      console.error('Fetch categories failed', e);
     } finally {
       setIsLoading(false);
     }
@@ -53,8 +53,8 @@ export function CategoriesList({ className }: { className?: string }) {
       await agentCategoriesApi.remove(id);
       toast.success('分类已删除');
       fetchData();
-    } catch {
-      toast.error('删除失败');
+    } catch (e) {
+      console.error('Delete category failed', e);
     }
   };
 

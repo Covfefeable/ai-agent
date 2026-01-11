@@ -57,7 +57,6 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
       setTotal(res.total);
     } catch (error) {
       console.error('Fetch users error', error);
-      toast.error('加载用户失败');
     } finally {
       setLoading(false);
     }
@@ -135,7 +134,6 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
       onClose();
     } catch (error) {
       console.error('Save users error', error);
-      toast.error('保存失败');
     } finally {
       setSubmitting(false);
     }
