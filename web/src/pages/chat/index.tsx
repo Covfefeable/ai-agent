@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Square, Globe, X, History, Plus, MoreHorizontal } from 'lucide-react';
+import { AppLogo } from '@/components/icons/app-logo';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
@@ -545,7 +546,7 @@ export function ChatPage() {
               >
                 <div className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden",
-                  msg.role === 'user' ? "bg-transparent text-slate-900" : "bg-blue-600 text-white shadow-sm"
+                  msg.role === 'user' ? "bg-transparent text-slate-900" : "bg-black text-white shadow-sm"
                 )}>
                   {msg.role === 'user' ? (
                     user.avatar ? (
@@ -554,7 +555,7 @@ export function ChatPage() {
                       <User className="h-5 w-5" />
                     )
                   ) : (
-                    <Bot className="h-5 w-5" />
+                    <AppLogo className="h-8 w-8 text-white" />
                   )}
                 </div>
                 <div className={cn(

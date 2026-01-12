@@ -87,7 +87,7 @@ export function LoginPage() {
           {/* Form */}
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700">邮箱账号</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-slate-700">账号</Label>
               <Input
                 id="email"
                 type="email"

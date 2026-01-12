@@ -87,11 +87,11 @@ export function RegisterPage() {
           {/* Form */}
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium text-slate-700">姓名</Label>
+              <Label htmlFor="name" className="text-sm font-medium text-slate-700">昵称</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="您的称呼"
+                placeholder="您的昵称"
                 className="h-11 border-slate-200 bg-slate-50 px-4 transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                 disabled={isLoading}
                 {...form.register('name')}
@@ -102,7 +102,7 @@ export function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700">邮箱账号</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-slate-700">邮箱</Label>
               <Input
                 id="email"
                 type="email"

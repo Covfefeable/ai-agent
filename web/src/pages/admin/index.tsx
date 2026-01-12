@@ -14,21 +14,22 @@ export function AdminPage() {
         <Tabs defaultValue="models" className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-4 max-w-[500px]">
             <TabsTrigger value="models">模型管理</TabsTrigger>
+            <TabsTrigger value="categories">分类管理</TabsTrigger>
             <TabsTrigger value="users">用户管理</TabsTrigger>
             <TabsTrigger value="user-groups">用户组管理</TabsTrigger>
-            <TabsTrigger value="categories">分类管理</TabsTrigger>
+
           </TabsList>
           <TabsContent value="models" className="flex-1 overflow-hidden mt-4 border rounded-xl p-0">
              <ModelsList className="h-full" />
+          </TabsContent>
+          <TabsContent value="categories" className="flex-1 overflow-hidden mt-4 border rounded-xl p-0">
+             <CategoriesList className="h-full" />
           </TabsContent>
           <TabsContent value="users" className="flex-1 overflow-hidden mt-4 border rounded-xl p-0">
              <UsersList className="h-full" />
           </TabsContent>
           <TabsContent value="user-groups" className="flex-1 overflow-hidden mt-4 border rounded-xl p-0">
              <UserGroupsList className="h-full" />
-          </TabsContent>
-          <TabsContent value="categories" className="flex-1 overflow-hidden mt-4 border rounded-xl p-0">
-             <CategoriesList className="h-full" />
           </TabsContent>
         </Tabs>
       </div>
