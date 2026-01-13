@@ -119,7 +119,7 @@ export async function getTopPages(startDate?: string, endDate?: string) {
   }));
 }
 
-export async function getUserAgentStats(startDate?: string, endDate?: string) {
+export async function getBrowserStats(startDate?: string, endDate?: string) {
   let dateFilter = sql`1=1`;
   if (startDate) {
     dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
@@ -132,20 +132,41 @@ export async function getUserAgentStats(startDate?: string, endDate?: string) {
 
   const stats = await db.execute(sql`
     SELECT 
-      ${userEvents.userAgent} as user_agent,
+      ${userEvents.browser} as browser_col,
       COUNT(*) as count
     FROM ${userEvents}
     WHERE ${userEvents.eventName} = 'visit'
-    AND ${userEvents.userAgent} IS NOT NULL 
-    AND ${userEvents.userAgent} != ''
+    AND (
+      (${userEvents.browser} IS NOT NULL AND ${userEvents.browser} != '')
+      OR 
+      (${userEvents.userAgent} IS NOT NULL AND ${userEvents.userAgent} != '')
+    )
     AND ${dateFilter}
-    GROUP BY ${userEvents.userAgent}
-    ORDER BY count DESC
-    LIMIT 100
+    GROUP BY ${userEvents.browser}
   `);
 
-  return stats.map((row: any) => ({
-    userAgent: row.user_agent,
-    count: Number(row.count)
-  }));
+  const browserStats = new Map<string, number>();
+
+  stats.forEach((row: any) => {
+    let browserName = 'Unknown';
+
+    if (row.browser_col) {
+      // format is name:version
+      const parts = row.browser_col.split(':');
+      // If name is 'unknown', keep it as 'Unknown' (capitalized) for consistency
+      if (parts[0] && parts[0] !== 'unknown') {
+        browserName = parts[0];
+      }
+    }
+
+    const currentCount = browserStats.get(browserName) || 0;
+    browserStats.set(browserName, currentCount + Number(row.count));
+  });
+
+  return Array.from(browserStats.entries())
+    .map(([name, value]) => ({
+      name,
+      value
+    }))
+    .sort((a, b) => b.value - a.value);
 }

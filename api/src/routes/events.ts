@@ -3,6 +3,7 @@ import { db } from '../db';
 import { userEvents } from '../db/schema';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
+import { UAParser } from 'ua-parser-js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
@@ -36,13 +37,36 @@ export async function eventsRoutes(fastify: FastifyInstance) {
       const ip = request.ip; // Fastify request object has ip
       const userAgent = request.headers['user-agent'] as string | undefined;
 
+      // Parse User Agent
+      let browserStr = 'unknown:unknown';
+      let osStr = 'unknown:unknown';
+      let deviceStr = 'unknown:unknown';
+
+      if (userAgent) {
+        try {
+          const parser = new UAParser(userAgent);
+          const browser = parser.getBrowser();
+          const os = parser.getOS();
+          const device = parser.getDevice();
+
+          browserStr = `${browser.name || 'unknown'}:${browser.version || 'unknown'}`;
+          osStr = `${os.name || 'unknown'}:${os.version || 'unknown'}`;
+          deviceStr = `${device.vendor || 'unknown'}:${device.model || 'unknown'}`;
+        } catch (e) {
+          // Keep defaults on error
+        }
+      }
+
       await db.insert(userEvents).values({
         eventName: body.eventName,
         userId: userId, // Assuming userId is string (uuid) in schema
         extraData: body.extraData,
         url: body.url,
         ip: ip,
-        userAgent: userAgent
+        userAgent: userAgent,
+        browser: browserStr,
+        os: osStr,
+        device: deviceStr
       });
 
       return { success: true };

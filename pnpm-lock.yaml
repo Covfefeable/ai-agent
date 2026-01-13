@@ -46,6 +46,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
+      ua-parser-js:
+        specifier: ^2.0.8
+        version: 2.0.8
       zod:
         specifier: ^4.3.5
         version: 4.3.5
@@ -59,6 +62,9 @@ importers:
       '@types/node':
         specifier: ^24.10.4
         version: 24.10.4
+      '@types/ua-parser-js':
+        specifier: ^0.7.39
+        version: 0.7.39
       drizzle-kit:
         specifier: ^0.31.8
         version: 0.31.8
@@ -134,9 +140,6 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
-      ua-parser-js:
-        specifier: ^2.0.8
-        version: 2.0.8
       zod:
         specifier: ^4.3.5
         version: 4.3.5

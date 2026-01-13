@@ -6,7 +6,7 @@ import locale from 'antd/es/date-picker/locale/zh_CN';
 import { PvUvChart } from '@/components/admin/analytics/pv-uv-chart';
 import { TopPagesChart } from '@/components/admin/analytics/top-pages-chart';
 import { UserAgentChart } from '@/components/admin/analytics/user-agent-chart';
-import { analyticsApi, type VisitData, type TopPageData, type UserAgentData } from '@/api/analytics';
+import { analyticsApi, type VisitData, type TopPageData, type BrowserData } from '@/api/analytics';
 
 const { RangePicker } = DatePicker;
 
@@ -17,7 +17,7 @@ export function AnalyticsPage() {
   ]);
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [topPagesData, setTopPagesData] = useState<TopPageData[]>([]);
-  const [userAgentData, setUserAgentData] = useState<UserAgentData[]>([]);
+  const [browserData, setBrowserData] = useState<BrowserData[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,13 +35,13 @@ export function AnalyticsPage() {
       if (res) {
         setVisitData(res.visit || []);
         setTopPagesData(res.topPages || []);
-        setUserAgentData(res.userAgentStats || []);
+        setBrowserData(res.browser || []);
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
       setVisitData([]);
       setTopPagesData([]);
-      setUserAgentData([]);
+      setBrowserData([]);
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ export function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PvUvChart data={visitData} loading={loading} />
           <TopPagesChart data={topPagesData} loading={loading} />
-          <UserAgentChart data={userAgentData} loading={loading} />
+          <UserAgentChart data={browserData} loading={loading} />
         </div>
       </div>
     </div>

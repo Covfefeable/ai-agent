@@ -133,5 +133,8 @@ export const userEvents = pgTable('user_events', {
   url: text('url'), // 当前上报时用户页面的url
   ip: text('ip'), // 来源 IP
   userAgent: text('user_agent'), // 用户代理
+  browser: text('browser'), // 浏览器 name:version
+  os: text('os'), // 操作系统 os:version
+  device: text('device'), // 设备 vendor:model
   createdAt: timestamp('created_at').defaultNow(),
 });

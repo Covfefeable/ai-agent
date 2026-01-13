@@ -1,31 +1,14 @@
 import { Card } from '@/components/ui/card';
 import ReactECharts from 'echarts-for-react';
-import { UAParser } from 'ua-parser-js';
-import type { UserAgentData } from '@/api/analytics';
+import type { BrowserData } from '@/api/analytics';
 
 interface UserAgentChartProps {
-  data: UserAgentData[];
+  data: BrowserData[];
   loading?: boolean;
 }
 
 export function UserAgentChart({ data, loading = false }: UserAgentChartProps) {
   const getOption = () => {
-    // Process data to group by browser
-    const browserStats = new Map<string, number>();
-    
-    data.forEach(item => {
-      const parser = new UAParser(item.userAgent);
-      const browser = parser.getBrowser();
-      const browserName = browser.name || 'Unknown';
-      
-      const currentCount = browserStats.get(browserName) || 0;
-      browserStats.set(browserName, currentCount + item.count);
-    });
-
-    const chartData = Array.from(browserStats.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-
     return {
       title: {
         text: '用户浏览器分布',
@@ -69,7 +52,7 @@ export function UserAgentChart({ data, loading = false }: UserAgentChartProps) {
           labelLine: {
             show: false
           },
-          data: chartData
+          data: data
         }
       ]
     };
