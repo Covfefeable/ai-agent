@@ -107,7 +107,7 @@ export function UserGroupsList({ className }: { className?: string }) {
               />
             </div>
           </div>
-          <Button onClick={handleCreate} className="gap-2 bg-black text-white hover:bg-black/90">
+          <Button onClick={handleCreate} className="gap-2" size="sm">
             <Plus className="h-4 w-4" />
             新建用户组
           </Button>

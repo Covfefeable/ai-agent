@@ -14,6 +14,26 @@ window.reportEvent = (eventName: string, extraData?: string | object) => {
   });
 };
 
+// 监听 JS 错误
+window.addEventListener('error', (event) => {
+  window.reportEvent('js_error', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    stack: event.error?.stack,
+  });
+});
+
+// 监听未处理的 Promise 拒绝
+window.addEventListener('unhandledrejection', (event) => {
+  window.reportEvent('js_error', {
+    type: 'unhandledrejection',
+    reason: event.reason instanceof Error ? event.reason.message : String(event.reason),
+    stack: event.reason instanceof Error ? event.reason.stack : undefined,
+  });
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

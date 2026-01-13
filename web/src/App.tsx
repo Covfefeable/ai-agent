@@ -17,6 +17,8 @@ import { AgentsSquarePage } from './pages/agent/square';
 import { AgentChatPage } from './pages/agent/chat';
 import { ModelsPage } from './pages/admin/models';
 import { ProfilePage } from './pages/profile';
+import { PageTracker } from '@/components/page-tracker';
+import { AnalyticsPage } from './pages/admin/analytics';
 
 function Layout() {
   const location = useLocation();
@@ -42,6 +44,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <BrowserRouter>
+      <PageTracker />
       <Toaster position="top-center" richColors />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -66,6 +69,7 @@ function App() {
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agent-categories" element={<AgentCategoriesPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/agents-square" element={<AgentsSquarePage />} />
           <Route path="/agents-square/:id" element={<AgentChatPage />} />
