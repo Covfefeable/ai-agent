@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlignLeft, Hash, Tag, Clock, Pencil, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -101,7 +101,7 @@ export function DocumentDetailPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(new Date(segment.created_at * 1000), 'yyyy-MM-dd HH:mm')}
+                        {dayjs(segment.created_at * 1000).format('YYYY-MM-DD HH:mm')}
                       </div>
                       <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
                         <Button 

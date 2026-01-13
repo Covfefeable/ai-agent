@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Pagination } from '@/components/ui/pagination';
 
@@ -135,7 +135,7 @@ export function AgentsSquarePage() {
                   <div className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs text-slate-400">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>{format(new Date(ag.createdAt), 'yyyy-MM-dd')}</span>
+                      <span>{dayjs(ag.createdAt).format('YYYY-MM-DD')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {ag.multiplier > 1 ? (

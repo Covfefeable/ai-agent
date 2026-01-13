@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -144,7 +144,7 @@ export function KnowledgeDetailPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-slate-500">
-                          {format(new Date(doc.created_at * 1000), 'yyyy-MM-dd HH:mm')}
+                          {dayjs(doc.created_at * 1000).format('YYYY-MM-DD HH:mm')}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button

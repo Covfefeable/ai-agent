@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { KnowledgeBaseModal } from '@/components/knowledge/knowledge-base-modal';
 import { Pagination } from '@/components/ui/pagination';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { toast } from 'sonner';
 import { knowledgeApi } from '@/api/knowledge';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -161,7 +161,7 @@ export function KnowledgePage() {
                 <div className="flex items-center justify-between border-t border-slate-50 pt-4 text-xs text-slate-400">
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" />
-                    <span>{format(new Date(kb.createdAt), 'yyyy-MM-dd')}</span>
+                    <span>{dayjs(kb.createdAt).format('YYYY-MM-DD')}</span>
                   </div>
                 </div>
               </div>

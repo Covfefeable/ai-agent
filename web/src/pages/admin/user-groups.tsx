@@ -7,7 +7,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { UserGroupModal } from '@/components/admin/user-group-modal';
 import { AddGroupUserModal } from '@/components/admin/add-group-user-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 
 export function UserGroupsList({ className }: { className?: string }) {
   const [groups, setGroups] = useState<UserGroup[]>([]);
@@ -139,7 +139,7 @@ export function UserGroupsList({ className }: { className?: string }) {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-slate-500">
-                      {format(new Date(group.createdAt), 'yyyy-MM-dd HH:mm')}
+                      {dayjs(group.createdAt).format('YYYY-MM-DD HH:mm')}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { agentsApi, type Agent, type AgentDetail } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AgentModal } from '@/components/agents/agent-modal';
@@ -168,7 +168,7 @@ export function AgentsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-600">
-                      {it.createdAt ? format(new Date(it.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+                      {it.createdAt ? dayjs(it.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

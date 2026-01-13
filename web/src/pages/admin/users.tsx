@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { RechargeModal } from '@/components/admin/recharge-modal';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { UserGroupsDisplay } from '@/components/admin/user-groups-display';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 
@@ -147,7 +147,7 @@ export function UsersList({ className }: { className?: string }) {
                           {['owner', 'admin'].includes(user.role) ? '∞' : user.balance?.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
-                          {user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+                          {user.createdAt ? dayjs(user.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
                           {user.role !== 'owner' && (
