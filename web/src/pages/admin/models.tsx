@@ -7,7 +7,7 @@ import { ModelModal } from '@/components/admin/model-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
-import { Tooltip } from 'antd';
+import { Popover } from 'antd';
 
 
 export function ModelsList({ className }: { className?: string }) {
@@ -132,8 +132,8 @@ export function ModelsList({ className }: { className?: string }) {
                       ) : it.visibility === 'private' ? (
                         <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">私有</span>
                       ) : (
-                        <Tooltip
-                          title={
+                        <Popover
+                          content={
                             <div className="flex flex-wrap gap-1 max-w-[300px]">
                               {it.groups?.split(',').map((group, idx) => (
                                 <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -146,7 +146,7 @@ export function ModelsList({ className }: { className?: string }) {
                           <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 cursor-default">
                             指定用户组 ({it.groups ? it.groups.split(',').length : 0})
                           </span>
-                        </Tooltip>
+                        </Popover>
                       )}
                     </td>
                     <td className="px-6 py-4">

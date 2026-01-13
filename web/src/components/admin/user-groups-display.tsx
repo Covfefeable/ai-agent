@@ -1,4 +1,4 @@
-import { Tooltip } from 'antd';
+import { Popover } from 'antd';
 
 interface UserGroupsDisplayProps {
   groups?: string;
@@ -33,8 +33,8 @@ export function UserGroupsDisplay({ groups }: UserGroupsDisplayProps) {
           {group}
         </span>
       ))}
-      <Tooltip
-        title={
+      <Popover
+        content={
           <div className="flex flex-wrap gap-1 max-w-[300px]">
             {remaining.map((group, idx) => (
               <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -47,7 +47,7 @@ export function UserGroupsDisplay({ groups }: UserGroupsDisplayProps) {
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 cursor-default hover:bg-slate-200">
           +{remaining.length}
         </span>
-      </Tooltip>
+      </Popover>
     </div>
   );
 }

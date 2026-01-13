@@ -13,8 +13,6 @@
     "@hookform/resolvers": "^5.2.2",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-popover": "^1.1.15",
-    "@radix-ui/react-tabs": "^1.1.13",
     "antd": "^6.2.0",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
