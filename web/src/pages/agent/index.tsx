@@ -9,7 +9,7 @@ import { AgentModal } from '@/components/agents/agent-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip } from 'antd';
 
 export function AgentsPage() {
   const [items, setItems] = useState<Agent[]>([]);
@@ -147,24 +147,21 @@ export function AgentsPage() {
                       ) : it.visibility === 'private' ? (
                         <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">私有</span>
                       ) : (
-                        <TooltipProvider>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 cursor-default">
-                                指定用户组 ({it.groups ? it.groups.split(',').length : 0})
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-[300px]">
-                              <div className="flex flex-wrap gap-1">
-                                {it.groups?.split(',').map((group, idx) => (
-                                  <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                                    {group}
-                                  </span>
-                                ))}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Tooltip
+                          title={
+                            <div className="flex flex-wrap gap-1 max-w-[300px]">
+                              {it.groups?.split(',').map((group, idx) => (
+                                <span key={idx} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                  {group}
+                                </span>
+                              ))}
+                            </div>
+                          }
+                        >
+                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 cursor-default">
+                            指定用户组 ({it.groups ? it.groups.split(',').length : 0})
+                          </span>
+                        </Tooltip>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-600">

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { RechargeModal } from '@/components/admin/recharge-modal';
 import dayjs from 'dayjs';
 import { UserGroupsDisplay } from '@/components/admin/user-groups-display';
-import { SimpleTooltip } from '@/components/ui/tooltip';
+import { Tooltip } from 'antd';
 
 export function UsersList({ className }: { className?: string }) {
   const [users, setUsers] = useState<User[]>([]);
@@ -128,15 +128,12 @@ export function UsersList({ className }: { className?: string }) {
                     {users.map((user) => (
                       <tr key={user.id} className="hover:bg-slate-50/50">
                         <td className="px-6 py-4 font-medium text-slate-900">
-                          <SimpleTooltip
-                            delayDuration={300}
-                            trigger={
-                              <div className="max-w-[150px] truncate cursor-default">
-                                {user.name}
-                              </div>
-                            }
-                            content={user.name}
-                          />
+                          <Tooltip
+                            mouseEnterDelay={0.3}
+                            title={user.name}
+                          >
+                            <div className="max-w-[150px] truncate cursor-default">{user.name}</div>
+                          </Tooltip>
                         </td>
                         <td className="px-6 py-4 text-slate-600">{user.email}</td>
                         <td className="px-6 py-4">{getRoleBadge(user.role)}</td>

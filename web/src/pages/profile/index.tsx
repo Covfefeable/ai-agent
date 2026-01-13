@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, Lock, Camera, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SimpleTooltip } from "@/components/ui/tooltip";
+import { Tooltip } from 'antd';
 import { Pagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
@@ -177,14 +177,14 @@ export function ProfilePage() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group/name min-w-0">
-                      <SimpleTooltip 
-                        trigger={
-                          <h1 className="text-2xl font-bold text-slate-900 truncate cursor-default max-w-full">
-                            {user.name || '未命名用户'}
-                          </h1>
-                        }
-                        content={<p>{user.name || '未命名用户'}</p>}
-                      />
+                      <Tooltip 
+                        title={<p>{user.name || '未命名用户'}</p>}
+                        placement="top"
+                      >
+                        <h1 className="text-2xl font-bold text-slate-900 truncate cursor-default max-w-full">
+                          {user.name || '未命名用户'}
+                        </h1>
+                      </Tooltip>
                       <Button 
                         size="icon" 
                         variant="ghost" 

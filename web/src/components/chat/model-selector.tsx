@@ -1,7 +1,7 @@
 import { Bot, Check, ChevronDown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SimpleTooltip } from '@/components/ui/tooltip';
+import { Tooltip } from 'antd';
 import { type Model } from '@/api/models';
 
 interface ModelSelectorProps {
@@ -40,14 +40,14 @@ export function ModelSelector({
                 Free
               </span>
             ) : current.multiplier > 1 ? (
-              <SimpleTooltip
-                trigger={
-                  <span className="shrink-0 rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
-                    {current.multiplier}x
-                  </span>
-                }
-                content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
-              />
+              <Tooltip
+                title={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
+                placement="top"
+              >
+                <span className="shrink-0 rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
+                  {current.multiplier}x
+                </span>
+              </Tooltip>
             ) : null
           )}
           <ChevronDown className="shrink-0 h-3 w-3 text-slate-400" />
@@ -84,14 +84,14 @@ export function ModelSelector({
                   Free
                 </span>
               ) : model.multiplier > 1 ? (
-                <SimpleTooltip
-                  trigger={
-                    <span className="shrink-0 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
-                      {model.multiplier}x
-                    </span>
-                  }
-                  content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
-                />
+                <Tooltip
+                  title={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
+                  placement="top"
+                >
+                  <span className="shrink-0 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
+                    {model.multiplier}x
+                  </span>
+                </Tooltip>
               ) : null}
               {selectedModelId === model.modelId && <Check className="shrink-0 h-3 w-3" />}
             </button>

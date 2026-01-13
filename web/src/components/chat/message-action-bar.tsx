@@ -1,6 +1,6 @@
 import { Check, Copy, Database, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SimpleTooltip } from '@/components/ui/tooltip';
+import { Tooltip } from 'antd';
 
 type FeedbackRating = 'like' | 'dislike' | null;
 
@@ -31,9 +31,7 @@ export function MessageActionBar({
       )}
     >
       {onLike && (
-        <SimpleTooltip
-          content={feedbackRating === 'like' ? '取消点赞' : '点赞'}
-          trigger={
+        <Tooltip title={feedbackRating === 'like' ? '取消点赞' : '点赞'}>
             <button
               type="button"
               onClick={onLike}
@@ -45,14 +43,11 @@ export function MessageActionBar({
             >
               <ThumbsUp className="h-3.5 w-3.5" />
             </button>
-          }
-        />
+        </Tooltip>
       )}
 
       {onDislike && (
-        <SimpleTooltip
-          content={feedbackRating === 'dislike' ? '取消点踩' : '点踩'}
-          trigger={
+        <Tooltip title={feedbackRating === 'dislike' ? '取消点踩' : '点踩'}>
             <button
               type="button"
               onClick={onDislike}
@@ -64,14 +59,11 @@ export function MessageActionBar({
             >
               <ThumbsDown className="h-3.5 w-3.5" />
             </button>
-          }
-        />
+        </Tooltip>
       )}
 
       {onCopy && (
-        <SimpleTooltip
-          content={copied ? '已复制' : '复制'}
-          trigger={
+        <Tooltip title={copied ? '已复制' : '复制'}>
             <button
               type="button"
               onClick={onCopy}
@@ -84,14 +76,11 @@ export function MessageActionBar({
                 <Copy className="h-3.5 w-3.5" />
               )}
             </button>
-          }
-        />
+        </Tooltip>
       )}
 
       {onSaveToKb && (
-        <SimpleTooltip
-          content="保存到知识库"
-          trigger={
+        <Tooltip title="保存到知识库">
             <button
               type="button"
               onClick={onSaveToKb}
@@ -100,8 +89,7 @@ export function MessageActionBar({
             >
               <Database className="h-3.5 w-3.5" />
             </button>
-          }
-        />
+        </Tooltip>
       )}
     </div>
   );
