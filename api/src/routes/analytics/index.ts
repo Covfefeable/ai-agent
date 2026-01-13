@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { getVisitData } from './visit';
+import { getVisitData, getTopPages } from './visit';
 
 export async function analyticsRoutes(fastify: FastifyInstance) {
   fastify.get('/stats', async (request, reply) => {
@@ -12,10 +12,14 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
       
       const { startDate, endDate } = schema.parse(request.query);
       
-      const visitData = await getVisitData(startDate, endDate);
+      const [visitData, topPages] = await Promise.all([
+        getVisitData(startDate, endDate),
+        getTopPages(startDate, endDate)
+      ]);
 
       return { 
-        visit: visitData
+        visit: visitData,
+        topPages
       };
     } catch (error) {
       request.log.error(error);

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DatePicker } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { PvUvChart } from '@/components/admin/analytics/pv-uv-chart';
+import { TopPagesChart } from '@/components/admin/analytics/top-pages-chart';
+import { analyticsApi, type VisitData, type TopPageData } from '@/api/analytics';
 
 const { RangePicker } = DatePicker;
 
@@ -12,6 +14,34 @@ export function AnalyticsPage() {
     dayjs().subtract(7, 'day'),
     dayjs(),
   ]);
+  const [visitData, setVisitData] = useState<VisitData[]>([]);
+  const [topPagesData, setTopPagesData] = useState<TopPageData[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [start, end] = dateRange;
+      const res = await analyticsApi.getStats(
+        start.format('YYYY-MM-DD'),
+        end.format('YYYY-MM-DD')
+      );
+      if (res) {
+        setVisitData(res.visit || []);
+        setTopPagesData(res.topPages || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      setVisitData([]);
+      setTopPagesData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -35,7 +65,8 @@ export function AnalyticsPage() {
 
       <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PvUvChart dateRange={dateRange} />
+          <PvUvChart data={visitData} loading={loading} />
+          <TopPagesChart data={topPagesData} loading={loading} />
         </div>
       </div>
     </div>

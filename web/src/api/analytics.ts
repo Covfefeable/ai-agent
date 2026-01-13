@@ -6,8 +6,15 @@ export interface VisitData {
   type: 'PV' | 'UV';
 }
 
+export interface TopPageData {
+  url: string;
+  pv: number;
+  uv: number;
+}
+
 export interface AnalyticsStats {
   visit: VisitData[];
+  topPages: TopPageData[];
 }
 
 export const analyticsApi = {

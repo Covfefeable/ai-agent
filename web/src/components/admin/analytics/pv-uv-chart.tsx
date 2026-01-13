@@ -1,43 +1,13 @@
-import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import ReactECharts from 'echarts-for-react';
-import { analyticsApi, type VisitData } from '@/api/analytics';
-import type { Dayjs } from 'dayjs';
+import { type VisitData } from '@/api/analytics';
 
 interface PvUvChartProps {
-  dateRange: [Dayjs, Dayjs];
+  data: VisitData[];
+  loading?: boolean;
 }
 
-export function PvUvChart({ dateRange }: PvUvChartProps) {
-  const [data, setData] = useState<VisitData[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchData();
-  }, [dateRange]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [start, end] = dateRange;
-      const res = await analyticsApi.getStats(
-        start.format('YYYY-MM-DD'),
-        end.format('YYYY-MM-DD')
-      );
-      // Ensure data is valid
-      if (res && res.visit) {
-         setData(res.visit);
-      } else {
-         setData([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export function PvUvChart({ data, loading = false }: PvUvChartProps) {
   // Transform data for ECharts
   const getOption = () => {
     // Extract unique dates for x-axis
@@ -55,6 +25,14 @@ export function PvUvChart({ dateRange }: PvUvChartProps) {
     });
 
     return {
+      title: {
+        text: '访问趋势',
+        left: 'left',
+        textStyle: {
+            fontSize: 16,
+            fontWeight: 'bold'
+        }
+      },
       tooltip: {
         trigger: 'axis'
       },
@@ -100,17 +78,12 @@ export function PvUvChart({ dateRange }: PvUvChartProps) {
   };
 
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-medium text-slate-900 mb-4">访问趋势 (PV/UV)</h3>
-      <div className="h-[300px]">
-        {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <ReactECharts option={getOption()} style={{ height: '100%', width: '100%' }} />
-        )}
-      </div>
+    <Card className="p-4 h-[400px]">
+      <ReactECharts 
+        option={getOption()} 
+        style={{ height: '100%', width: '100%' }}
+        showLoading={loading}
+      />
     </Card>
   );
 }
