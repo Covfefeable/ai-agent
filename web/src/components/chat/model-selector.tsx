@@ -36,13 +36,13 @@ export function ModelSelector({
           <span className="max-w-[100px] truncate">{current?.name || '选择模型'}</span>
           {current?.multiplier !== undefined && (
             current.multiplier <= 0 ? (
-              <span className="rounded bg-green-100 px-1 text-[10px] font-bold text-green-600">
+              <span className="shrink-0 rounded bg-green-100 px-1 text-[10px] font-bold text-green-600">
                 Free
               </span>
             ) : current.multiplier > 1 ? (
               <SimpleTooltip
                 trigger={
-                  <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
+                  <span className="shrink-0 rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
                     {current.multiplier}x
                   </span>
                 }
@@ -50,10 +50,10 @@ export function ModelSelector({
               />
             ) : null
           )}
-          <ChevronDown className="h-3 w-3 text-slate-400" />
+          <ChevronDown className="shrink-0 h-3 w-3 text-slate-400" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-48 p-1" align="start" side="top" sideOffset={8}>
+      <PopoverContent className="w-60 p-1" align="start" side="top" sideOffset={8}>
         <div className="max-h-64 overflow-y-auto space-y-0.5">
           {models.map(model => (
             <button
@@ -78,22 +78,22 @@ export function ModelSelector({
               )}
               <span className="truncate flex-1">
                 {model.name}
-                {model.multiplier <= 0 ? (
-                  <span className="ml-1.5 inline-flex items-center rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-600">
-                    Free
-                  </span>
-                ) : model.multiplier > 1 ? (
-                  <SimpleTooltip
-                    trigger={
-                      <span className="ml-1.5 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
-                        {model.multiplier}x
-                      </span>
-                    }
-                    content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
-                  />
-                ) : null}
               </span>
-              {selectedModelId === model.modelId && <Check className="h-3 w-3" />}
+              {model.multiplier <= 0 ? (
+                <span className="shrink-0 inline-flex items-center rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-600">
+                  Free
+                </span>
+              ) : model.multiplier > 1 ? (
+                <SimpleTooltip
+                  trigger={
+                    <span className="shrink-0 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
+                      {model.multiplier}x
+                    </span>
+                  }
+                  content={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
+                />
+              ) : null}
+              {selectedModelId === model.modelId && <Check className="shrink-0 h-3 w-3" />}
             </button>
           ))}
         </div>

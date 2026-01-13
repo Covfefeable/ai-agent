@@ -16,6 +16,7 @@ import { agentCategoriesRoutes } from './routes/agentCategories';
 import { favoritesRoutes } from './routes/favorites';
 import { modelsRoutes } from './routes/models';
 import { userGroupsRoutes } from './routes/user-groups';
+import { eventsRoutes } from './routes/events';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
@@ -54,6 +55,7 @@ fastify.decorate('authenticate', async function (request: any, reply: any) {
 
 // Register Routes
 fastify.register(authRoutes, { prefix: '/auth' });
+fastify.register(eventsRoutes, { prefix: '/events' });
 fastify.register(async (instance) => {
   instance.addHook('preHandler', async (req, reply) => {
     await (instance as any).authenticate(req, reply);

@@ -124,3 +124,14 @@ export const userUsage = pgTable('user_usage', {
   
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const userEvents = pgTable('user_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventName: text('event_name').notNull(),
+  userId: uuid('user_id').references(() => users.id), // 可为空
+  extraData: text('extra_data'), // 可为空，上报时附带的额外数据
+  url: text('url'), // 当前上报时用户页面的url
+  ip: text('ip'), // 来源 IP
+  userAgent: text('user_agent'), // 用户代理
+  createdAt: timestamp('created_at').defaultNow(),
+});
