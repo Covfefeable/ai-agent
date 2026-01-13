@@ -118,3 +118,34 @@ export async function getTopPages(startDate?: string, endDate?: string) {
     uv: Number(row.uv)
   }));
 }
+
+export async function getUserAgentStats(startDate?: string, endDate?: string) {
+  let dateFilter = sql`1=1`;
+  if (startDate) {
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} <= ${end.toISOString()}`;
+  }
+
+  const stats = await db.execute(sql`
+    SELECT 
+      ${userEvents.userAgent} as user_agent,
+      COUNT(*) as count
+    FROM ${userEvents}
+    WHERE ${userEvents.eventName} = 'visit'
+    AND ${userEvents.userAgent} IS NOT NULL 
+    AND ${userEvents.userAgent} != ''
+    AND ${dateFilter}
+    GROUP BY ${userEvents.userAgent}
+    ORDER BY count DESC
+    LIMIT 100
+  `);
+
+  return stats.map((row: any) => ({
+    userAgent: row.user_agent,
+    count: Number(row.count)
+  }));
+}

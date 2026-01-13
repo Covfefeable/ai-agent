@@ -12,9 +12,15 @@ export interface TopPageData {
   uv: number;
 }
 
+export interface UserAgentData {
+  userAgent: string;
+  count: number;
+}
+
 export interface AnalyticsStats {
   visit: VisitData[];
   topPages: TopPageData[];
+  userAgentStats: UserAgentData[];
 }
 
 export const analyticsApi = {

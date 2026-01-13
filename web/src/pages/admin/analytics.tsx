@@ -5,7 +5,8 @@ import 'dayjs/locale/zh-cn';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { PvUvChart } from '@/components/admin/analytics/pv-uv-chart';
 import { TopPagesChart } from '@/components/admin/analytics/top-pages-chart';
-import { analyticsApi, type VisitData, type TopPageData } from '@/api/analytics';
+import { UserAgentChart } from '@/components/admin/analytics/user-agent-chart';
+import { analyticsApi, type VisitData, type TopPageData, type UserAgentData } from '@/api/analytics';
 
 const { RangePicker } = DatePicker;
 
@@ -16,16 +17,17 @@ export function AnalyticsPage() {
   ]);
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [topPagesData, setTopPagesData] = useState<TopPageData[]>([]);
+  const [userAgentData, setUserAgentData] = useState<UserAgentData[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [dateRange]);
+  }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (range?: [Dayjs, Dayjs]) => {
     try {
       setLoading(true);
-      const [start, end] = dateRange;
+      const [start, end] = range || dateRange;
       const res = await analyticsApi.getStats(
         start.format('YYYY-MM-DD'),
         end.format('YYYY-MM-DD')
@@ -33,11 +35,13 @@ export function AnalyticsPage() {
       if (res) {
         setVisitData(res.visit || []);
         setTopPagesData(res.topPages || []);
+        setUserAgentData(res.userAgentStats || []);
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
       setVisitData([]);
       setTopPagesData([]);
+      setUserAgentData([]);
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,9 @@ export function AnalyticsPage() {
               // Ant Design DatePicker dates can be null, but we initialize with valid dates
               // and the UI usually enforces selection or clearing both
               if (dates && dates[0] && dates[1]) {
-                setDateRange([dates[0], dates[1]] as [Dayjs, Dayjs]);
+                const newRange = [dates[0], dates[1]] as [Dayjs, Dayjs];
+                setDateRange(newRange);
+                fetchData(newRange);
               }
             }}
             className="w-64"
@@ -67,6 +73,7 @@ export function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PvUvChart data={visitData} loading={loading} />
           <TopPagesChart data={topPagesData} loading={loading} />
+          <UserAgentChart data={userAgentData} loading={loading} />
         </div>
       </div>
     </div>

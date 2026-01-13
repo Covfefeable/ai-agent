@@ -91,12 +91,26 @@ export function TopPagesChart({ data, loading = false }: TopPagesChartProps) {
     };
   };
 
+  const onEvents = {
+    click: (params: { componentType: string; dataIndex: number }) => {
+      if (params.componentType === 'series') {
+        const sortedData = [...data].reverse();
+        const item = sortedData[params.dataIndex];
+        if (item?.url) {
+          window.open(item.url, '_blank');
+        }
+      }
+    },
+  };
+
   return (
     <Card className="p-4 h-[400px]">
       <ReactECharts 
         option={getOption()} 
         style={{ height: '100%', width: '100%' }}
         showLoading={loading}
+        onEvents={onEvents}
+        notMerge={true}
       />
     </Card>
   );

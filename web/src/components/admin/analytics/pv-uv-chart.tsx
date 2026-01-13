@@ -83,6 +83,7 @@ export function PvUvChart({ data, loading = false }: PvUvChartProps) {
         option={getOption()} 
         style={{ height: '100%', width: '100%' }}
         showLoading={loading}
+        notMerge={true}
       />
     </Card>
   );
