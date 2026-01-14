@@ -17,16 +17,41 @@ export interface BrowserData {
   value: number;
 }
 
+export interface OsData {
+  name: string;
+  value: number;
+}
+
+export interface DeviceData {
+  name: string;
+  value: number;
+}
+
+export interface UserGrowthData {
+  date: string;
+  value: number;
+  type: 'Login' | 'Register';
+}
+
+export interface ActiveHoursData {
+  hour: string;
+  value: number;
+}
+
 export interface AnalyticsStats {
-  visit: VisitData[];
-  topPages: TopPageData[];
-  browser: BrowserData[];
+  visit?: VisitData[];
+  topPages?: TopPageData[];
+  browser?: BrowserData[];
+  os?: OsData[];
+  device?: DeviceData[];
+  userGrowth?: UserGrowthData[];
+  activeHours?: ActiveHoursData[];
 }
 
 export const analyticsApi = {
-  getStats: (startDate?: string, endDate?: string) => {
+  getStats: (startDate?: string, endDate?: string, type?: 'visit' | 'profile') => {
     return http.get<unknown, AnalyticsStats>('/analytics/stats', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, type },
     });
   },
 };

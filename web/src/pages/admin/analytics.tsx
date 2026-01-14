@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { DatePicker } from 'antd';
+import { DatePicker, Segmented } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import locale from 'antd/es/date-picker/locale/zh_CN';
 import { PvUvChart } from '@/components/admin/analytics/pv-uv-chart';
 import { TopPagesChart } from '@/components/admin/analytics/top-pages-chart';
 import { UserAgentChart } from '@/components/admin/analytics/user-agent-chart';
-import { analyticsApi, type VisitData, type TopPageData, type BrowserData } from '@/api/analytics';
+import { OsChart } from '@/components/admin/analytics/os-chart';
+import { DeviceChart } from '@/components/admin/analytics/device-chart';
+import { UserGrowthChart } from '@/components/admin/analytics/user-growth-chart';
+import { ActiveHoursChart } from '@/components/admin/analytics/active-hours-chart';
+import { analyticsApi, type VisitData, type TopPageData, type BrowserData, type OsData, type DeviceData, type UserGrowthData, type ActiveHoursData } from '@/api/analytics';
 
 const { RangePicker } = DatePicker;
 
@@ -15,33 +19,59 @@ export function AnalyticsPage() {
     dayjs().subtract(7, 'day'),
     dayjs(),
   ]);
+  const [activeTab, setActiveTab] = useState<'visit' | 'profile'>('visit');
+  
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [topPagesData, setTopPagesData] = useState<TopPageData[]>([]);
   const [browserData, setBrowserData] = useState<BrowserData[]>([]);
+  const [osData, setOsData] = useState<OsData[]>([]);
+  const [deviceData, setDeviceData] = useState<DeviceData[]>([]);
+  const [userGrowthData, setUserGrowthData] = useState<UserGrowthData[]>([]);
+  const [activeHoursData, setActiveHoursData] = useState<ActiveHoursData[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (dateRange[0] && dateRange[1]) {
+      fetchData(dateRange, activeTab);
+    }
+  }, [dateRange, activeTab]);
 
-  const fetchData = async (range?: [Dayjs, Dayjs]) => {
+  const fetchData = async (range: [Dayjs, Dayjs], type: 'visit' | 'profile') => {
     try {
       setLoading(true);
-      const [start, end] = range || dateRange;
+      const [start, end] = range;
       const res = await analyticsApi.getStats(
         start.format('YYYY-MM-DD'),
-        end.format('YYYY-MM-DD')
+        end.format('YYYY-MM-DD'),
+        type
       );
+      
       if (res) {
-        setVisitData(res.visit || []);
-        setTopPagesData(res.topPages || []);
-        setBrowserData(res.browser || []);
+        if (type === 'visit') {
+          setVisitData(res.visit || []);
+          setTopPagesData(res.topPages || []);
+          setUserGrowthData(res.userGrowth || []);
+        } else {
+          setBrowserData(res.browser || []);
+          setOsData(res.os || []);
+          setDeviceData(res.device || []);
+          setActiveHoursData(res.activeHours || []);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
-      setVisitData([]);
-      setTopPagesData([]);
-      setBrowserData([]);
+      // Clear data on error based on type or just leave as is?
+      // Leaving as is might be better for UX, or clear specific data.
+      if (type === 'visit') {
+        setVisitData([]);
+        setTopPagesData([]);
+        setUserGrowthData([]);
+      } else {
+        setBrowserData([]);
+        setOsData([]);
+        setDeviceData([]);
+        setActiveHoursData([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -50,31 +80,47 @@ export function AnalyticsPage() {
   return (
     <div className="flex h-full flex-col bg-white">
       <header className="flex h-16 items-center justify-between border-b border-slate-100 pl-14 pr-4 md:px-8">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">数据分析</h2>
+        <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">数据分析</h2>
+      </header>
+
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <Segmented
+            options={[
+              { label: '用户访问', value: 'visit' },
+              { label: '用户画像', value: 'profile' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as 'visit' | 'profile')}
+          />
           <RangePicker
             locale={locale}
             value={dateRange}
             onChange={(dates) => {
-              // Ant Design DatePicker dates can be null, but we initialize with valid dates
-              // and the UI usually enforces selection or clearing both
               if (dates && dates[0] && dates[1]) {
-                const newRange = [dates[0], dates[1]] as [Dayjs, Dayjs];
-                setDateRange(newRange);
-                fetchData(newRange);
+                setDateRange([dates[0], dates[1]] as [Dayjs, Dayjs]);
               }
             }}
-            className="w-64"
+            className="w-full md:w-64"
           />
         </div>
-      </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PvUvChart data={visitData} loading={loading} />
-          <TopPagesChart data={topPagesData} loading={loading} />
-          <UserAgentChart data={browserData} loading={loading} />
-        </div>
+        {activeTab === 'visit' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PvUvChart data={visitData} loading={loading} />
+            <UserGrowthChart data={userGrowthData} loading={loading} />
+            <TopPagesChart data={topPagesData} loading={loading} />
+          </div>
+        )}
+        
+        {activeTab === 'profile' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <UserAgentChart data={browserData} loading={loading} />
+            <OsChart data={osData} loading={loading} />
+            <DeviceChart data={deviceData} loading={loading} />
+            <ActiveHoursChart data={activeHoursData} loading={loading} />
+          </div>
+        )}
       </div>
     </div>
   );

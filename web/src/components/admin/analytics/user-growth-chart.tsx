@@ -1,32 +1,32 @@
 import { Card } from '@/components/ui/card';
 import ReactECharts from 'echarts-for-react';
-import { type VisitData } from '@/api/analytics';
+import { type UserGrowthData } from '@/api/analytics';
 
-interface PvUvChartProps {
-  data: VisitData[];
+interface UserGrowthChartProps {
+  data: UserGrowthData[];
   loading?: boolean;
 }
 
-export function PvUvChart({ data, loading = false }: PvUvChartProps) {
+export function UserGrowthChart({ data, loading = false }: UserGrowthChartProps) {
   // Transform data for ECharts
   const getOption = () => {
     // Extract unique dates for x-axis
     const dates = Array.from(new Set(data.map(item => item.date)));
     
     // Extract series data
-    const pvData = dates.map(date => {
-      const item = data.find(d => d.date === date && d.type === 'PV');
+    const loginData = dates.map(date => {
+      const item = data.find(d => d.date === date && d.type === 'Login');
       return item ? item.value : 0;
     });
     
-    const uvData = dates.map(date => {
-      const item = data.find(d => d.date === date && d.type === 'UV');
+    const registerData = dates.map(date => {
+      const item = data.find(d => d.date === date && d.type === 'Register');
       return item ? item.value : 0;
     });
 
     return {
       title: {
-        text: '访问趋势',
+        text: '增长趋势',
         left: 'left',
         textStyle: {
             fontSize: 16,
@@ -37,7 +37,7 @@ export function PvUvChart({ data, loading = false }: PvUvChartProps) {
         trigger: 'axis'
       },
       legend: {
-        data: ['PV', 'UV'],
+        data: ['登录用户', '注册用户'],
         top: 0,
         left: 'center'
       },
@@ -55,14 +55,14 @@ export function PvUvChart({ data, loading = false }: PvUvChartProps) {
       yAxis: {
         type: 'value'
       },
-      color: ['#6366f1', '#10b981'],
+      color: ['#f59e0b', '#ec4899'],
       series: [
         {
-          name: 'PV',
+          name: '登录用户',
           type: 'line',
           smooth: true,
           showSymbol: false,
-          data: pvData,
+          data: loginData,
           symbol: 'circle',
           symbolSize: 8,
           lineStyle: {
@@ -77,19 +77,19 @@ export function PvUvChart({ data, loading = false }: PvUvChartProps) {
               x2: 0,
               y2: 1,
               colorStops: [{
-                  offset: 0, color: '#6366f1' // 0% 处的颜色
+                  offset: 0, color: '#f59e0b' // 0% 处的颜色
               }, {
-                  offset: 1, color: 'rgba(99, 102, 241, 0.1)' // 100% 处的颜色
+                  offset: 1, color: 'rgba(245, 158, 11, 0.1)' // 100% 处的颜色
               }]
             }
           }
         },
         {
-          name: 'UV',
+          name: '注册用户',
           type: 'line',
           smooth: true,
           showSymbol: false,
-          data: uvData,
+          data: registerData,
           symbol: 'circle',
           symbolSize: 8,
           lineStyle: {
@@ -104,9 +104,9 @@ export function PvUvChart({ data, loading = false }: PvUvChartProps) {
               x2: 0,
               y2: 1,
               colorStops: [{
-                  offset: 0, color: '#10b981' // 0% 处的颜色
+                  offset: 0, color: '#ec4899' // 0% 处的颜色
               }, {
-                  offset: 1, color: 'rgba(16, 185, 129, 0.1)' // 100% 处的颜色
+                  offset: 1, color: 'rgba(236, 72, 153, 0.1)' // 100% 处的颜色
               }]
             }
           }

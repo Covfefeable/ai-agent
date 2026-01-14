@@ -42,6 +42,9 @@ export function LoginPage() {
       const response = await authApi.login(data);
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
+      window.reportEvent('login', {
+        userId: response.user.id.toString(),
+      });
       setIsSuccess(true);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

@@ -51,6 +51,9 @@ export function RegisterPage() {
       });
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
+      window.reportEvent('register', {
+        userId: response.user.id.toString(),
+      });
       navigate('/');
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

@@ -72,7 +72,8 @@ export function TopPagesChart({ data, loading = false }: TopPagesChartProps) {
             position: 'right'
           },
           itemStyle: {
-            color: '#1979C9'
+            color: '#6366f1',
+            borderRadius: [0, 4, 4, 0]
           }
         },
         {
@@ -84,7 +85,8 @@ export function TopPagesChart({ data, loading = false }: TopPagesChartProps) {
             position: 'right'
           },
           itemStyle: {
-            color: '#D62A0D'
+            color: '#10b981',
+            borderRadius: [0, 4, 4, 0]
           }
         }
       ]

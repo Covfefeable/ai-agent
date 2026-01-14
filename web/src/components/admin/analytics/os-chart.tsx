@@ -1,17 +1,17 @@
 import { Card } from '@/components/ui/card';
 import ReactECharts from 'echarts-for-react';
-import type { BrowserData } from '@/api/analytics';
+import type { OsData } from '@/api/analytics';
 
-interface UserAgentChartProps {
-  data: BrowserData[];
+interface OsChartProps {
+  data: OsData[];
   loading?: boolean;
 }
 
-export function UserAgentChart({ data, loading = false }: UserAgentChartProps) {
+export function OsChart({ data, loading = false }: OsChartProps) {
   const getOption = () => {
     return {
       title: {
-        text: '用户浏览器分布',
+        text: '用户操作系统分布',
         left: 'left',
         textStyle: {
           fontSize: 16,
@@ -30,7 +30,7 @@ export function UserAgentChart({ data, loading = false }: UserAgentChartProps) {
       color: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'],
       series: [
         {
-          name: '浏览器',
+          name: '操作系统',
           type: 'pie',
           radius: ['40%', '70%'],
           avoidLabelOverlap: false,
