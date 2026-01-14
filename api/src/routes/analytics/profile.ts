@@ -1,0 +1,189 @@
+import { db } from '../../db';
+import { userEvents } from '../../db/schema';
+import { sql } from 'drizzle-orm';
+
+export async function getBrowserStats(startDate?: string, endDate?: string) {
+  let dateFilter = sql`1=1`;
+  if (startDate) {
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} <= ${end.toISOString()}`;
+  }
+
+  const stats = await db.execute(sql`
+    SELECT 
+      ${userEvents.browser} as browser_col,
+      COUNT(*) as count
+    FROM ${userEvents}
+    WHERE ${userEvents.eventName} = 'visit'
+    AND (
+      (${userEvents.browser} IS NOT NULL AND ${userEvents.browser} != '')
+      OR 
+      (${userEvents.userAgent} IS NOT NULL AND ${userEvents.userAgent} != '')
+    )
+    AND ${dateFilter}
+    GROUP BY ${userEvents.browser}
+  `);
+
+  const browserStats = new Map<string, number>();
+
+  stats.forEach((row: any) => {
+    let browserName = 'Unknown';
+
+    if (row.browser_col) {
+      // format is name:version
+      const parts = row.browser_col.split(':');
+      // If name is 'unknown', keep it as 'Unknown' (capitalized) for consistency
+      if (parts[0] && parts[0] !== 'unknown') {
+        browserName = parts[0];
+      }
+    }
+
+    const currentCount = browserStats.get(browserName) || 0;
+    browserStats.set(browserName, currentCount + Number(row.count));
+  });
+
+  return Array.from(browserStats.entries())
+    .map(([name, value]) => ({
+      name,
+      value
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export async function getOsStats(startDate?: string, endDate?: string) {
+  let dateFilter = sql`1=1`;
+  if (startDate) {
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} <= ${end.toISOString()}`;
+  }
+
+  const stats = await db.execute(sql`
+    SELECT 
+      ${userEvents.os} as os_col,
+      COUNT(*) as count
+    FROM ${userEvents}
+    WHERE ${userEvents.eventName} = 'visit'
+    AND ${userEvents.os} IS NOT NULL 
+    AND ${userEvents.os} != ''
+    AND ${dateFilter}
+    GROUP BY ${userEvents.os}
+  `);
+
+  const osStats = new Map<string, number>();
+
+  stats.forEach((row: any) => {
+    let osName = 'Unknown';
+
+    if (row.os_col) {
+      // format is name:version
+      const parts = row.os_col.split(':');
+      if (parts[0] && parts[0] !== 'unknown') {
+        osName = parts[0];
+      }
+    }
+
+    const currentCount = osStats.get(osName) || 0;
+    osStats.set(osName, currentCount + Number(row.count));
+  });
+
+  return Array.from(osStats.entries())
+    .map(([name, value]) => ({
+      name,
+      value
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export async function getActiveHoursStats(startDate?: string, endDate?: string) {
+  let dateFilter = sql`1=1`;
+  if (startDate) {
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} <= ${end.toISOString()}`;
+  }
+
+  const stats = await db.execute(sql`
+    SELECT 
+      EXTRACT(HOUR FROM ${userEvents.createdAt} + interval '8 hours') as hour,
+      COUNT(*) as count
+    FROM ${userEvents}
+    WHERE ${userEvents.eventName} = 'visit'
+    AND ${dateFilter}
+    GROUP BY hour
+    ORDER BY hour ASC
+  `);
+
+  const hoursMap = new Map<number, number>();
+  stats.forEach((row: any) => {
+    hoursMap.set(Number(row.hour), Number(row.count));
+  });
+
+  const result: any[] = [];
+  for (let i = 0; i < 24; i++) {
+    result.push({
+      hour: `${i}点`,
+      value: hoursMap.get(i) || 0
+    });
+  }
+  return result;
+}
+
+export async function getDeviceStats(startDate?: string, endDate?: string) {
+  let dateFilter = sql`1=1`;
+  if (startDate) {
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} >= ${new Date(startDate).toISOString()}`;
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter = sql`${dateFilter} AND ${userEvents.createdAt} <= ${end.toISOString()}`;
+  }
+
+  const stats = await db.execute(sql`
+    SELECT 
+      ${userEvents.device} as device_col,
+      COUNT(*) as count
+    FROM ${userEvents}
+    WHERE ${userEvents.eventName} = 'visit'
+    AND ${userEvents.device} IS NOT NULL 
+    AND ${userEvents.device} != ''
+    AND ${dateFilter}
+    GROUP BY ${userEvents.device}
+  `);
+
+  const deviceStats = new Map<string, number>();
+
+  stats.forEach((row: any) => {
+    let deviceName = 'Unknown'; // Default for desktop or unrecognized
+
+    if (row.device_col) {
+      // format is vendor:model
+      const parts = row.device_col.split(':');
+      // If vendor is available, use it (e.g., Apple, Samsung)
+      if (parts[0] && parts[0] !== 'unknown') {
+        deviceName = parts[0];
+      }
+    }
+
+    const currentCount = deviceStats.get(deviceName) || 0;
+    deviceStats.set(deviceName, currentCount + Number(row.count));
+  });
+
+  return Array.from(deviceStats.entries())
+    .map(([name, value]) => ({
+      name,
+      value
+    }))
+    .sort((a, b) => b.value - a.value);
+}
