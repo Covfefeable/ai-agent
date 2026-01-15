@@ -5,6 +5,7 @@ import { Tooltip } from 'antd';
 import { Pagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import { ChangePasswordModal } from '@/components/profile/change-password-modal';
+import { RechargeModal } from '@/components/profile/recharge-modal';
 import { userApi } from '@/api/user';
 import { toast } from 'sonner';
 
@@ -24,6 +25,7 @@ interface UsageItem {
 export function ProfilePage() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [usageList, setUsageList] = useState<UsageItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -207,8 +209,20 @@ export function ProfilePage() {
                   )}
                 </div>
                 <div className="text-sm text-slate-500">{user.email}</div>
-                <div className="text-sm font-medium text-slate-600 pt-1">
-                  余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '∞' : `${user.balance?.toLocaleString() || 0} Tokens`}</span>
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="text-sm font-medium text-slate-600">
+                    余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '∞' : `${(user.balance / 1000).toFixed(2)}k Tokens`}</span>
+                  </div>
+                  {!['owner', 'admin'].includes(user.role) && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setIsRechargeModalOpen(true)}
+                    >
+                      充值
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -281,6 +295,11 @@ export function ProfilePage() {
       <ChangePasswordModal 
         isOpen={isPasswordModalOpen} 
         onClose={() => setIsPasswordModalOpen(false)} 
+      />
+      
+      <RechargeModal 
+        isOpen={isRechargeModalOpen} 
+        onClose={() => setIsRechargeModalOpen(false)} 
       />
     </div>
   );
