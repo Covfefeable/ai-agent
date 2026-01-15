@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
+import { Modal } from 'antd';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -25,18 +26,17 @@ export function ConfirmDialog({
   variant = 'default',
   isLoading = false,
 }: ConfirmDialogProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
-        className="fixed inset-0" 
-        onClick={onClose}
-      />
-      <div 
-        className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
+    <Modal
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={384}
+      centered
+      closable={false}
+      className="confirm-dialog"
+    >
+      <div className="pt-2">
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
         {description && (
           <div className="mt-2 text-sm text-slate-500">
@@ -67,6 +67,6 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

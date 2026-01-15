@@ -1,6 +1,8 @@
+import { Modal } from 'antd';
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { toast } from 'sonner';
 import { useForm, type Resolver, useWatch } from 'react-hook-form';
@@ -53,8 +55,6 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
 
   const keywords = useWatch<SegmentFormValues>({ control, name: 'keywords' }) as string[];
 
-  if (!isOpen) return null;
-
   const onSubmit = async (data: SegmentFormValues) => {
     try {
       await knowledgeApi.updateSegment(datasetId, documentId, segment.id, {
@@ -81,72 +81,66 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div 
-        className="relative w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">编辑分段</h3>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-500">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">内容</label>
-              <textarea
-                {...register('content')}
-                className="w-full min-h-[200px] rounded-lg border border-slate-200 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="分段内容..."
+    <Modal
+      title="编辑分段"
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={800}
+      centered
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="pt-4 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2 max-h-[60vh]">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">内容</label>
+            <textarea
+              {...register('content')}
+              className="w-full min-h-[200px] rounded-2xl border border-slate-200 p-4 text-sm transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+              placeholder="分段内容..."
+            />
+            {errors.content && (
+              <p className="text-xs text-red-500">{errors.content.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">关键词</label>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={newKeyword}
+                onChange={(e) => setNewKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addKeyword();
+                  }
+                }}
+                className="flex-1"
+                placeholder="输入关键词并回车..."
               />
-              {errors.content && (
-                <p className="text-xs text-red-500">{errors.content.message}</p>
-              )}
+              <Button type="button" onClick={addKeyword} variant="outline" className="shrink-0 h-12 rounded-2xl px-6">
+                添加
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">关键词</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newKeyword}
-                  onChange={(e) => setNewKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addKeyword();
-                    }
-                  }}
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="输入关键词并回车..."
-                />
-                <Button type="button" onClick={addKeyword} variant="outline" className="shrink-0">
-                  添加
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {keywords.map((keyword, index) => (
-                  <span key={index} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
-                    {keyword}
-                    <button type="button" onClick={() => removeKeyword(keyword)} className="ml-1 hover:text-red-500">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {keywords.map((keyword, index) => (
+                <span key={index} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+                  {keyword}
+                  <button type="button" onClick={() => removeKeyword(keyword)} className="ml-1 hover:text-red-500">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
             </div>
           </div>
+        </div>
 
-          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>取消</Button>
-            <Button type="submit" isLoading={isSubmitting} className="bg-black hover:bg-black/80 text-white">保存</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>取消</Button>
+          <Button type="submit" isLoading={isSubmitting} className="bg-black hover:bg-black/80 text-white">保存</Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

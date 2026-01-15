@@ -1,7 +1,8 @@
+import { Modal } from 'antd';
 import { useState, useEffect } from 'react';
 import { userGroupsApi, type GroupUser } from '@/api/user-groups';
 import { toast } from 'sonner';
-import { X, Loader2, Search } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { UserGroupsDisplay } from '@/components/admin/user-groups-display';
@@ -139,20 +140,17 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-4xl flex flex-col h-[600px] rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b p-6 pb-4">
-          <h3 className="text-lg font-bold text-slate-900">添加用户</h3>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex gap-2 p-6 pb-0">
+    <Modal
+      title="添加用户"
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={896}
+      centered
+    >
+      <div className="flex flex-col h-[600px] pt-4 -mx-6 -mb-6">
+        <div className="flex gap-2 px-6 pb-4 border-b">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -165,7 +163,7 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
              <div className="flex h-40 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -242,7 +240,7 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
           )}
         </div>
 
-        <div className="border-t p-4 flex justify-between items-center">
+        <div className="border-t p-4 flex justify-between items-center bg-white rounded-b-lg">
              <div className="flex-1">
              {users.length > 0 && (
                 <Pagination
@@ -265,6 +263,6 @@ export function AddGroupUserModal({ isOpen, groupId, onClose, onSuccess }: AddGr
             </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

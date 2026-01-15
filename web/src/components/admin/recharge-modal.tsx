@@ -1,6 +1,7 @@
+import { Modal } from 'antd';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,21 +55,16 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">
-            给用户充值
-          </h3>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+    <Modal
+      title="给用户充值"
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={448}
+      centered
+    >
+      <div className="pt-4">
         <div className="mb-4 text-sm text-slate-600">
           正在为用户 <span className="font-bold text-slate-900">{userName}</span> 充值
         </div>
@@ -110,6 +106,6 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
+import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
-import { X, Loader2, Check, Search } from 'lucide-react';
+import { Loader2, Check, Search } from 'lucide-react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -145,29 +146,23 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md flex flex-col h-[600px] rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 pb-4 border-b">
-          <h3 className="text-lg font-bold text-slate-900">
-            {mode === 'create' ? '新建智能体' : '编辑智能体'}
-          </h3>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-6">
-            {isLoading ? (
-              <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-              </div>
-            ) : (
-              <div className="space-y-4">
+    <Modal
+      title={mode === 'create' ? '新建智能体' : '编辑智能体'}
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={448}
+      centered
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="pt-4 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto max-h-[60vh] pr-2">
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          ) : (
+            <div className="space-y-4">
               <div className="space-y-3">
                 <Label>可见范围</Label>
                 <div className="flex gap-4">
@@ -315,29 +310,26 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                   <p className="text-xs text-red-500">{errors.multiplier.message}</p>
                 )}
               </div>
-
-
             </div>
           )}
-          </div>
+        </div>
 
-          <div className="p-6 border-t bg-white flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              取消
-            </Button>
-            <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting || isLoading}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === 'create' ? '创建中...' : '保存中...'}
-                </>
-              ) : (
-                mode === 'create' ? '立即创建' : '保存修改'
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            取消
+          </Button>
+          <Button type="submit" className="bg-black hover:bg-black/80 text-white" disabled={isSubmitting || isLoading}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {mode === 'create' ? '创建中...' : '保存中...'}
+              </>
+            ) : (
+              mode === 'create' ? '立即创建' : '保存修改'
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

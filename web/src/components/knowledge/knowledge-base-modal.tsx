@@ -1,5 +1,6 @@
+import { Modal } from 'antd';
 import { useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,86 +80,69 @@ export function KnowledgeBaseModal({ isOpen, onClose, onSuccess, mode, initialDa
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
-        className="fixed inset-0" 
-        onClick={onClose}
-      />
-      <div 
-        className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">
-            {mode === 'create' ? '新建知识库' : '编辑知识库'}
-          </h3>
-          <button 
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <Modal
+      title={mode === 'create' ? '新建知识库' : '编辑知识库'}
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      width={448}
+      centered
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="pt-4">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">名称</Label>
+            <Input
+              id="name"
+              {...register('name')}
+              placeholder="请输入知识库名称"
+              disabled={isSubmitting}
+            />
+            {errors.name && (
+              <p className="text-xs text-red-500">{errors.name.message}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">描述</Label>
+            <Input
+              id="description"
+              {...register('description')}
+              placeholder="请输入知识库描述"
+              disabled={isSubmitting}
+            />
+            {errors.description && (
+              <p className="text-xs text-red-500">{errors.description.message}</p>
+            )}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">名称</Label>
-              <Input
-                id="name"
-                {...register('name')}
-                placeholder="请输入知识库名称"
-                disabled={isSubmitting}
-              />
-              {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">描述</Label>
-              <Input
-                id="description"
-                {...register('description')}
-                placeholder="请输入知识库描述"
-                disabled={isSubmitting}
-              />
-              {errors.description && (
-                <p className="text-xs text-red-500">{errors.description.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              取消
-            </Button>
-            <Button 
-              type="submit" 
-              className="bg-black hover:bg-black/80 text-white"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === 'create' ? '创建中...' : '保存中...'}
-                </>
-              ) : (
-                mode === 'create' ? '立即创建' : '保存修改'
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            取消
+          </Button>
+          <Button 
+            type="submit" 
+            className="bg-black hover:bg-black/80 text-white"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {mode === 'create' ? '创建中...' : '保存中...'}
+              </>
+            ) : (
+              mode === 'create' ? '立即创建' : '保存修改'
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
