@@ -7,7 +7,7 @@ import { users } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
-const INITIAL_BALANCE = parseInt(process.env.INITIAL_BALANCE || '100000', 10);
+const INITIAL_BALANCE = parseInt(process.env.INITIAL_BALANCE || '100', 10);
 
 const registerSchema = z.object({
   name: z.string().min(2),
