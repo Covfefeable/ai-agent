@@ -18,6 +18,8 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
         if (data.event === 'message_end' && data.metadata?.usage) {
           const usage = data.metadata.usage;
           
+          const points = Number((((usage.prompt_tokens * 0.5) + usage.completion_tokens) * multiplier / 2000).toFixed(2));
+
           // Record usage
           await db.insert(userUsage).values({
             userId,
@@ -37,13 +39,14 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
             timeToFirstToken: String(usage.time_to_first_token),
             timeToGenerate: String(usage.time_to_generate),
             multiplier: multiplier,
+            calculatedPoints: points,
           });
 
           // Deduct balance for regular members
           if (userRole === 'member') {
              await db.update(users)
                .set({ 
-                 balance: sql`${users.balance} - ${Math.ceil(usage.total_tokens * multiplier)}` 
+                 balance: sql`${users.balance} - ${points}` 
                })
                .where(eq(users.id, userId));
           }

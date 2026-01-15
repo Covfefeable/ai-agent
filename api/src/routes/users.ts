@@ -76,11 +76,27 @@ export async function usersRoutes(fastify: FastifyInstance) {
         }, {} as Record<string, string>);
       }
 
-      const data = list.map(item => ({
-        ...item,
-        agentName: item.source === 'super_agent' ? 'Super Agent' : (agentMap[item.source] || '未知智能体'),
-        calculatedTotalTokens: Math.ceil((item.totalTokens || 0) * (item.multiplier ?? 1.0)),
-      }));
+      const data = list.map(item => {
+        let calculatedPoints = item.calculatedPoints;
+
+        if (calculatedPoints === null || calculatedPoints === undefined) {
+          const multiplier = item.multiplier ?? 1.0;
+          calculatedPoints = Number((((item.promptTokens || 0) * 0.5 + (item.completionTokens || 0)) * multiplier / 2000).toFixed(2));
+        }
+
+        return {
+          id: item.id,
+          agentName: item.source === 'super_agent' ? 'Super Agent' : (agentMap[item.source] || '未知智能体'),
+          promptTokens: item.promptTokens,
+          completionTokens: item.completionTokens,
+          totalTokens: item.totalTokens,
+          calculatedPoints,
+          latency: item.latency,
+          totalPrice: item.totalPrice,
+          currency: item.currency,
+          createdAt: item.createdAt,
+        };
+      });
 
       return {
         data,

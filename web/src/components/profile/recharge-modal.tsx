@@ -8,13 +8,14 @@ interface RechargeOption {
   price: number;
   tokens: number;
   label: string;
+  discount: number;
 }
 
 const RECHARGE_OPTIONS: RechargeOption[] = [
-  { price: 1, tokens: 100000, label: '100k' },
-  { price: 10, tokens: 1000000, label: '1000k' },
-  { price: 50, tokens: 5000000, label: '5000k' },
-  { price: 100, tokens: 10000000, label: '10000k' },
+  { price: 1, tokens: 10, label: '10', discount: 1 },
+  { price: 10, tokens: 100, label: '100', discount: 1 },
+  { price: 47.5, tokens: 500, label: '500', discount: 0.95 },
+  { price: 92, tokens: 1000, label: '1000', discount: 0.92 },
 ];
 
 interface RechargeModalProps {
@@ -52,16 +53,26 @@ export function RechargeModal({ isOpen, onClose }: RechargeModalProps) {
                   : "border-transparent ring-1 ring-slate-200"
               )}
             >
+              {option.discount < 1 && (
+                <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg rounded-tr-lg font-bold">
+                  {(option.discount * 10).toFixed(1).replace('.0', '')}折
+                </div>
+              )}
               {selectedPrice === option.price && (
-                <div className="absolute top-2 right-2 text-slate-900">
+                <div className="absolute top-2 left-2 text-slate-900">
                   <Check className="w-4 h-4" />
                 </div>
               )}
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                ￥{option.price}
+              <div className="text-2xl font-bold text-slate-900 mb-1 flex items-baseline gap-2">
+                <span>￥{option.price}</span>
+                {option.discount < 1 && (
+                  <span className="text-sm font-normal text-slate-400 line-through decoration-slate-400">
+                    ￥{Math.ceil(option.price / option.discount)}
+                  </span>
+                )}
               </div>
               <div className="text-sm font-medium text-slate-500">
-                {option.label} Tokens
+                {option.label} 点数
               </div>
             </div>
           ))}

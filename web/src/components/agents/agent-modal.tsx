@@ -1,7 +1,7 @@
 import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { Loader2, Check, Search } from 'lucide-react';
-import { useForm, Controller, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,6 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
     handleSubmit,
     control,
     reset,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<AgentFormValues>({
@@ -61,8 +60,11 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
     },
   });
 
-  const visibility = watch('visibility');
-  const selectedGroupIds = watch('groupIds') || [];
+  const visibility = useWatch({ control, name: 'visibility' });
+  const selectedGroupIds = useWatch({ control, name: 'groupIds' }) || [];
+  
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.role === 'admin' || user.role === 'owner';
 
   // Debounce search
   useEffect(() => {
@@ -73,14 +75,14 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
   }, [groupSearch]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isAdmin) {
       setLoadingGroups(true);
       userGroupsApi.list(1, 100, debouncedGroupSearch)
         .then(res => setAvailableGroups(res.data))
         .catch(() => console.error('获取用户组列表失败'))
         .finally(() => setLoadingGroups(false));
     }
-  }, [isOpen, debouncedGroupSearch]);
+  }, [isOpen, debouncedGroupSearch, isAdmin]);
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -186,19 +188,21 @@ export function AgentModal({ isOpen, onClose, onSuccess, mode, categories, initi
                     />
                     <span className="text-sm text-slate-700">私有</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="selected_groups"
-                      {...register('visibility')}
-                      className="h-4 w-4 border-slate-300 accent-black"
-                      disabled={isSubmitting}
-                    />
-                    <span className="text-sm text-slate-700">指定用户组</span>
-                  </label>
+                  {isAdmin && (
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="selected_groups"
+                        {...register('visibility')}
+                        className="h-4 w-4 border-slate-300 accent-black"
+                        disabled={isSubmitting}
+                      />
+                      <span className="text-sm text-slate-700">指定用户组</span>
+                    </label>
+                  )}
                 </div>
 
-                {visibility === 'selected_groups' && (
+                {visibility === 'selected_groups' && isAdmin && (
                   <div className="mt-2 rounded-lg border border-slate-200 p-3">
                     <div className="mb-2 flex items-center justify-between">
                       <div className="text-xs font-medium text-slate-500">选择用户组</div>

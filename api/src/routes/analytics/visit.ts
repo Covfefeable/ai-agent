@@ -221,8 +221,8 @@ export async function getUserGrowthData(startDate?: string, endDate?: string) {
   const stats = await db.execute(sql`
     SELECT 
       DATE(${userEvents.createdAt}) as date,
-      SUM(CASE WHEN ${userEvents.eventName} = 'login' THEN 1 ELSE 0 END) as login_count,
-      SUM(CASE WHEN ${userEvents.eventName} = 'register' THEN 1 ELSE 0 END) as register_count
+      COUNT(DISTINCT CASE WHEN ${userEvents.eventName} = 'login' THEN ${userEvents.userId} END) as login_count,
+      COUNT(DISTINCT CASE WHEN ${userEvents.eventName} = 'register' THEN ${userEvents.userId} END) as register_count
     FROM ${userEvents}
     WHERE ${userEvents.eventName} IN ('login', 'register')
     AND ${dateFilter}

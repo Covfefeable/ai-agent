@@ -72,7 +72,7 @@ export function RechargeModal({ isOpen, onClose, onSuccess, userId, userName }: 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">充值数额 (Token)</Label>
+              <Label htmlFor="amount">充值数额 (点数)</Label>
               <Input
                 id="amount"
                 type="number"

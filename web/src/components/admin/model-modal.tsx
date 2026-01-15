@@ -7,7 +7,7 @@ import { Loader2, Plus, Check, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { cn } from '@/lib/utils';
@@ -55,7 +55,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ModelFormValues>({
@@ -72,8 +72,8 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     },
   });
 
-  const visibility = watch('visibility');
-  const selectedGroupIds = watch('groupIds') || [];
+  const visibility = useWatch({ control, name: 'visibility' });
+  const selectedGroupIds = useWatch({ control, name: 'groupIds' }) || [];
 
   // Debounce search
   useEffect(() => {
@@ -135,7 +135,7 @@ export function ModelModal({ isOpen, mode, initialData, onClose, onSuccess, isLo
     }
   };
 
-  const iconUrl = watch('iconUrl');
+  const iconUrl = useWatch({ control, name: 'iconUrl' });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

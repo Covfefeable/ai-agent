@@ -15,7 +15,7 @@ interface UsageItem {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  calculatedTotalTokens?: number;
+  calculatedPoints?: number;
   latency: string;
   totalPrice: string;
   currency: string;
@@ -211,7 +211,7 @@ export function ProfilePage() {
                 <div className="text-sm text-slate-500">{user.email}</div>
                 <div className="flex items-center gap-3 pt-1">
                   <div className="text-sm font-medium text-slate-600">
-                    余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '∞' : `${(user.balance / 1000).toFixed(2)}k Tokens`}</span>
+                    余额: <span className="text-slate-900">{['owner', 'admin'].includes(user.role) ? '∞' : `${Number(user.balance || 0).toFixed(2)} 点数`}</span>
                   </div>
                   {!['owner', 'admin'].includes(user.role) && (
                     <Button 
@@ -241,8 +241,7 @@ export function ProfilePage() {
                 <tr>
                   <th className="px-4 py-3">时间</th>
                   <th className="px-4 py-3">来源</th>
-                  <th className="px-4 py-3">Tokens</th>
-                  <th className="px-4 py-3">结算token</th>
+                  <th className="px-4 py-3">结算点数</th>
                   <th className="px-4 py-3">耗时</th>
                   {/* <th className="px-4 py-3">费用</th> */}
                 </tr>
@@ -256,11 +255,8 @@ export function ProfilePage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.agentName}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {item.totalTokens}
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-900">
-                      {item.calculatedTotalTokens ?? item.totalTokens}
+                      {item.calculatedPoints ?? item.totalTokens}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {Number(item.latency).toFixed(2)}s
