@@ -7,7 +7,7 @@ import { inArray, eq, and } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
-const DIFY_SUPER_AGENT_API_KEY = process.env.DIFY_SUPER_AGENT_API_KEY;
+const DIFY_SUPER_AGENT_CHAT_API_KEY = process.env.DIFY_SUPER_AGENT_CHAT_API_KEY;
 const DIFY_KNOWLEDGE_API_KEY = process.env.DIFY_KNOWLEDGE_API_KEY;
 
 const chatSchema = z.object({
@@ -94,7 +94,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         },
         {
           headers: {
-            'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`,
+            'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`,
             'Content-Type': 'application/json'
           },
           responseType: 'stream'
@@ -150,7 +150,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`,
+            'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`,
             // Axios automatically sets Content-Type for FormData, but we might need to be careful
             'Content-Type': 'multipart/form-data'
           }
@@ -178,7 +178,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
           limit
         },
         headers: {
-          'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`
+          'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`
         }
       });
 
@@ -200,7 +200,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
           user: user.id.toString()
         },
         headers: {
-          'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`,
+          'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`,
           'Content-Type': 'application/json'
         }
       });
@@ -226,7 +226,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
           limit
         },
         headers: {
-          'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`
+          'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`
         }
       });
 
@@ -252,7 +252,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         },
         {
           headers: {
-            'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`,
+            'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`,
             'Content-Type': 'application/json'
           }
         }
@@ -278,7 +278,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
         },
         {
           headers: {
-            'Authorization': `Bearer ${DIFY_SUPER_AGENT_API_KEY}`,
+            'Authorization': `Bearer ${DIFY_SUPER_AGENT_CHAT_API_KEY}`,
             'Content-Type': 'application/json'
           }
         }
