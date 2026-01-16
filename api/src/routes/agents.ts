@@ -624,9 +624,6 @@ export async function agentsRoutes(fastify: FastifyInstance) {
 
       const { apiKey: inputApiKey, baseUrl: inputBaseUrl, categoryId: inputCategoryId, multiplier: inputMultiplier, visibility: inputVisibility, groupIds: inputGroupIds } = parsed.data;
 
-      let targetApiKey = inputApiKey;
-      let targetBaseUrl = inputBaseUrl;
-
       // Check DB if needed
       const [record] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
       if (!record) {
@@ -646,36 +643,16 @@ export async function agentsRoutes(fastify: FastifyInstance) {
          return reply.status(400).send({ message: '请选择可见用户组' });
       }
 
-      if (inputGroupIds && userRole === 'member') {
-         const members = await db.select().from(userGroupMembers).where(and(eq(userGroupMembers.userId, request.user.id), inArray(userGroupMembers.groupId, inputGroupIds)));
-         if (members.length !== inputGroupIds.length) {
-            return reply.status(403).send({ message: '您只能选择自己加入的用户组' });
-         }
-      }
+      const targetApiKey = inputApiKey || record.apiKey;
+      const targetBaseUrl = inputBaseUrl !== undefined ? inputBaseUrl : (record.baseUrl || undefined);
 
-      if (!targetApiKey) {
-        targetApiKey = record.apiKey;
-      }
-      if (targetBaseUrl === undefined) {
-        targetBaseUrl = record.baseUrl || undefined;
-      }
-
-      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; visibility: 'public' | 'private' | 'selected_groups'; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number; updatedAt: Date }> = {};
-      
-      updateFields.updatedAt = new Date();
-
-      if (inputApiKey) {
-        updateFields.apiKey = inputApiKey;
-      }
-      if (inputMultiplier !== undefined) {
-        updateFields.multiplier = inputMultiplier;
-      }
-      if (inputBaseUrl !== undefined) {
-        updateFields.baseUrl = inputBaseUrl || null;
-      }
-      if (newVisibility) {
-        updateFields.visibility = newVisibility;
-      }
+      const updateFields: any = {
+        updatedAt: new Date(),
+        ...(inputApiKey && { apiKey: inputApiKey }),
+        ...(inputMultiplier !== undefined && { multiplier: inputMultiplier }),
+        ...(inputBaseUrl !== undefined && { baseUrl: inputBaseUrl || null }),
+        ...(newVisibility && { visibility: newVisibility }),
+      };
       if (typeof inputCategoryId === 'string') {
         if (inputCategoryId) {
           const [cat] = await db.select().from(categories).where(eq(categories.id, inputCategoryId)).limit(1);
