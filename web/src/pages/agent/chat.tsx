@@ -782,7 +782,7 @@ export function AgentChatPage() {
                     </div>
                   )}
                   <div className={cn(
-                    "rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm",
+                    "rounded-2xl px-5 py-2 text-sm leading-relaxed shadow-sm",
                     msg.role === 'user' 
                           ? "bg-slate-900 text-white rounded-tr-none" 
                           : "bg-slate-50 text-slate-800 border border-slate-100 rounded-tl-none"
