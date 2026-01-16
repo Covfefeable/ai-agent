@@ -27,20 +27,19 @@ export async function userGroupsRoutes(fastify: FastifyInstance) {
       }
 
       // Get groups with user count
-      const list = await db
-        .select({
-            id: userGroups.id,
-            name: userGroups.name,
-            createdAt: userGroups.createdAt,
-            userCount: sql<number>`count(${userGroupMembers.id})`.mapWith(Number)
-        })
-        .from(userGroups)
-        .leftJoin(userGroupMembers, eq(userGroups.id, userGroupMembers.groupId))
-        .where(conditions)
-        .groupBy(userGroups.id)
-        .orderBy(desc(userGroups.createdAt))
-        .limit(limitNum)
-        .offset(offset);
+      const list = await db.query.userGroups.findMany({
+        where: conditions,
+        limit: limitNum,
+        offset: offset,
+        orderBy: desc(userGroups.createdAt),
+        extras: {
+          userCount: sql<number>`(
+            SELECT count(*) 
+            FROM ${userGroupMembers} 
+            WHERE ${userGroupMembers.groupId} = ${userGroups.id}
+          )`.mapWith(Number).as('user_count')
+        }
+      });
 
       const [countResult] = await db
         .select({ count: sql<number>`count(*)` })

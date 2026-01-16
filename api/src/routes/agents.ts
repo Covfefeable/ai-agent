@@ -25,6 +25,21 @@ async function verifyAgentAccess(agent: any, userId: string, userRole: string) {
   if (agent.visibility === 'public') return true;
 
   if (agent.visibility === 'selected_groups') {
+    // Check if groups are already loaded (from db.query)
+    if (agent.groups && Array.isArray(agent.groups)) {
+       const groupIds = agent.groups.map((g: any) => g.groupId);
+       if (groupIds.length === 0) return false;
+       
+       const [member] = await db.select({ id: userGroupMembers.id })
+         .from(userGroupMembers)
+         .where(and(
+            eq(userGroupMembers.userId, userId),
+            inArray(userGroupMembers.groupId, groupIds)
+         ))
+         .limit(1);
+       return !!member;
+    }
+
     const [match] = await db.select({ id: agentUserGroups.id })
       .from(agentUserGroups)
       .innerJoin(userGroupMembers, eq(agentUserGroups.groupId, userGroupMembers.groupId))
@@ -72,46 +87,23 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const total = Number(countResult?.count || 0);
 
       // Get paginated data
-      const list = await db.select({
-        id: agents.id,
-        title: agents.title,
-        description: agents.description,
-        iconUrl: agents.iconUrl,
-        categoryId: agents.categoryId,
-        multiplier: agents.multiplier,
-        visibility: agents.visibility,
-        createdAt: agents.createdAt,
-      })
-      .from(agents)
-      .where(whereClause)
-      .orderBy(desc(agents.createdAt))
-      .limit(limitNum)
-      .offset(offset);
-
-      // Fetch groups for selected_groups agents
-      const agentIds = list.map(a => a.id);
-      const agentGroupsMap: Record<string, string[]> = {};
-      
-      if (agentIds.length > 0) {
-        const groups = await db.select({
-          agentId: agentUserGroups.agentId,
-          groupName: userGroups.name
-        })
-        .from(agentUserGroups)
-        .innerJoin(userGroups, eq(agentUserGroups.groupId, userGroups.id))
-        .where(inArray(agentUserGroups.agentId, agentIds));
-
-        groups.forEach(g => {
-            if (!agentGroupsMap[g.agentId]) {
-                agentGroupsMap[g.agentId] = [];
+      const list = await db.query.agents.findMany({
+        where: whereClause,
+        limit: limitNum,
+        offset: offset,
+        orderBy: desc(agents.createdAt),
+        with: {
+          groups: {
+            with: {
+              group: true
             }
-            agentGroupsMap[g.agentId].push(g.groupName);
-        });
-      }
+          }
+        }
+      });
 
       const listWithGroups = list.map(item => ({
         ...item,
-        groups: agentGroupsMap[item.id]?.join(',') || undefined
+        groups: item.groups?.map((g: any) => g.group.name).join(',') || undefined
       }));
 
       return { 
@@ -175,21 +167,19 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const total = Number(countResult?.count || 0);
 
       // Get paginated data
-      const list = await db.select({
-        id: agents.id,
-        title: agents.title,
-        description: agents.description,
-        iconUrl: agents.iconUrl,
-        categoryId: agents.categoryId,
-        multiplier: agents.multiplier,
-        visibility: agents.visibility,
-        createdAt: agents.createdAt,
-      })
-      .from(agents)
-      .where(whereClause)
-      .orderBy(desc(agents.createdAt))
-      .limit(limitNum)
-      .offset(offset);
+      const list = await db.query.agents.findMany({
+        where: whereClause,
+        limit: limitNum,
+        offset: offset,
+        orderBy: desc(agents.createdAt),
+        with: {
+          groups: {
+            with: {
+              group: true
+            }
+          }
+        }
+      });
 
       return { 
         data: list,
@@ -489,8 +479,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       const parsed = bodySchema.parse(request.body);
       const { apiKey, baseUrl: inputBaseUrl, categoryId, multiplier, groupIds } = parsed;
       
-      let visibility = parsed.visibility;
-      if (!visibility) visibility = 'public'; // Default
+      let visibility: 'public' | 'private' | 'selected_groups' = parsed.visibility || 'public';
 
       // Validate visibility and groups
       if (visibility === 'selected_groups') {
@@ -671,8 +660,10 @@ export async function agentsRoutes(fastify: FastifyInstance) {
         targetBaseUrl = record.baseUrl || undefined;
       }
 
-      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; visibility: string; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number }> = {};
+      let updateFields: Partial<{ title: string; description: string; iconUrl: string | null; visibility: 'public' | 'private' | 'selected_groups'; categoryId: string | null; baseUrl: string | null; apiKey: string; multiplier: number; updatedAt: Date }> = {};
       
+      updateFields.updatedAt = new Date();
+
       if (inputApiKey) {
         updateFields.apiKey = inputApiKey;
       }

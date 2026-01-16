@@ -216,34 +216,32 @@ export async function usersRoutes(fastify: FastifyInstance) {
         .where(conditions);
       const total = Number(countResult?.count || 0);
 
-      let baseQuery = db.select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        balance: users.balance,
-        createdAt: users.createdAt,
-        groups: sql<string>`(
-          SELECT string_agg(ug.name, ',')
-          FROM ${userGroupMembers} ugm
-          JOIN ${userGroups} ug ON ug.id = ugm.group_id
-          WHERE ugm.user_id = "users"."id"
-        )`.as('groups'),
-      })
-      .from(users)
-      .$dynamic();
+      const allUsers = await db.query.users.findMany({
+        where: conditions,
+        limit: limitNum,
+        offset: offset,
+        orderBy: desc(users.createdAt),
+        with: {
+          groups: {
+            with: {
+              group: true
+            }
+          }
+        }
+      });
 
-      if (conditions) {
-        baseQuery = baseQuery.where(conditions);
-      }
-
-      const allUsers = await baseQuery
-        .orderBy(desc(users.createdAt))
-        .limit(limitNum)
-        .offset(offset);
+      const data = allUsers.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        balance: u.balance,
+        createdAt: u.createdAt,
+        groups: u.groups.map((g: any) => g.group.name).join(',')
+      }));
 
       return { 
-        data: allUsers,
+        data,
         total,
         page: pageNum,
         limit: limitNum
@@ -289,7 +287,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
       
       // Update role
       await db.update(users)
-        .set({ role })
+        .set({ role: role as 'admin' | 'member' })
         .where(eq(users.id, id));
 
       return { message: '角色更新成功' };

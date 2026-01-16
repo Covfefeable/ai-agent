@@ -1,20 +1,27 @@
-import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique, doublePrecision } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique, doublePrecision, pgEnum } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+
+// Enums
+export const roleEnum = pgEnum('role', ['owner', 'admin', 'member']);
+export const visibilityEnum = pgEnum('visibility', ['public', 'selected_groups', 'private']);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(), // 添加密码字段
-  role: text('role').notNull().default('member'), // owner, admin, member
+  role: roleEnum('role').notNull().default('member'), // owner, admin, member
   avatar: text('avatar'), // base64 avatar
   balance: doublePrecision('balance').notNull().default(100000), // 用户余额，单位 点数
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const userGroups = pgTable('user_groups', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const userGroupMembers = pgTable('user_group_members', {
@@ -33,6 +40,7 @@ export const datasets = pgTable('datasets', {
   name: text('name').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const categories = pgTable('categories', {
@@ -40,6 +48,7 @@ export const categories = pgTable('categories', {
   name: text('name').notNull().unique(),
   sort: integer('sort').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const agents = pgTable('agents', {
@@ -50,10 +59,11 @@ export const agents = pgTable('agents', {
   apiKey: text('api_key').notNull(),
   baseUrl: text('base_url'),
   iconUrl: text('icon_url'),
-  visibility: text('visibility').notNull().default('public'), // 'public', 'selected_groups', 'private'
+  visibility: visibilityEnum('visibility').notNull().default('public'), // 'public', 'selected_groups', 'private'
   categoryId: uuid('category_id').references(() => categories.id),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const agentUserGroups = pgTable('agent_user_groups', {
@@ -82,7 +92,7 @@ export const models = pgTable('models', {
   enabled: boolean('enabled').notNull().default(true),
   iconUrl: text('icon_url'),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
-  visibility: text('visibility').notNull().default('public'), // 'public', 'selected_groups'
+  visibility: visibilityEnum('visibility').notNull().default('public'), // 'public', 'selected_groups'
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -133,3 +143,106 @@ export const userEvents = pgTable('user_events', {
   device: text('device'), // 设备 vendor:model
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// Relations
+
+export const usersRelations = relations(users, ({ many }) => ({
+  groups: many(userGroupMembers),
+  datasets: many(datasets),
+  createdAgents: many(agents),
+  favoriteAgents: many(userFavoriteAgents),
+  usage: many(userUsage),
+  events: many(userEvents),
+}));
+
+export const userGroupMembersRelations = relations(userGroupMembers, ({ one }) => ({
+  user: one(users, {
+    fields: [userGroupMembers.userId],
+    references: [users.id],
+  }),
+  group: one(userGroups, {
+    fields: [userGroupMembers.groupId],
+    references: [userGroups.id],
+  }),
+}));
+
+export const datasetsRelations = relations(datasets, ({ one }) => ({
+  user: one(users, {
+    fields: [datasets.userId],
+    references: [users.id],
+  }),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  agents: many(agents),
+}));
+
+export const agentsRelations = relations(agents, ({ one, many }) => ({
+  user: one(users, {
+    fields: [agents.userId],
+    references: [users.id],
+  }),
+  category: one(categories, {
+    fields: [agents.categoryId],
+    references: [categories.id],
+  }),
+  groups: many(agentUserGroups),
+  favoriteByUsers: many(userFavoriteAgents),
+}));
+
+export const agentUserGroupsRelations = relations(agentUserGroups, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentUserGroups.agentId],
+    references: [agents.id],
+  }),
+  group: one(userGroups, {
+    fields: [agentUserGroups.groupId],
+    references: [userGroups.id],
+  }),
+}));
+
+export const userFavoriteAgentsRelations = relations(userFavoriteAgents, ({ one }) => ({
+  user: one(users, {
+    fields: [userFavoriteAgents.userId],
+    references: [users.id],
+  }),
+  agent: one(agents, {
+    fields: [userFavoriteAgents.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const modelsRelations = relations(models, ({ many }) => ({
+  groups: many(modelUserGroups),
+}));
+
+export const modelUserGroupsRelations = relations(modelUserGroups, ({ one }) => ({
+  model: one(models, {
+    fields: [modelUserGroups.modelId],
+    references: [models.id],
+  }),
+  group: one(userGroups, {
+    fields: [modelUserGroups.groupId],
+    references: [userGroups.id],
+  }),
+}));
+
+export const userGroupsRelations = relations(userGroups, ({ many }) => ({
+  members: many(userGroupMembers),
+  agents: many(agentUserGroups),
+  models: many(modelUserGroups),
+}));
+
+export const userUsageRelations = relations(userUsage, ({ one }) => ({
+  user: one(users, {
+    fields: [userUsage.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userEventsRelations = relations(userEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [userEvents.userId],
+    references: [users.id],
+  }),
+}));

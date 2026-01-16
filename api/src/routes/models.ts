@@ -69,47 +69,24 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       const total = Number(countResult?.count || 0);
 
       // Get paginated data
-      const list = await db.select()
-        .from(models)
-        .where(whereClause)
-        .orderBy(asc(models.sort), desc(models.createdAt))
-        .limit(limitNum)
-        .offset(offset);
-
-      // Fetch groups for selected_groups models
-      const modelIds = list.map(m => m.id);
-      const modelGroupsMap: Record<string, string[]> = {};
-      const modelGroupIdsMap: Record<string, string[]> = {};
-
-      if (modelIds.length > 0) {
-        const groups = await db.select({
-          modelId: modelUserGroups.modelId,
-          groupId: modelUserGroups.groupId,
-          groupName: userGroups.name
-        })
-        .from(modelUserGroups)
-        .innerJoin(userGroups, eq(modelUserGroups.groupId, userGroups.id))
-        .where(inArray(modelUserGroups.modelId, modelIds));
-
-        groups.forEach(g => {
-            // Map names
-            if (!modelGroupsMap[g.modelId]) {
-                modelGroupsMap[g.modelId] = [];
+      const list = await db.query.models.findMany({
+        where: whereClause,
+        limit: limitNum,
+        offset: offset,
+        orderBy: [asc(models.sort), desc(models.createdAt)],
+        with: {
+          groups: {
+            with: {
+              group: true
             }
-            modelGroupsMap[g.modelId].push(g.groupName);
-
-            // Map IDs (for existing logic compatibility if needed)
-            if (!modelGroupIdsMap[g.modelId]) {
-                modelGroupIdsMap[g.modelId] = [];
-            }
-            modelGroupIdsMap[g.modelId].push(g.groupId);
-        });
-      }
+          }
+        }
+      });
 
       const listWithGroups = list.map(model => ({
         ...model,
-        groupIds: modelGroupIdsMap[model.id] || [],
-        groups: modelGroupsMap[model.id]?.join(',') || undefined
+        groupIds: model.groups?.map((g: any) => g.groupId) || [],
+        groups: model.groups?.map((g: any) => g.group.name).join(',') || undefined
       }));
 
       return { 
@@ -131,7 +108,12 @@ export async function modelsRoutes(fastify: FastifyInstance) {
       const userRole = request.user.role;
       const userId = request.user.id;
 
-      const [row] = await db.select().from(models).where(eq(models.id, id)).limit(1);
+      const row = await db.query.models.findFirst({
+        where: eq(models.id, id),
+        with: {
+          groups: true
+        }
+      });
       
       if (!row) {
         return reply.status(404).send({ message: '模型不存在' });
@@ -143,14 +125,17 @@ export async function modelsRoutes(fastify: FastifyInstance) {
            return reply.status(403).send({ message: '无权限' });
         }
         if (row.visibility === 'selected_groups') {
-           const [match] = await db.select({ id: modelUserGroups.id })
-             .from(modelUserGroups)
-             .innerJoin(userGroupMembers, eq(modelUserGroups.groupId, userGroupMembers.groupId))
+           const allowedGroupIds = row.groups.map((g: any) => g.groupId);
+           if (allowedGroupIds.length === 0) return reply.status(403).send({ message: '无权限' });
+
+           const [match] = await db.select({ id: userGroupMembers.id })
+             .from(userGroupMembers)
              .where(and(
-               eq(modelUserGroups.modelId, row.id),
-               eq(userGroupMembers.userId, userId)
+               eq(userGroupMembers.userId, userId),
+               inArray(userGroupMembers.groupId, allowedGroupIds)
              ))
              .limit(1);
+
            if (!match) {
              return reply.status(403).send({ message: '无权限' });
            }
@@ -159,13 +144,11 @@ export async function modelsRoutes(fastify: FastifyInstance) {
 
       let groupIds: string[] = [];
       if (row.visibility === 'selected_groups') {
-        const groups = await db.select({ groupId: modelUserGroups.groupId })
-          .from(modelUserGroups)
-          .where(eq(modelUserGroups.modelId, row.id));
-        groupIds = groups.map(g => g.groupId);
+        groupIds = row.groups.map((g: any) => g.groupId);
       }
 
-      return { data: { ...row, groupIds } };
+      const { groups, ...rest } = row;
+      return { data: { ...rest, groupIds } };
     } catch (error: any) {
       fastify.log.error({ error }, 'Get model detail error');
       reply.status(500).send({ message: '服务器内部错误' });
