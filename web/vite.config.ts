@@ -21,4 +21,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd'],
+          'echarts-vendor': ['echarts', 'echarts-for-react'],
+          'utils-vendor': ['axios', 'dayjs', 'zod'],
+          'ui-vendor': ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
+          'markdown-vendor': ['marked', 'highlight.js', '@uiw/react-md-editor'],
+        },
+      },
+    },
+  },
 });

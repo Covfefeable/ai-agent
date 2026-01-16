@@ -1,24 +1,34 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { LoginPage } from './pages/auth/login';
 import { RegisterPage } from './pages/auth/register';
-import { ChatPage } from './pages/chat';
-import { KnowledgePage } from './pages/knowledge';
-import { KnowledgeDetailPage } from './pages/knowledge/detail';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { DocumentDetailPage } from './pages/knowledge/document';
-import { UsersPage } from './pages/admin/users';
-import { AdminPage } from './pages/admin';
-import { AgentsPage } from './pages/agent';
-import { AgentCategoriesPage } from './pages/admin/categories';
-import { AgentsSquarePage } from './pages/agent/square';
-import { AgentChatPage } from './pages/agent/chat';
-import { ModelsPage } from './pages/admin/models';
-import { ProfilePage } from './pages/profile';
 import { PageTracker } from '@/components/page-tracker';
-import { AnalyticsPage } from './pages/admin/analytics';
+
+// Lazy load components
+const ChatPage = lazy(() => import('./pages/chat').then(module => ({ default: module.ChatPage })));
+const KnowledgePage = lazy(() => import('./pages/knowledge').then(module => ({ default: module.KnowledgePage })));
+const KnowledgeDetailPage = lazy(() => import('./pages/knowledge/detail').then(module => ({ default: module.KnowledgeDetailPage })));
+const DocumentDetailPage = lazy(() => import('./pages/knowledge/document').then(module => ({ default: module.DocumentDetailPage })));
+const UsersPage = lazy(() => import('./pages/admin/users').then(module => ({ default: module.UsersPage })));
+const AdminPage = lazy(() => import('./pages/admin').then(module => ({ default: module.AdminPage })));
+const AgentsPage = lazy(() => import('./pages/agent').then(module => ({ default: module.AgentsPage })));
+const AgentCategoriesPage = lazy(() => import('./pages/admin/categories').then(module => ({ default: module.AgentCategoriesPage })));
+const AgentsSquarePage = lazy(() => import('./pages/agent/square').then(module => ({ default: module.AgentsSquarePage })));
+const AgentChatPage = lazy(() => import('./pages/agent/chat').then(module => ({ default: module.AgentChatPage })));
+const ModelsPage = lazy(() => import('./pages/admin/models').then(module => ({ default: module.ModelsPage })));
+const ProfilePage = lazy(() => import('./pages/profile').then(module => ({ default: module.ProfilePage })));
+const AnalyticsPage = lazy(() => import('./pages/admin/analytics').then(module => ({ default: module.AnalyticsPage })));
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+  );
+}
 
 function Layout() {
   const location = useLocation();
@@ -27,7 +37,9 @@ function Layout() {
   return (
     <DashboardLayout>
       <AnimatePresence>
-        {element && React.cloneElement(element, { key: location.pathname })}
+        <Suspense fallback={<LoadingSpinner />}>
+          {element && React.cloneElement(element, { key: location.pathname })}
+        </Suspense>
       </AnimatePresence>
     </DashboardLayout>
   );
