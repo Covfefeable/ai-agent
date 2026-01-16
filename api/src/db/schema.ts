@@ -68,7 +68,7 @@ export const agentUserGroups = pgTable('agent_user_groups', {
 export const userFavoriteAgents = pgTable('user_favorite_agents', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id).notNull(),
-  agentId: uuid('agent_id').references(() => agents.id).notNull(),
+  agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 }, (t) => ({
   uniqueUserAgent: unique().on(t.userId, t.agentId),
