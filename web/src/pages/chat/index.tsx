@@ -59,6 +59,7 @@ export function ChatPage() {
   const [knowledgeBases, setKnowledgeBases] = useState<Dataset[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [showKbSelector, setShowKbSelector] = useState(false);
+  const [retrievalDepth, setRetrievalDepth] = useState<'light' | 'default' | 'deep'>('default');
   
   // Model related states
   const [models, setModels] = useState<Model[]>([]);
@@ -403,7 +404,8 @@ export function ChatPage() {
           inputs: {
             knowledge_base_ids: Array.from(selectedKbIds),
             web_search: webSearch,
-            model: selectedModelId
+            model: selectedModelId,
+            top_k: retrievalDepth === 'light' ? 1 : retrievalDepth === 'deep' ? 10 : 5
           }
         }),
         signal: abortControllerRef.current.signal,
@@ -733,6 +735,8 @@ export function ChatPage() {
                       }}
                       open={showKbSelector}
                       onOpenChange={setShowKbSelector}
+                      retrievalDepth={retrievalDepth}
+                      onDepthChange={setRetrievalDepth}
                     />
                   </div>
 

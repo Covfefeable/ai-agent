@@ -39,7 +39,7 @@ export function RechargeModal({ isOpen, onClose }: RechargeModalProps) {
 
   const customInfo = useMemo(() => {
     const amount = Number(customAmount);
-    if (!amount || amount <= 0) return null;
+    if (!amount || amount < 1 || !Number.isInteger(amount)) return null;
 
     let discount = 1;
     if (amount >= 100) discount = 0.92;
@@ -176,7 +176,7 @@ export function RechargeModal({ isOpen, onClose }: RechargeModalProps) {
           <Button 
             onClick={handleConfirm} 
             className="bg-slate-900 hover:bg-slate-800 text-white min-w-[100px]"
-            disabled={selectedType === 'custom' && (!customAmount || Number(customAmount) <= 0)}
+            disabled={selectedType === 'custom' && (!customInfo)}
           >
             立即支付
           </Button>

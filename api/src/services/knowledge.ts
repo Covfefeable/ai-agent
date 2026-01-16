@@ -334,7 +334,7 @@ export const knowledgeService = {
     return response.data;
   },
 
-  async retrieve(id: string, userId: string, userRole: string, query: string) {
+  async retrieve(id: string, userId: string, userRole: string, query: string, top_k?: number) {
     const dataset = await this.getDataset(id, userId, userRole);
     if (!dataset) {
       throw new Error('知识库不存在');
@@ -343,7 +343,12 @@ export const knowledgeService = {
     const response = await axios.post(
       `${DIFY_BASE_URL}/datasets/${dataset.difyId}/retrieve`,
       {
-        query
+        query,
+        retrieval_model: {
+          reranking_enable: false,
+          top_k: top_k || 5,
+          score_threshold_enabled: false
+        }
       },
       {
         headers: {

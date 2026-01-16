@@ -267,24 +267,4 @@ export const knowledgeController = {
       return reply.status(status).send({ message });
     }
   },
-
-  async retrieve(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const { id } = request.params as { id: string };
-      const userId = (request as any).user.id;
-      const userRole = (request as any).user.role;
-      const { query } = request.body as { query: string };
-
-      const result = await knowledgeService.retrieve(id, userId, userRole, query);
-      return result;
-    } catch (error: any) {
-      request.log.error(error);
-      if (error.message === '知识库不存在') {
-        return reply.status(404).send({ message: error.message });
-      }
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message || '服务器内部错误';
-      return reply.status(status).send({ message });
-    }
-  }
 };

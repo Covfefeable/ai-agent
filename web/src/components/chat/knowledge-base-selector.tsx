@@ -10,6 +10,8 @@ interface KnowledgeBaseSelectorProps {
   onKbSelect: (kbId: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  retrievalDepth: 'light' | 'default' | 'deep';
+  onDepthChange: (depth: 'light' | 'default' | 'deep') => void;
 }
 
 export function KnowledgeBaseSelector({
@@ -17,7 +19,9 @@ export function KnowledgeBaseSelector({
   selectedKbIds,
   onKbSelect,
   open,
-  onOpenChange
+  onOpenChange,
+  retrievalDepth,
+  onDepthChange
 }: KnowledgeBaseSelectorProps) {
   const navigate = useNavigate();
 
@@ -36,6 +40,26 @@ export function KnowledgeBaseSelector({
                 <X className="h-3.5 w-3.5" />
               </button>
            </div>
+           
+           <div className="mb-2 px-2">
+             <div className="flex rounded-md bg-slate-100 p-0.5">
+               {(['light', 'default', 'deep'] as const).map((depth) => (
+                 <button
+                   key={depth}
+                   onClick={() => onDepthChange(depth)}
+                   className={cn(
+                     "flex-1 rounded py-1 text-xs font-medium transition-all",
+                     retrievalDepth === depth
+                       ? "bg-white text-blue-600 shadow-sm"
+                       : "text-slate-500 hover:text-slate-700"
+                   )}
+                 >
+                   {depth === 'light' ? '轻量检索' : depth === 'default' ? '默认' : '深度检索'}
+                 </button>
+               ))}
+             </div>
+           </div>
+
            <div className="max-h-48 overflow-y-auto space-y-1">
              {knowledgeBases.map(kb => (
                <div 

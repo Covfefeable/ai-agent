@@ -37,10 +37,18 @@ export const chatService = {
           );
 
         if (userDatasets.length > 0) {
+            const topK = inputs.top_k || 5;
             const retrievalPromises = userDatasets.map(ds => 
               axios.post(
                 `${DIFY_BASE_URL}/datasets/${ds.difyId}/retrieve`,
-                { query },
+                { 
+                  query,
+                  retrieval_model: {
+                    reranking_enable: false,
+                    top_k: topK,
+                    score_threshold_enabled: false
+                  }
+                },
                 { headers: { 'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}` } }
               ).then(res => res.data)
             );
@@ -60,6 +68,7 @@ export const chatService = {
       
       // Clean up inputs to avoid sending internal fields to Dify
       delete inputs.knowledge_base_ids;
+      delete inputs.top_k;
     }
 
     const response = await axios.post(

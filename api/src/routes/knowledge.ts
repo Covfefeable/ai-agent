@@ -18,7 +18,4 @@ export async function knowledgeRoutes(fastify: FastifyInstance) {
   fastify.get('/datasets/:id/documents/:documentId/segments', knowledgeController.listSegments);
   fastify.post('/datasets/:id/documents/:documentId/segments/:segmentId', knowledgeController.updateSegment);
   fastify.delete('/datasets/:id/documents/:documentId/segments/:segmentId', knowledgeController.deleteSegment);
-
-  // Retrieve
-  fastify.post('/datasets/:id/retrieve', knowledgeController.retrieve);
 }
