@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Lock, Camera, Pencil, Check, X } from 'lucide-react';
+import { User, Lock, Camera, Pencil, Check, X, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from 'antd';
 import { Pagination } from '@/components/ui/pagination';
@@ -216,10 +216,10 @@ export function ProfilePage() {
                   {!['owner', 'admin'].includes(user.role) && (
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="h-6 px-2 text-xs"
+                      className="h-7 px-3 text-xs bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white border-0 shadow-sm gap-1.5 transition-all hover:shadow-md hover:scale-105"
                       onClick={() => setIsRechargeModalOpen(true)}
                     >
+                      <Sparkles className="h-3.5 w-3.5" />
                       充值
                     </Button>
                   )}
@@ -241,9 +241,9 @@ export function ProfilePage() {
                 <tr>
                   <th className="px-4 py-3">时间</th>
                   <th className="px-4 py-3">来源</th>
+                  <th className="px-4 py-3">Token 用量</th>
                   <th className="px-4 py-3">结算点数</th>
                   <th className="px-4 py-3">耗时</th>
-                  {/* <th className="px-4 py-3">费用</th> */}
                 </tr>
               </thead>
               <tbody>
@@ -255,20 +255,36 @@ export function ProfilePage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.agentName}
                     </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-slate-900">{item.totalTokens}</span>
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          <Tooltip title="输入">
+                            <span className="flex items-center gap-1 cursor-help">
+                              <ArrowUp className="h-3 w-3 text-blue-500" />
+                              {item.promptTokens}
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="输出">
+                            <span className="flex items-center gap-1 cursor-help">
+                              <ArrowDown className="h-3 w-3 text-green-500" />
+                              {item.completionTokens}
+                            </span>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-900">
                       {item.calculatedPoints ?? item.totalTokens}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {Number(item.latency).toFixed(2)}s
                     </td>
-                    {/* <td className="px-4 py-3 whitespace-nowrap">
-                      {item.totalPrice} {item.currency}
-                    </td> */}
                   </tr>
                 ))}
                 {usageList.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
                       {loading ? '加载中...' : '暂无记录'}
                     </td>
                   </tr>

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Search, Calendar, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { agentsApi, type Agent } from '@/api/agents';
 import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import dayjs from 'dayjs';
@@ -138,13 +139,18 @@ export function AgentsSquarePage() {
                       <span>{dayjs(ag.createdAt).format('YYYY-MM-DD')}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {ag.multiplier > 1 ? (
+                      {ag.multiplier !== 1 && ag.multiplier > 0 ? (
                         <Tooltip
                           title={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
                           placement="top"
                         >
                           <span 
-                            className="rounded bg-orange-100 px-2 py-0.5 text-orange-600 cursor-help"
+                            className={cn(
+                              "rounded px-2 py-0.5 cursor-help",
+                              ag.multiplier > 1 
+                                ? "bg-orange-100 text-orange-600"
+                                : "bg-blue-100 text-blue-600"
+                            )}
                           >
                             {ag.multiplier}x
                           </span>

@@ -2,6 +2,7 @@ import { Check, Database, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover } from 'antd';
 import { type Dataset } from '@/api/knowledge';
+import { useNavigate } from 'react-router-dom';
 
 interface KnowledgeBaseSelectorProps {
   knowledgeBases: Dataset[];
@@ -18,6 +19,8 @@ export function KnowledgeBaseSelector({
   open,
   onOpenChange
 }: KnowledgeBaseSelectorProps) {
+  const navigate = useNavigate();
+
   return (
     <Popover
       open={open}
@@ -50,8 +53,17 @@ export function KnowledgeBaseSelector({
                </div>
              ))}
              {knowledgeBases.length === 0 && (
-               <div className="px-2 py-4 text-center text-xs text-slate-400">
-                 暂无知识库
+               <div className="flex flex-col items-center gap-2 px-2 py-4 text-center text-xs text-slate-400">
+                 <span>暂无知识库</span>
+                 <button
+                   className="text-blue-600 hover:text-blue-700 hover:underline"
+                   onClick={() => {
+                     onOpenChange(false);
+                     navigate('/knowledge');
+                   }}
+                 >
+                   去创建
+                 </button>
                </div>
              )}
            </div>

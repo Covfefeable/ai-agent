@@ -715,7 +715,7 @@ export function ChatPage() {
                     )}
                   >
                     <Globe className={cn("h-3.5 w-3.5", webSearch ? "text-blue-600" : "text-slate-400")} />
-                    联网搜索
+                    智能联网
                   </button>
 
                   <div className={cn("relative", mobileToolbarExpanded ? "block" : "hidden md:block")}>

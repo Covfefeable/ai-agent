@@ -202,6 +202,7 @@ export function KnowledgePage() {
         onConfirm={handleDelete}
         title="删除知识库"
         description="确定要删除这个知识库吗？此操作无法撤销，知识库内的所有数据将被永久删除。"
+        variant="destructive"
       />
     </div>
   );

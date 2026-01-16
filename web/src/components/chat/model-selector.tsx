@@ -58,12 +58,17 @@ export function ModelSelector({
                   <span className="shrink-0 inline-flex items-center rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-600">
                     Free
                   </span>
-                ) : model.multiplier > 1 ? (
+                ) : model.multiplier !== 1 ? (
                   <Tooltip
                     title={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
                     placement="top"
                   >
-                    <span className="shrink-0 inline-flex items-center rounded bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-600 cursor-help">
+                    <span className={cn(
+                      "shrink-0 inline-flex items-center rounded px-1 py-0.5 text-[10px] font-bold cursor-help",
+                      model.multiplier > 1 
+                        ? "bg-orange-100 text-orange-600"
+                        : "bg-blue-100 text-blue-600"
+                    )}>
                       {model.multiplier}x
                     </span>
                   </Tooltip>
@@ -90,12 +95,17 @@ export function ModelSelector({
             <span className="shrink-0 rounded bg-green-100 px-1 text-[10px] font-bold text-green-600">
               Free
             </span>
-          ) : current.multiplier > 1 ? (
+          ) : current.multiplier !== 1 ? (
             <Tooltip
               title={<p>结算 Token 数 = 实际消耗量 × 倍率</p>}
               placement="top"
             >
-              <span className="shrink-0 rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600 cursor-help">
+              <span className={cn(
+                "shrink-0 rounded px-1 text-[10px] font-bold cursor-help",
+                current.multiplier > 1 
+                  ? "bg-orange-100 text-orange-600"
+                  : "bg-blue-100 text-blue-600"
+              )}>
                 {current.multiplier}x
               </span>
             </Tooltip>

@@ -188,6 +188,7 @@ export function KnowledgeDetailPage() {
         onConfirm={handleDelete}
         title="删除文档"
         description="确定要删除这个文档吗？此操作无法撤销。"
+        variant="destructive"
       />
 
       <UploadDocumentModal

@@ -5,7 +5,9 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   // Agent CRUD and Lists
   fastify.get('/', agentController.list);
   fastify.get('/public', agentController.listPublic);
+  fastify.get('/:id', agentController.get);
   fastify.post('/', agentController.create);
+  fastify.patch('/:id', agentController.update);
   fastify.delete('/:id', agentController.delete);
 
   // Dify Proxy Endpoints

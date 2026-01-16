@@ -46,6 +46,44 @@ export const agentController = {
     }
   },
 
+  async get(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const id = (request.params as any).id;
+      const agent = await agentService.getById(id);
+      
+      if (!agent) {
+        return reply.status(404).send({ message: '智能体不存在' });
+      }
+      
+      const hasAccess = await agentService.verifyAccess(agent, (request.user as any)?.id, (request.user as any)?.role);
+      if (!hasAccess) {
+        return reply.status(403).send({ message: '无权限' });
+      }
+
+      return { data: agent };
+    } catch (error: any) {
+      request.log.error({ error }, 'Get agent details error');
+      reply.status(500).send({ message: '服务器内部错误' });
+    }
+  },
+
+  async update(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const id = (request.params as any).id;
+      const body = request.body as any;
+      const userId = (request.user as any).id;
+      const userRole = (request.user as any).role;
+
+      const updated = await agentService.update(id, body, userId, userRole);
+      return { data: updated };
+    } catch (error: any) {
+      request.log.error({ error }, 'Update agent error');
+      const message = error.message || '服务器内部错误';
+      const status = message === '无权限' ? 403 : (message === '智能体不存在' ? 404 : 500);
+      reply.status(status).send({ message });
+    }
+  },
+
   async getParameters(request: FastifyRequest, reply: FastifyReply) {
     try {
       const id = (request.params as any).id;

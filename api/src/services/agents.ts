@@ -187,7 +187,16 @@ export const agentService = {
 
   async getById(id: string) {
     const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
-    return row;
+    if (!row) return null;
+
+    const groups = await db.select({ groupId: agentUserGroups.groupId })
+      .from(agentUserGroups)
+      .where(eq(agentUserGroups.agentId, id));
+
+    return {
+      ...row,
+      groupIds: groups.map(g => g.groupId)
+    };
   },
 
   async create(data: {
@@ -268,6 +277,90 @@ export const agentService = {
     }
 
     return created;
+  },
+
+  async update(id: string, data: {
+    apiKey?: string;
+    baseUrl?: string;
+    visibility?: 'public' | 'private' | 'selected_groups';
+    groupIds?: string[];
+    categoryId?: string;
+    multiplier?: number;
+  }, userId: string, userRole: string) {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
+    if (!agent) {
+      throw new Error('智能体不存在');
+    }
+
+    if (!['owner', 'admin'].includes(userRole)) {
+      if (agent.userId !== userId) {
+        throw new Error('无权限');
+      }
+    }
+
+    // Validate visibility and groups if provided
+    if (data.visibility === 'selected_groups') {
+       if (data.groupIds && data.groupIds.length === 0) {
+          throw new Error('请选择可见用户组');
+       }
+    }
+
+    // Prepare update values
+    const updateValues: any = {};
+    if (data.apiKey !== undefined) updateValues.apiKey = data.apiKey;
+    if (data.baseUrl !== undefined) updateValues.baseUrl = data.baseUrl;
+    if (data.visibility !== undefined) updateValues.visibility = data.visibility;
+    if (data.categoryId !== undefined) updateValues.categoryId = data.categoryId;
+    if (data.multiplier !== undefined) updateValues.multiplier = data.multiplier;
+
+    // If apiKey or baseUrl changed, validate and refresh info
+    if (data.apiKey || (data.baseUrl && data.baseUrl !== agent.baseUrl)) {
+         const apiKey = data.apiKey || agent.apiKey;
+         const baseUrl = data.baseUrl || agent.baseUrl || process.env.DIFY_BASE_URL || 'https://api.dify.ai/v1';
+         
+         try {
+            const resp = await axios.get(`${baseUrl}/site`, {
+                headers: { Authorization: `Bearer ${apiKey}` },
+                timeout: 10000,
+            });
+             // Update title/desc/icon if fetched successfully
+             const siteData = resp.data || {};
+             if (siteData.title) updateValues.title = siteData.title;
+             if (siteData.description) updateValues.description = siteData.description;
+             
+             const iconType: string = siteData.icon_type || 'emoji';
+             const iconUrl: string | null = iconType === 'image' ? (siteData.icon_url || null) : null;
+             if (iconUrl) {
+                 const iconBase64 = await fetchImageAsBase64(iconUrl);
+                 if (iconBase64) updateValues.iconUrl = iconBase64;
+             }
+         } catch (error) {
+             console.warn('Validate agent failed', error);
+             throw new Error('无效的 API Key 或 Base URL');
+         }
+    }
+
+    if (Object.keys(updateValues).length > 0) {
+      await db.update(agents).set(updateValues).where(eq(agents.id, id));
+    }
+
+    // Update groups if groupIds is provided
+    if (data.groupIds !== undefined) {
+       // Clear existing
+       await db.delete(agentUserGroups).where(eq(agentUserGroups.agentId, id));
+       
+       const targetVisibility = data.visibility || agent.visibility;
+       if (targetVisibility === 'selected_groups' && data.groupIds.length > 0) {
+           await db.insert(agentUserGroups).values(
+               data.groupIds.map(groupId => ({
+                   agentId: id,
+                   groupId
+               }))
+           );
+       }
+    }
+    
+    return this.getById(id);
   },
 
   async delete(id: string, userId: string, userRole: string) {
