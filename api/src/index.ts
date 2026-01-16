@@ -17,7 +17,7 @@ import { favoritesRoutes } from './routes/favorites';
 import { modelsRoutes } from './routes/models';
 import { userGroupsRoutes } from './routes/user-groups';
 import { eventsRoutes } from './routes/events';
-import { analyticsRoutes } from './routes/analytics/index';
+import { analyticsRoutes } from './routes/analytics';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
