@@ -19,6 +19,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/files': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   build: {
@@ -31,7 +35,7 @@ export default defineConfig({
           'echarts-vendor': ['echarts', 'echarts-for-react'],
           'utils-vendor': ['axios', 'dayjs', 'zod'],
           'ui-vendor': ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
-          'markdown-vendor': ['marked', 'highlight.js', '@uiw/react-md-editor'],
+          'markdown-vendor': ['marked', 'highlight.js'],
         },
       },
     },

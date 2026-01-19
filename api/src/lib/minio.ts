@@ -56,10 +56,9 @@ export const uploadBuffer = async (
 };
 
 export const getPublicUrl = (path: string) => {
-  const publicUrl = process.env.MINIO_PUBLIC_URL || 'http://localhost:9000';
-  const baseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
-  // path starts with /BUCKET_NAME/...
-  return `${baseUrl}${path}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `/files${normalizedPath}`;
 };
 
 export const uploadBase64 = async (base64Data: string, pathPrefix: string): Promise<string | null> => {
@@ -90,21 +89,16 @@ export const getFileUrl = async (objectName: string): Promise<string> => {
     return `/${BUCKET_NAME}/${objectName}`;
 }
 
-export const getPresignedUrl = async (objectName: string, expiry: number = 24 * 60 * 60) => {
-  try {
-    return await minioClient.presignedGetObject(BUCKET_NAME, objectName, expiry);
-  } catch (err) {
-    console.error('Failed to get presigned URL:', err);
-    return null;
-  }
-};
-
-export const transformToPresigned = async (url: string | null): Promise<string | null> => {
+export const transformToProxyUrl = async (url: string | null): Promise<string | null> => {
     if (!url) return null;
+    
+    // Check if it's already a file proxy URL
+    if (url.includes('/files/')) return url;
+
     const path = extractPathFromUrl(url);
     if (path) {
-        const presigned = await getPresignedUrl(path);
-        if (presigned) return presigned;
+        // Convert to public proxy URL instead of presigned URL
+        return getPublicUrl(`/${BUCKET_NAME}/${path}`);
     }
     return url;
 };
@@ -127,12 +121,25 @@ export const extractPathFromUrl = (url: string): string | null => {
       // If it's a full URL
       if (url.startsWith('http')) {
           const urlObj = new URL(url);
-          const path = urlObj.pathname; // /BUCKET_NAME/path/to/file
+          const path = urlObj.pathname; // /BUCKET_NAME/path/to/file or /files/BUCKET_NAME/path/to/file
+          
+          // Check for /files/ prefix
+          const filesPrefix = `/files/${BUCKET_NAME}/`;
+          if (path.startsWith(filesPrefix)) {
+             return path.substring(filesPrefix.length);
+          }
+
           const prefix = `/${BUCKET_NAME}/`;
           if (path.startsWith(prefix)) {
               return path.substring(prefix.length);
           }
       } else if (url.startsWith('/')) {
+          // Check for /files/ prefix
+          const filesPrefix = `/files/${BUCKET_NAME}/`;
+          if (url.startsWith(filesPrefix)) {
+             return url.substring(filesPrefix.length);
+          }
+
           const prefix = `/${BUCKET_NAME}/`;
           if (url.startsWith(prefix)) {
               return url.substring(prefix.length);

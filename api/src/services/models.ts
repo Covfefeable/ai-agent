@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { models, modelUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
-import { uploadBase64, deleteFile, extractPathFromUrl, transformToPresigned } from '../lib/minio';
+import { uploadBase64, deleteFile, extractPathFromUrl, transformToProxyUrl } from '../lib/minio';
 
 export const modelsService = {
   async listModels(user: any, query: { keyword?: string; page?: number; limit?: number }) {
@@ -77,7 +77,7 @@ export const modelsService = {
 
     const listWithGroups = await Promise.all(list.map(async model => ({
       ...model,
-      iconUrl: await transformToPresigned(model.iconUrl),
+      iconUrl: await transformToProxyUrl(model.iconUrl),
       groupIds: model.groups?.map((g: any) => g.groupId) || [],
       groups: model.groups?.map((g: any) => g.group.name).join(',') || undefined
     })));
@@ -103,7 +103,7 @@ export const modelsService = {
     }
 
     if (row.iconUrl) {
-      row.iconUrl = await transformToPresigned(row.iconUrl);
+      row.iconUrl = await transformToProxyUrl(row.iconUrl);
     }
 
     // Access control
@@ -143,6 +143,14 @@ export const modelsService = {
     const [existing] = await db.select().from(models).where(eq(models.modelId, data.modelId)).limit(1);
     if (existing) {
       throw new Error('模型ID已存在');
+    }
+
+    // Handle icon upload
+    if (data.iconUrl && data.iconUrl.startsWith('data:image')) {
+      const uploaded = await uploadBase64(data.iconUrl, `models/${Date.now()}-${Math.random().toString(36).substring(7)}`);
+      if (uploaded) {
+        data.iconUrl = uploaded;
+      }
     }
 
     const [created] = await db.insert(models).values({

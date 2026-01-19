@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { userFavoriteAgents, agents } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { transformToPresigned } from '../lib/minio';
+import { transformToProxyUrl } from '../lib/minio';
 
 export const favoritesService = {
   async add(userId: string, agentId: string) {
@@ -45,7 +45,7 @@ export const favoritesService = {
 
     const data = await Promise.all(favorites.map(async f => ({
       ...f.agent,
-      iconUrl: await transformToPresigned(f.agent.iconUrl),
+      iconUrl: await transformToProxyUrl(f.agent.iconUrl),
       favoritedAt: f.favoritedAt
     })));
 

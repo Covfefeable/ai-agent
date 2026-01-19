@@ -18,6 +18,7 @@ import { modelsRoutes } from './routes/models';
 import { userGroupsRoutes } from './routes/user-groups';
 import { eventsRoutes } from './routes/events';
 import { analyticsRoutes } from './routes/analytics';
+import { filesRoutes } from './routes/files';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
@@ -56,6 +57,7 @@ fastify.decorate('authenticate', async function (request: any, reply: any) {
 
 // Register Routes
 fastify.register(authRoutes, { prefix: '/auth' });
+fastify.register(filesRoutes, { prefix: '/files' });
 fastify.register(eventsRoutes, { prefix: '/events' });
 fastify.register(async (instance) => {
   instance.addHook('preHandler', async (req, reply) => {

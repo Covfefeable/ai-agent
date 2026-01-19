@@ -2,7 +2,7 @@ import { db } from '../db';
 import { users, userUsage, agents } from '../db/schema';
 import { eq, desc, ilike, or, sql, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl, transformToPresigned } from '../lib/minio';
+import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl, transformToProxyUrl } from '../lib/minio';
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -17,7 +17,7 @@ export const usersService = {
     }).from(users).where(eq(users.id, userId)).limit(1);
 
     if (user && user.avatar) {
-      user.avatar = await transformToPresigned(user.avatar);
+      user.avatar = await transformToProxyUrl(user.avatar);
     }
 
     return user;
@@ -202,7 +202,7 @@ export const usersService = {
       name: u.name,
       email: u.email,
       role: u.role,
-      avatar: await transformToPresigned(u.avatar),
+      avatar: await transformToProxyUrl(u.avatar),
       balance: u.balance,
       createdAt: u.createdAt,
       groups: u.groups?.map((g: any) => g.group.name).join(',') || undefined

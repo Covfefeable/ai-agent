@@ -3,7 +3,7 @@ import { db } from '../db';
 import { agents, categories, users, agentUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, inArray } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
-import { uploadBuffer, deleteFile, extractPathFromUrl, transformToPresigned } from '../lib/minio';
+import { uploadBuffer, deleteFile, extractPathFromUrl, transformToProxyUrl, getPublicUrl } from '../lib/minio';
 
 async function fetchImageAndUpload(url: string | null, agentId: string): Promise<string | null> {
   if (!url) return null;
@@ -18,9 +18,7 @@ async function fetchImageAndUpload(url: string | null, agentId: string): Promise
     const path = await uploadBuffer(buffer, filename, mimeType);
     
     // Construct full URL
-    const publicUrl = process.env.MINIO_PUBLIC_URL || 'http://localhost:9000';
-    const baseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
-    return `${baseUrl}${path}`;
+    return getPublicUrl(path);
     
   } catch (error) {
     console.error(`Failed to fetch and upload icon image from ${url}:`, error);
@@ -113,7 +111,7 @@ export const agentService = {
 
     const listWithGroups = await Promise.all(list.map(async item => ({
       ...item,
-      iconUrl: await transformToPresigned(item.iconUrl),
+      iconUrl: await transformToProxyUrl(item.iconUrl),
       groups: item.groups?.map((g: any) => g.group.name).join(',') || undefined
     })));
 
@@ -191,7 +189,7 @@ export const agentService = {
 
     const data = await Promise.all(list.map(async item => ({
       ...item,
-      iconUrl: await transformToPresigned(item.iconUrl),
+      iconUrl: await transformToProxyUrl(item.iconUrl),
     })));
 
     return { 
@@ -207,7 +205,7 @@ export const agentService = {
     if (!row) return null;
 
     if (row.iconUrl) {
-      row.iconUrl = await transformToPresigned(row.iconUrl);
+      row.iconUrl = await transformToProxyUrl(row.iconUrl);
     }
 
     const groups = await db.select({ groupId: agentUserGroups.groupId })
