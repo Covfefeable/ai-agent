@@ -33,9 +33,6 @@ services:
       - ./volumes/minio_data:/mnt/data
       - ./minio.license:/minio.license:ro
       - ./volumes/minio_certs:/etc/minio/certs
-    ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     networks:
       - app_network
     healthcheck:

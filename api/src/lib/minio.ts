@@ -1,7 +1,8 @@
 import * as Minio from 'minio';
+import * as crypto from 'crypto';
 
 const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+  endPoint: process.env.MINIO_ENDPOINT || 'minio',
   port: parseInt(process.env.MINIO_PORT || '9000'),
   useSSL: process.env.MINIO_USE_SSL === 'true',
   accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
@@ -30,35 +31,37 @@ export const uploadBuffer = async (
   }
 
   await minioClient.putObject(BUCKET_NAME, objectName, buffer, buffer.length, metaData);
-
-  // Return the path or URL
-  // If we want to return a directly accessible URL, we might need to construct it
-  // For now, let's return the relative path in the bucket, 
-  // and we can have a helper to get the full URL if needed.
-  // Or, if the bucket is public, we can construct the URL.
-  
-  // Constructing public URL (assuming standard MinIO path style)
-  const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
-  const port = process.env.MINIO_PORT ? `:${process.env.MINIO_PORT}` : '';
-  const host = process.env.MINIO_ENDPOINT;
-  
-  // NOTE: If MINIO_ENDPOINT is 'minio' (docker internal), returning this URL to frontend won't work.
-  // Ideally, we return the object path, and the API has an endpoint to proxy it, 
-  // OR we configure a separate MINIO_PUBLIC_ENDPOINT env var.
-  // For simplicity in this task, I'll return the object path, 
-  // BUT the user request implies "replacing base64 with minio storage".
-  // If I just return "avatars/xyz.png", the frontend needs to know how to fetch it.
-  // Let's assume we return a full URL if possible, or relative path if we expect frontend to use a proxy.
-  // Given the "localhost" default, let's return a relative URL that the frontend can prepend base URL to, 
-  // or just the full URL if it's localhost.
-  
   return `/${BUCKET_NAME}/${objectName}`;
+};
+
+const FILE_URL_SIGN_SECRET = process.env.FILE_URL_SIGN_SECRET;
+const FILE_URL_EXPIRES_IN = parseInt(process.env.FILE_URL_EXPIRES_IN || '3600');
+
+export const generateFileSignature = (path: string, expires: number) => {
+  if (!FILE_URL_SIGN_SECRET) return '';
+  const data = `${path}:${expires}`;
+  return crypto.createHmac('sha256', FILE_URL_SIGN_SECRET).update(data).digest('hex');
 };
 
 export const getPublicUrl = (path: string) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const apiUrl = process.env.API_PUBLIC_URL || process.env.API_URL;
+  
+  // console.log('DEBUG: getPublicUrl', { path, secret, expiresIn });
 
-  return `/files${normalizedPath}`;
+  let query = '';
+  if (FILE_URL_SIGN_SECRET) {
+    const expires = Math.floor(Date.now() / 1000) + FILE_URL_EXPIRES_IN;
+    const sign = generateFileSignature(normalizedPath, expires);
+    query = `?sign=${sign}&expires=${expires}`;
+  }
+  
+  if (apiUrl) {
+    const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+    return `${baseUrl}/files${normalizedPath}${query}`;
+  }
+  
+  return `/files${normalizedPath}${query}`;
 };
 
 export const uploadBase64 = async (base64Data: string, pathPrefix: string): Promise<string | null> => {
@@ -92,9 +95,7 @@ export const getFileUrl = async (objectName: string): Promise<string> => {
 export const transformToProxyUrl = async (url: string | null): Promise<string | null> => {
     if (!url) return null;
     
-    // Check if it's already a file proxy URL
-    if (url.includes('/files/')) return url;
-
+    // Always extract path and regenerate URL to ensure signature is fresh
     const path = extractPathFromUrl(url);
     if (path) {
         // Convert to public proxy URL instead of presigned URL
@@ -134,15 +135,19 @@ export const extractPathFromUrl = (url: string): string | null => {
               return path.substring(prefix.length);
           }
       } else if (url.startsWith('/')) {
+          // Remove query params if present
+          const queryIndex = url.indexOf('?');
+          const cleanUrl = queryIndex !== -1 ? url.substring(0, queryIndex) : url;
+
           // Check for /files/ prefix
           const filesPrefix = `/files/${BUCKET_NAME}/`;
-          if (url.startsWith(filesPrefix)) {
-             return url.substring(filesPrefix.length);
+          if (cleanUrl.startsWith(filesPrefix)) {
+             return cleanUrl.substring(filesPrefix.length);
           }
 
           const prefix = `/${BUCKET_NAME}/`;
-          if (url.startsWith(prefix)) {
-              return url.substring(prefix.length);
+          if (cleanUrl.startsWith(prefix)) {
+              return cleanUrl.substring(prefix.length);
           }
       }
   } catch (e) {
