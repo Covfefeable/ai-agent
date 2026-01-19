@@ -3,16 +3,27 @@ import { db } from '../db';
 import { agents, categories, users, agentUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, inArray } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
+import { uploadBuffer, deleteFile, extractPathFromUrl } from '../lib/minio';
 
-async function fetchImageAsBase64(url: string | null): Promise<string | null> {
+async function fetchImageAndUpload(url: string | null, agentId: string): Promise<string | null> {
   if (!url) return null;
   try {
     const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
     const buffer = Buffer.from(response.data);
     const mimeType = response.headers['content-type'] || 'image/png';
-    return `data:${mimeType};base64,${buffer.toString('base64')}`;
+    const ext = mimeType.split('/')[1] || 'png';
+    
+    // Upload to MinIO: agents/<agentId>-<timestamp>.<ext>
+    const filename = `agents/${agentId}-${Date.now()}.${ext}`;
+    const path = await uploadBuffer(buffer, filename, mimeType);
+    
+    // Construct full URL
+    const publicUrl = process.env.MINIO_PUBLIC_URL || 'http://localhost:9000';
+    const baseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
+    return `${baseUrl}${path}`;
+    
   } catch (error) {
-    console.error(`Failed to fetch icon image from ${url}:`, error);
+    console.error(`Failed to fetch and upload icon image from ${url}:`, error);
     return null;
   }
 }
@@ -244,8 +255,7 @@ export const agentService = {
     const description: string = siteData.description || '';
     const iconType: string = siteData.icon_type || 'emoji';
     const iconUrl: string | null = iconType === 'image' ? (siteData.icon_url || null) : null;
-    const iconBase64 = await fetchImageAsBase64(iconUrl);
-
+    
     // validate category if provided
     let catId: string | undefined = categoryId;
     if (catId) {
@@ -261,11 +271,20 @@ export const agentService = {
       description,
       apiKey,
       baseUrl: inputBaseUrl || null,
-      iconUrl: iconBase64 || iconUrl || null,
+      iconUrl: iconUrl || null, // Temporary placeholder
       visibility,
       categoryId: catId,
       multiplier: multiplier ?? 1.0,
     }).returning();
+
+    // Now fetch and upload icon if exists
+    if (iconUrl) {
+      const uploadedIconUrl = await fetchImageAndUpload(iconUrl, created.id);
+      if (uploadedIconUrl) {
+        await db.update(agents).set({ iconUrl: uploadedIconUrl }).where(eq(agents.id, created.id));
+        created.iconUrl = uploadedIconUrl;
+      }
+    }
 
     if (visibility === 'selected_groups' && groupIds && groupIds.length > 0) {
       await db.insert(agentUserGroups).values(
@@ -331,8 +350,18 @@ export const agentService = {
              const iconType: string = siteData.icon_type || 'emoji';
              const iconUrl: string | null = iconType === 'image' ? (siteData.icon_url || null) : null;
              if (iconUrl) {
-                 const iconBase64 = await fetchImageAsBase64(iconUrl);
-                 if (iconBase64) updateValues.iconUrl = iconBase64;
+                 const uploadedIconUrl = await fetchImageAndUpload(iconUrl, id);
+                 if (uploadedIconUrl) {
+                     updateValues.iconUrl = uploadedIconUrl;
+
+                     // Delete old icon
+                     if (agent.iconUrl) {
+                         const oldPath = extractPathFromUrl(agent.iconUrl);
+                         if (oldPath) {
+                             deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+                         }
+                     }
+                 }
              }
          } catch (error) {
              console.warn('Validate agent failed', error);
@@ -376,6 +405,14 @@ export const agentService = {
     }
     
     await db.delete(agents).where(eq(agents.id, id));
+
+    // Delete icon if exists
+    if (row.iconUrl) {
+        const oldPath = extractPathFromUrl(row.iconUrl);
+        if (oldPath) {
+            deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+        }
+    }
   },
 
   // Dify Proxy Methods

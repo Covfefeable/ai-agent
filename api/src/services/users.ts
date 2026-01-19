@@ -2,6 +2,7 @@ import { db } from '../db';
 import { users, userUsage, agents } from '../db/schema';
 import { eq, desc, ilike, or, sql, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl } from '../lib/minio';
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -118,11 +119,46 @@ export const usersService = {
   },
 
   async updateAvatar(userId: string, avatar: string) {
+    let finalAvatar = avatar;
+    
+    // Check if it's base64 data URI
+    if (avatar && avatar.startsWith('data:image')) {
+      try {
+        const matches = avatar.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const ext = matches[1];
+          const data = matches[2];
+          const buffer = Buffer.from(data, 'base64');
+          
+          // Generate filename: avatars/userId-timestamp.ext
+          const filename = `avatars/${userId}-${Date.now()}.${ext}`;
+          
+          // Upload to MinIO
+          const path = await uploadBuffer(buffer, filename, `image/${ext}`);
+          
+          finalAvatar = getPublicUrl(path);
+
+          // Delete old avatar if exists
+          const [currentUser] = await db.select({ avatar: users.avatar }).from(users).where(eq(users.id, userId)).limit(1);
+          if (currentUser && currentUser.avatar) {
+              const oldPath = extractPathFromUrl(currentUser.avatar);
+              if (oldPath) {
+                  // Don't await deletion to not block response
+                  deleteFile(oldPath).catch(err => console.error('Background delete failed', err));
+              }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to upload avatar to MinIO:', error);
+        throw new Error('头像上传失败');
+      }
+    }
+
     await db.update(users)
-      .set({ avatar })
+      .set({ avatar: finalAvatar })
       .where(eq(users.id, userId));
 
-    return { message: '头像更新成功' };
+    return { message: '头像更新成功', url: finalAvatar };
   },
 
   async listUsers(query: { keyword?: string; page?: number; limit?: number }) {

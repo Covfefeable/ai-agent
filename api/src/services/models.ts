@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { models, modelUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
+import { uploadBase64, deleteFile, extractPathFromUrl } from '../lib/minio';
 
 export const modelsService = {
   async listModels(user: any, query: { keyword?: string; page?: number; limit?: number }) {
@@ -177,6 +178,22 @@ export const modelsService = {
     // Prepare update data, excluding groupIds
     const { groupIds, ...updateData } = data;
 
+    // Handle icon upload
+    if (updateData.iconUrl && updateData.iconUrl.startsWith('data:image')) {
+        const uploaded = await uploadBase64(updateData.iconUrl, `models/${id}-${Date.now()}`);
+        if (uploaded) {
+            updateData.iconUrl = uploaded;
+
+            // Delete old icon
+            if (existing.iconUrl) {
+                const oldPath = extractPathFromUrl(existing.iconUrl);
+                if (oldPath) {
+                    deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+                }
+            }
+        }
+    }
+
     const [updated] = await db.update(models)
       .set({
         ...updateData,
@@ -216,6 +233,15 @@ export const modelsService = {
     }
 
     await db.delete(models).where(eq(models.id, id));
+    
+    // Delete icon if exists
+    if (existing.iconUrl) {
+        const oldPath = extractPathFromUrl(existing.iconUrl);
+        if (oldPath) {
+            deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+        }
+    }
+    
     return { message: '已删除' };
   }
 };

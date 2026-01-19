@@ -26,6 +26,7 @@
     "fastify": "^5.6.2",
     "form-data": "^4.0.5",
     "jsonwebtoken": "^9.0.3",
+    "minio": "^8.0.6",
     "postgres": "^3.4.7",
     "ua-parser-js": "^2.0.8",
     "zod": "^4.3.5"

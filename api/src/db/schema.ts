@@ -11,7 +11,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(), // 添加密码字段
   role: roleEnum('role').notNull().default('member'), // owner, admin, member
-  avatar: text('avatar'), // base64 avatar
+  avatar: text('avatar'), // avatar url (MinIO)
   balance: doublePrecision('balance').notNull().default(100000), // 用户余额，单位 点数
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -90,7 +90,7 @@ export const models = pgTable('models', {
   modelId: text('model_id').notNull().unique(), // 实际调用大模型时的模型 ID
   sort: integer('sort').notNull().default(0),
   enabled: boolean('enabled').notNull().default(true),
-  iconUrl: text('icon_url'),
+  iconUrl: text('icon_url'), // icon url (MinIO)
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
   visibility: visibilityEnum('visibility').notNull().default('public'), // 'public', 'selected_groups'
   createdAt: timestamp('created_at').defaultNow(),
