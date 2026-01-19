@@ -3,7 +3,7 @@ import { db } from '../db';
 import { agents, categories, users, agentUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, inArray } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
-import { uploadBuffer, deleteFile, extractPathFromUrl } from '../lib/minio';
+import { uploadBuffer, deleteFile, extractPathFromUrl, transformToPresigned } from '../lib/minio';
 
 async function fetchImageAndUpload(url: string | null, agentId: string): Promise<string | null> {
   if (!url) return null;
@@ -111,10 +111,11 @@ export const agentService = {
       }
     });
 
-    const listWithGroups = list.map(item => ({
+    const listWithGroups = await Promise.all(list.map(async item => ({
       ...item,
+      iconUrl: await transformToPresigned(item.iconUrl),
       groups: item.groups?.map((g: any) => g.group.name).join(',') || undefined
-    }));
+    })));
 
     return { 
       data: listWithGroups,
@@ -188,8 +189,13 @@ export const agentService = {
       }
     });
 
+    const data = await Promise.all(list.map(async item => ({
+      ...item,
+      iconUrl: await transformToPresigned(item.iconUrl),
+    })));
+
     return { 
-      data: list,
+      data,
       total,
       page,
       limit
@@ -199,6 +205,10 @@ export const agentService = {
   async getById(id: string) {
     const [row] = await db.select().from(agents).where(eq(agents.id, id)).limit(1);
     if (!row) return null;
+
+    if (row.iconUrl) {
+      row.iconUrl = await transformToPresigned(row.iconUrl);
+    }
 
     const groups = await db.select({ groupId: agentUserGroups.groupId })
       .from(agentUserGroups)

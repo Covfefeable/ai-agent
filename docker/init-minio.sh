@@ -15,14 +15,19 @@ BUCKET_NAME=${MINIO_BUCKET_NAME:-files}
 echo "Creating bucket: $BUCKET_NAME"
 mc mb --ignore-existing myminio/"$BUCKET_NAME"
 
-# Set bucket policy to download (public read)
-echo "Setting bucket policy to download (public read)..."
-mc anonymous set download myminio/"$BUCKET_NAME"
+# Create a dedicated user for the application
+echo "Creating application user 'ai-agent-app'..."
+mc admin user add myminio ai-agent-app ai-agent-secret-key
+mc admin policy attach myminio readwrite --user ai-agent-app
+
+# Set bucket policy to private (no anonymous access)
+echo "Setting bucket policy to private..."
+mc anonymous set none myminio/"$BUCKET_NAME"
 
 # Also try to set policy for 'super-agent' if it exists, for backward compatibility with user's error
 if mc ls myminio/super-agent >/dev/null 2>&1; then
-    echo "Setting policy for existing 'super-agent' bucket..."
-    mc anonymous set download myminio/super-agent
+    echo "Setting policy for existing 'super-agent' bucket to private..."
+    mc anonymous set none myminio/super-agent
 fi
 
 # You can add more buckets here if needed

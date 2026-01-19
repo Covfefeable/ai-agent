@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { models, modelUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
-import { uploadBase64, deleteFile, extractPathFromUrl } from '../lib/minio';
+import { uploadBase64, deleteFile, extractPathFromUrl, transformToPresigned } from '../lib/minio';
 
 export const modelsService = {
   async listModels(user: any, query: { keyword?: string; page?: number; limit?: number }) {
@@ -75,11 +75,12 @@ export const modelsService = {
       }
     });
 
-    const listWithGroups = list.map(model => ({
+    const listWithGroups = await Promise.all(list.map(async model => ({
       ...model,
+      iconUrl: await transformToPresigned(model.iconUrl),
       groupIds: model.groups?.map((g: any) => g.groupId) || [],
       groups: model.groups?.map((g: any) => g.group.name).join(',') || undefined
-    }));
+    })));
 
     return { 
       data: listWithGroups,
@@ -99,6 +100,10 @@ export const modelsService = {
     
     if (!row) {
       throw new Error('模型不存在');
+    }
+
+    if (row.iconUrl) {
+      row.iconUrl = await transformToPresigned(row.iconUrl);
     }
 
     // Access control

@@ -2,7 +2,7 @@ import { db } from '../db';
 import { users, userUsage, agents } from '../db/schema';
 import { eq, desc, ilike, or, sql, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl } from '../lib/minio';
+import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl, transformToPresigned } from '../lib/minio';
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -15,6 +15,10 @@ export const usersService = {
       avatar: users.avatar,
       createdAt: users.createdAt,
     }).from(users).where(eq(users.id, userId)).limit(1);
+
+    if (user && user.avatar) {
+      user.avatar = await transformToPresigned(user.avatar);
+    }
 
     return user;
   },
@@ -193,17 +197,18 @@ export const usersService = {
       }
     });
 
-    const data = allUsers.map(u => ({
+    const data = await Promise.all(allUsers.map(async u => ({
       id: u.id,
       name: u.name,
       email: u.email,
       role: u.role,
+      avatar: await transformToPresigned(u.avatar),
       balance: u.balance,
       createdAt: u.createdAt,
-      groups: u.groups.map((g: any) => g.group.name).join(',')
-    }));
+      groups: u.groups?.map((g: any) => g.group.name).join(',') || undefined
+    })));
 
-    return { 
+    return {
       data,
       total,
       page: pageNum,

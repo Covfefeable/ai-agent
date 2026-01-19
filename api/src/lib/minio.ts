@@ -90,6 +90,25 @@ export const getFileUrl = async (objectName: string): Promise<string> => {
     return `/${BUCKET_NAME}/${objectName}`;
 }
 
+export const getPresignedUrl = async (objectName: string, expiry: number = 24 * 60 * 60) => {
+  try {
+    return await minioClient.presignedGetObject(BUCKET_NAME, objectName, expiry);
+  } catch (err) {
+    console.error('Failed to get presigned URL:', err);
+    return null;
+  }
+};
+
+export const transformToPresigned = async (url: string | null): Promise<string | null> => {
+    if (!url) return null;
+    const path = extractPathFromUrl(url);
+    if (path) {
+        const presigned = await getPresignedUrl(path);
+        if (presigned) return presigned;
+    }
+    return url;
+};
+
 export const deleteFile = async (objectName: string) => {
   try {
     await minioClient.removeObject(BUCKET_NAME, objectName);

@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { userFavoriteAgents, agents } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { transformToPresigned } from '../lib/minio';
 
 export const favoritesService = {
   async add(userId: string, agentId: string) {
@@ -42,6 +43,12 @@ export const favoritesService = {
     .where(eq(userFavoriteAgents.userId, userId))
     .orderBy(desc(userFavoriteAgents.createdAt));
 
-    return { data: favorites.map(f => ({ ...f.agent, favoritedAt: f.favoritedAt })) };
+    const data = await Promise.all(favorites.map(async f => ({
+      ...f.agent,
+      iconUrl: await transformToPresigned(f.agent.iconUrl),
+      favoritedAt: f.favoritedAt
+    })));
+
+    return { data };
   }
 };
