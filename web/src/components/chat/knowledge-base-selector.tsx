@@ -31,7 +31,7 @@ export function KnowledgeBaseSelector({
       onOpenChange={onOpenChange}
       placement="topLeft"
       trigger="click"
-      overlayInnerStyle={{ padding: 0 }}
+      styles={{ container: { padding: 0 } }}
       content={
         <div className="w-64 p-2">
            <div className="mb-2 flex items-center justify-between px-2 pb-2 border-b border-slate-50">

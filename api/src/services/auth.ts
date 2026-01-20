@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { users } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { transformToProxyUrl } from '../lib/minio';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const INITIAL_BALANCE = parseInt(process.env.INITIAL_BALANCE || '100', 10);
@@ -37,7 +38,15 @@ export const authService = {
     // Generate token
     const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
-    return { user: newUser, token };
+    const avatarUrl = await transformToProxyUrl(newUser.avatar);
+
+    return { 
+      user: {
+        ...newUser,
+        avatar: avatarUrl
+      }, 
+      token 
+    };
   },
 
   async login(data: { email: string; password: string }) {
@@ -58,8 +67,10 @@ export const authService = {
     // Generate token
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
+    const avatarUrl = await transformToProxyUrl(user.avatar);
+
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, balance: user.balance, avatar: user.avatar },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, balance: user.balance, avatar: avatarUrl },
       token
     };
   }

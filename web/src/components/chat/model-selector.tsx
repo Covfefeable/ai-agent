@@ -26,7 +26,7 @@ export function ModelSelector({
       onOpenChange={onOpenChange}
       placement="topLeft"
       trigger="click"
-      overlayInnerStyle={{ padding: 0 }}
+      styles={{ container: { padding: 0 } }}
       content={
         <div className="w-60 p-1">
           <div className="max-h-64 overflow-y-auto space-y-0.5">
