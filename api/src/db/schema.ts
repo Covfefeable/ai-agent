@@ -48,6 +48,23 @@ export const datasets = pgTable('datasets', {
   userIdIdx: index('datasets_user_id_idx').on(t.userId),
 }));
 
+export const documents = pgTable('documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  datasetId: uuid('dataset_id').references(() => datasets.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id).notNull(), // 冗余一下方便鉴权和OSS路径构建
+  name: text('name').notNull(),
+  size: integer('size').notNull(), // 字节数
+  url: text('url').notNull(), // MinIO path/url
+  mimeType: text('mime_type'),
+  extension: text('extension'),
+  difyId: text('dify_id'), // Dify 文档 ID
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  datasetIdIdx: index('documents_dataset_id_idx').on(t.datasetId),
+  userIdIdx: index('documents_user_id_idx').on(t.userId),
+}));
+
 export const categories = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull().unique(),

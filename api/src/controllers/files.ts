@@ -3,6 +3,7 @@ import { minioClient } from '../lib/minio';
 import * as crypto from 'crypto';
 
 const FILE_URL_SIGN_SECRET = process.env.FILE_URL_SIGN_SECRET;
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'super-agent';
 
 export const filesController = {
   async getFile(request: FastifyRequest, reply: FastifyReply) {
@@ -13,7 +14,7 @@ export const filesController = {
 
     // Validate Signature
     if (FILE_URL_SIGN_SECRET) {
-      const { sign, expires } = request.query as { sign?: string; expires?: string };
+      const { sign, expires, filename } = request.query as { sign?: string; expires?: string; filename?: string };
       
       if (!sign || !expires) {
         return reply.status(403).send({ message: 'Missing signature' });
@@ -25,22 +26,34 @@ export const filesController = {
       }
       
       const normalizedPath = '/' + path; // path captured by wildcard doesn't have leading slash
-      const data = `${normalizedPath}:${expires}`;
+      const data = filename 
+        ? `${normalizedPath}:${expires}:${filename}` 
+        : `${normalizedPath}:${expires}`;
       const expectedSign = crypto.createHmac('sha256', FILE_URL_SIGN_SECRET).update(data).digest('hex');
       
       if (sign !== expectedSign) {
         return reply.status(403).send({ message: 'Invalid signature' });
       }
+
+      if (filename) {
+        reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      }
     }
 
-    // path is like "super-agent/avatars/123.png"
+    // path is like "super-agent/avatars/123.png" or "avatars/123.png"
     const parts = path.split('/');
-    if (parts.length < 2) {
+    if (parts.length < 1) {
        return reply.status(404).send({ message: 'File not found' });
     }
 
-    const bucketName = parts[0];
-    const objectName = parts.slice(1).join('/');
+    let bucketName = parts[0];
+    let objectName = parts.slice(1).join('/');
+
+    // If the first part is not the bucket name, assume it's part of the object path in the default bucket
+    if (bucketName !== BUCKET_NAME) {
+        bucketName = BUCKET_NAME;
+        objectName = path;
+    }
 
     try {
       // Check if object exists and get stats

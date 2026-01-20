@@ -40,6 +40,7 @@ export interface Document {
   word_count: number;
   hit_count: number;
   doc_form: string;
+  hasFile?: boolean;
 }
 
 export interface GetDocumentsResponse {
@@ -141,6 +142,10 @@ export const knowledgeApi = {
 
   createDocumentByText: (id: string, data: { name: string; text: string; separator?: string; max_tokens?: number }) => {
     return http.post<unknown, unknown>(`/knowledge/datasets/${id}/documents/create-by-text`, data);
+  },
+
+  getDownloadUrl: (datasetId: string, documentId: string) => {
+    return http.get<unknown, { url: string }>(`/knowledge/datasets/${datasetId}/documents/${documentId}/download`);
   },
 
   deleteDocument: (datasetId: string, documentId: string) => {

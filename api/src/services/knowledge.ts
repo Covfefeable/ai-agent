@@ -1,9 +1,10 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import { db } from '../db';
-import { datasets } from '../db/schema';
-import { eq, desc, and, ilike, or, sql } from 'drizzle-orm';
+import { datasets, documents } from '../db/schema';
+import { eq, desc, and, ilike, or, sql, inArray } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
+import { uploadBuffer, deleteFile, getPublicUrl } from '../lib/minio';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_KNOWLEDGE_API_KEY = process.env.DIFY_KNOWLEDGE_API_KEY;
@@ -105,21 +106,25 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    // 1. Clean up OSS files
+    const docs = await db.select().from(documents).where(eq(documents.datasetId, id));
+    for (const doc of docs) {
+      await deleteFile(doc.url);
+    }
+
     try {
       await axios.delete(`${DIFY_BASE_URL}/datasets/${dataset.difyId}`, {
         headers: {
           'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`
         }
       });
-    } catch (difyError: any) {
-      console.error('Dify Delete Error:', difyError.response?.data || difyError.message);
-      if (difyError.response?.status !== 404) {
-        // Log but continue
-      }
+    } catch (error) {
+      console.error('Delete Dify dataset failed', error);
     }
 
     await db.delete(datasets).where(eq(datasets.id, id));
-    return { message: '知识库删除成功' };
+
+    return { success: true };
   },
 
   async updateDataset(id: string, userId: string, userRole: string, data: { name?: string; description?: string }) {
@@ -157,14 +162,82 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    const { page = 1, limit = 20, keyword } = query;
+    
+    // 1. Get document list from Dify API
     const response = await axios.get(`${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents`, {
-      params: query,
+      params: {
+        page,
+        limit,
+        keyword
+      },
       headers: {
         'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`
       }
     });
 
+    const difyDocs = response.data.data;
+    const difyTotal = response.data.total;
+    
+    // 2. Map Dify IDs to local records to get download URLs
+    const difyIds = difyDocs.map((doc: any) => doc.id);
+    
+    if (difyIds.length > 0) {
+        const localDocs = await db.select({
+            difyId: documents.difyId,
+            url: documents.url,
+            id: documents.id
+        })
+        .from(documents)
+        .where(inArray(documents.difyId, difyIds));
+
+        // Create a map for quick lookup
+        const localDocMap = new Map(localDocs.map(doc => [doc.difyId, doc]));
+
+        // Merge downloadUrl and local ID into Dify response
+        const mergedDocs = difyDocs.map((doc: any) => {
+            const localDoc = localDocMap.get(doc.id);
+            return {
+                ...doc,
+                id: localDoc ? localDoc.id : doc.id, // Prefer local ID if available for consistency
+                difyId: doc.id, // Keep original Dify ID
+                // Remove direct downloadUrl generation to avoid expired links
+                hasFile: !!localDoc
+            };
+        });
+        
+        return {
+            data: mergedDocs,
+            total: difyTotal,
+            page: response.data.page,
+            limit: response.data.limit,
+            has_more: response.data.has_more
+        };
+    }
+
     return response.data;
+  },
+
+  async getDocumentDownloadUrl(id: string, documentId: string, userId: string, userRole: string) {
+    const dataset = await this.getDataset(id, userId, userRole);
+    if (!dataset) {
+      throw new Error('知识库不存在');
+    }
+
+    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    
+    if (!doc) {
+        throw new Error('文档不存在或不支持下载');
+    }
+
+    // Check dataset permission (already done in getDataset but doc must belong to dataset)
+    if (doc.datasetId !== dataset.id) {
+        throw new Error('文档不属于该知识库');
+    }
+
+    return {
+        url: getPublicUrl(doc.url, doc.name)
+    };
   },
 
   async createDocumentByFile(id: string, userId: string, userRole: string, fileData: { buffer: Buffer; filename: string; mimetype: string }, options: { separator: string; max_tokens: number }) {
@@ -173,6 +246,12 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    // 1. Upload to MinIO
+    const timestamp = Date.now();
+    const objectName = `documents/${userId}/${timestamp}_${fileData.filename}`;
+    const minioPath = await uploadBuffer(fileData.buffer, objectName, fileData.mimetype);
+
+    // 2. Upload to Dify
     const form = new FormData();
     const dataPayload = {
       indexing_technique: "high_quality",
@@ -181,10 +260,7 @@ export const knowledgeService = {
         mode: "hierarchical",
         rules: {
           pre_processing_rules: [
-            {
-              id: "remove_extra_spaces",
-              enabled: true
-            },
+            { id: "remove_extra_spaces", enabled: true },
           ],
           segmentation: {
             separator: options.separator,
@@ -194,8 +270,8 @@ export const knowledgeService = {
           subchunk_segmentation: {
             separator: "\n",
             max_tokens: 100,
-            chunk_overlap: 10
-          }
+            chunk_overlap: 10,
+          },
         }
       }
     };
@@ -203,18 +279,39 @@ export const knowledgeService = {
     form.append('data', JSON.stringify(dataPayload));
     form.append('file', fileData.buffer, { filename: fileData.filename, contentType: fileData.mimetype });
 
-    const response = await axios.post(
-      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/document/create-by-file`,
-      form,
-      {
-        headers: {
-          'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`,
-          ...form.getHeaders()
+    try {
+      const response = await axios.post(
+        `${DIFY_BASE_URL}/datasets/${dataset.difyId}/document/create-by-file`,
+        form,
+        {
+          headers: {
+            'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`,
+            ...form.getHeaders()
+          }
         }
-      }
-    );
+      );
+      
+      const difyDoc = response.data.document;
 
-    return response.data;
+      // 3. Insert into DB
+      const [newDoc] = await db.insert(documents).values({
+          datasetId: dataset.id,
+          userId: userId,
+          name: fileData.filename,
+          size: fileData.buffer.length,
+          url: minioPath,
+          mimeType: fileData.mimetype,
+          extension: fileData.filename.split('.').pop() || '',
+          difyId: difyDoc.id
+      }).returning();
+
+      return { ...newDoc, downloadUrl: getPublicUrl(newDoc.url) };
+
+    } catch (error) {
+      // Cleanup MinIO if Dify fails
+      await deleteFile(minioPath);
+      throw error;
+    }
   },
 
   async createDocumentByText(id: string, userId: string, userRole: string, data: any) {
@@ -266,16 +363,32 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
-    const response = await axios.delete(
-      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`
-        }
-      }
-    );
+    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    
+    // If doc exists locally, delete from OSS and DB
+    if (doc) {
+        await deleteFile(doc.url);
+        await db.delete(documents).where(eq(documents.id, documentId));
+    }
 
-    return response.data;
+    const difyIdToDelete = doc ? doc.difyId : documentId;
+    
+    if (difyIdToDelete) {
+        try {
+            await axios.delete(
+              `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${difyIdToDelete}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`
+                }
+              }
+            );
+        } catch (e) {
+            console.error('Dify delete failed', e);
+        }
+    }
+
+    return { success: true };
   },
 
   async listSegments(id: string, documentId: string, userId: string, userRole: string, query: { page?: number; limit?: number }) {
@@ -284,8 +397,11 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    const difyDocumentId = doc ? doc.difyId : documentId;
+
     const response = await axios.get(
-      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments`,
+      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${difyDocumentId}/segments`,
       {
         params: query,
         headers: {
@@ -303,8 +419,11 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    const difyDocumentId = doc ? doc.difyId : documentId;
+
     const response = await axios.post(
-      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments/${segmentId}`,
+      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${difyDocumentId}/segments/${segmentId}`,
       data,
       {
         headers: {
@@ -322,8 +441,11 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
+    const [doc] = await db.select().from(documents).where(eq(documents.id, documentId)).limit(1);
+    const difyDocumentId = doc ? doc.difyId : documentId;
+
     const response = await axios.delete(
-      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${documentId}/segments/${segmentId}`,
+      `${DIFY_BASE_URL}/datasets/${dataset.difyId}/documents/${difyDocumentId}/segments/${segmentId}`,
       {
         headers: {
           'Authorization': `Bearer ${DIFY_KNOWLEDGE_API_KEY}`

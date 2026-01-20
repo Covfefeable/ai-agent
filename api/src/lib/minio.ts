@@ -37,13 +37,13 @@ export const uploadBuffer = async (
 const FILE_URL_SIGN_SECRET = process.env.FILE_URL_SIGN_SECRET;
 const FILE_URL_EXPIRES_IN = parseInt(process.env.FILE_URL_EXPIRES_IN || '3600');
 
-export const generateFileSignature = (path: string, expires: number) => {
+export const generateFileSignature = (path: string, expires: number, filename?: string) => {
   if (!FILE_URL_SIGN_SECRET) return '';
-  const data = `${path}:${expires}`;
+  const data = filename ? `${path}:${expires}:${filename}` : `${path}:${expires}`;
   return crypto.createHmac('sha256', FILE_URL_SIGN_SECRET).update(data).digest('hex');
 };
 
-export const getPublicUrl = (path: string) => {
+export const getPublicUrl = (path: string, filename?: string) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const apiUrl = process.env.API_PUBLIC_URL || process.env.API_URL;
   
@@ -52,8 +52,11 @@ export const getPublicUrl = (path: string) => {
   let query = '';
   if (FILE_URL_SIGN_SECRET) {
     const expires = Math.floor(Date.now() / 1000) + FILE_URL_EXPIRES_IN;
-    const sign = generateFileSignature(normalizedPath, expires);
+    const sign = generateFileSignature(normalizedPath, expires, filename);
     query = `?sign=${sign}&expires=${expires}`;
+    if (filename) {
+        query += `&filename=${encodeURIComponent(filename)}`;
+    }
   }
   
   if (apiUrl) {
@@ -98,18 +101,57 @@ export const transformToProxyUrl = async (url: string | null): Promise<string | 
     // Always extract path and regenerate URL to ensure signature is fresh
     const path = extractPathFromUrl(url);
     if (path) {
-        // Convert to public proxy URL instead of presigned URL
-        return getPublicUrl(`/${BUCKET_NAME}/${path}`);
+      return getPublicUrl(path);
     }
-    return url;
+    
+    return null;
 };
 
 export const deleteFile = async (objectName: string) => {
   try {
-    await minioClient.removeObject(BUCKET_NAME, objectName);
-    console.log(`Deleted file: ${objectName}`);
-  } catch (err) {
-    console.error(`Failed to delete file: ${objectName}`, err);
+    // Check if bucket exists first to avoid error if bucket is missing
+    const bucketExists = await minioClient.bucketExists(BUCKET_NAME);
+    if (!bucketExists) return;
+    
+    // Normalize path (remove leading slash if present for MinIO call)
+    const path = objectName.startsWith('/') ? objectName.slice(1) : objectName;
+    // However, MinIO client usually expects object name without bucket name if using putObject(bucket, objectName)
+    // But if our objectName stored includes bucket name (e.g. /bucket/path), we need to strip it?
+    // In uploadBuffer, we return `/${BUCKET_NAME}/${objectName}`.
+    // So if we pass that back here, we need to parse it.
+    
+    let finalObjectName = objectName;
+    if (objectName.startsWith(`/${BUCKET_NAME}/`)) {
+      finalObjectName = objectName.replace(`/${BUCKET_NAME}/`, '');
+    } else if (objectName.startsWith('/')) {
+        finalObjectName = objectName.slice(1);
+    }
+
+    await minioClient.removeObject(BUCKET_NAME, finalObjectName);
+  } catch (error) {
+    console.error('Error deleting file from MinIO:', error);
+  }
+};
+
+export const deleteFolder = async (prefix: string) => {
+  try {
+     const bucketExists = await minioClient.bucketExists(BUCKET_NAME);
+     if (!bucketExists) return;
+
+    const objectsList: string[] = [];
+    const stream = minioClient.listObjectsV2(BUCKET_NAME, prefix, true);
+    
+    for await (const obj of stream) {
+      if (obj.name) {
+        objectsList.push(obj.name);
+      }
+    }
+
+    if (objectsList.length > 0) {
+      await minioClient.removeObjects(BUCKET_NAME, objectsList);
+    }
+  } catch (error) {
+    console.error('Error deleting folder from MinIO:', error);
   }
 };
 

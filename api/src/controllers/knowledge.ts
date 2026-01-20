@@ -190,6 +190,25 @@ export const knowledgeController = {
     }
   },
 
+  async getDownloadUrl(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { id, documentId } = request.params as { id: string; documentId: string };
+      const userId = (request as any).user.id;
+      const userRole = (request as any).user.role;
+
+      const result = await knowledgeService.getDocumentDownloadUrl(id, documentId, userId, userRole);
+      return result;
+    } catch (error: any) {
+      request.log.error(error);
+      if (error.message === '知识库不存在' || error.message === '文档不存在或不支持下载') {
+        return reply.status(404).send({ message: error.message });
+      }
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message || '服务器内部错误';
+      return reply.status(status).send({ message });
+    }
+  },
+
   async deleteDocument(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id, documentId } = request.params as { id: string; documentId: string };

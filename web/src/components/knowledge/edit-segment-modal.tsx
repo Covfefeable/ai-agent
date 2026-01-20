@@ -137,7 +137,7 @@ export function EditSegmentModal({ isOpen, onClose, onSuccess, datasetId, docume
         </div>
 
         <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>取消</Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>取消</Button>
           <Button type="submit" isLoading={isSubmitting} className="bg-black hover:bg-black/80 text-white">保存</Button>
         </div>
       </form>

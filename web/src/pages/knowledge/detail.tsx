@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2, Search, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
@@ -62,6 +62,17 @@ export function KnowledgeDetailPage() {
       console.error('Delete segment failed:', error);
     } finally {
       // Clean up
+    }
+  };
+
+  const handleDownload = async (documentId: string) => {
+    if (!id) return;
+    try {
+      const response = await knowledgeApi.getDownloadUrl(id, documentId);
+      window.open(response.url, '_blank');
+    } catch (error) {
+      console.error('Failed to get download url:', error);
+      toast.error('下载失败');
     }
   };
 
@@ -147,16 +158,30 @@ export function KnowledgeDetailPage() {
                           {dayjs(doc.created_at * 1000).format('YYYY-MM-DD HH:mm')}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteId(doc.id);
-                            }}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            title="删除文档"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            {doc.hasFile && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(doc.id);
+                                }}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                title="下载文档"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteId(doc.id);
+                              }}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              title="删除文档"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
