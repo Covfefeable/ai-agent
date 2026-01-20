@@ -69,7 +69,7 @@ export const usersService = {
 
       if (calculatedPoints === null || calculatedPoints === undefined) {
         const multiplier = item.multiplier ?? 1.0;
-        calculatedPoints = Number((((item.promptTokens || 0) * 0.5 + (item.completionTokens || 0)) * multiplier / 2000).toFixed(2));
+        calculatedPoints = (((item.promptTokens || 0) * 0.5 + (item.completionTokens || 0)) * multiplier / 2000).toFixed(2);
       }
 
       return {

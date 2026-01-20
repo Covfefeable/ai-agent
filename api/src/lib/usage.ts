@@ -39,7 +39,7 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
             timeToFirstToken: String(usage.time_to_first_token),
             timeToGenerate: String(usage.time_to_generate),
             multiplier: multiplier,
-            calculatedPoints: points,
+            calculatedPoints: String(points),
           });
 
           // Deduct balance for regular members

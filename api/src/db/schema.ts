@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique, doublePrecision, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, boolean, integer, unique, doublePrecision, pgEnum, decimal, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Enums
@@ -12,16 +12,16 @@ export const users = pgTable('users', {
   password: text('password').notNull(), // 添加密码字段
   role: roleEnum('role').notNull().default('member'), // owner, admin, member
   avatar: text('avatar'), // avatar url (MinIO)
-  balance: doublePrecision('balance').notNull().default(100000), // 用户余额，单位 点数
+  balance: decimal('balance', { precision: 18, scale: 2 }).notNull().default('100'), // 用户余额，单位 点数
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
 export const userGroups = pgTable('user_groups', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
 export const userGroupMembers = pgTable('user_group_members', {
@@ -31,6 +31,8 @@ export const userGroupMembers = pgTable('user_group_members', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (t) => ({
   uniqueUserGroup: unique().on(t.userId, t.groupId),
+  userIdIdx: index('user_group_members_user_id_idx').on(t.userId),
+  groupIdIdx: index('user_group_members_group_id_idx').on(t.groupId),
 }));
 
 export const datasets = pgTable('datasets', {
@@ -40,15 +42,18 @@ export const datasets = pgTable('datasets', {
   name: text('name').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  difyIdIdx: index('datasets_dify_id_idx').on(t.difyId),
+  userIdIdx: index('datasets_user_id_idx').on(t.userId),
+}));
 
 export const categories = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull().unique(),
   sort: integer('sort').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
 export const agents = pgTable('agents', {
@@ -63,8 +68,11 @@ export const agents = pgTable('agents', {
   categoryId: uuid('category_id').references(() => categories.id),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  userIdIdx: index('agents_user_id_idx').on(t.userId),
+  categoryIdIdx: index('agents_category_id_idx').on(t.categoryId),
+}));
 
 export const agentUserGroups = pgTable('agent_user_groups', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -73,6 +81,8 @@ export const agentUserGroups = pgTable('agent_user_groups', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (t) => ({
   uniqueAgentGroup: unique().on(t.agentId, t.groupId),
+  agentIdIdx: index('agent_user_groups_agent_id_idx').on(t.agentId),
+  groupIdIdx: index('agent_user_groups_group_id_idx').on(t.groupId),
 }));
 
 export const userFavoriteAgents = pgTable('user_favorite_agents', {
@@ -82,6 +92,8 @@ export const userFavoriteAgents = pgTable('user_favorite_agents', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (t) => ({
   uniqueUserAgent: unique().on(t.userId, t.agentId),
+  userIdIdx: index('user_favorite_agents_user_id_idx').on(t.userId),
+  agentIdIdx: index('user_favorite_agents_agent_id_idx').on(t.agentId),
 }));
 
 export const models = pgTable('models', {
@@ -94,7 +106,7 @@ export const models = pgTable('models', {
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
   visibility: visibilityEnum('visibility').notNull().default('public'), // 'public', 'selected_groups'
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
 export const modelUserGroups = pgTable('model_user_groups', {
@@ -104,6 +116,8 @@ export const modelUserGroups = pgTable('model_user_groups', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (t) => ({
   uniqueModelGroup: unique().on(t.modelId, t.groupId),
+  modelIdIdx: index('model_user_groups_model_id_idx').on(t.modelId),
+  groupIdIdx: index('model_user_groups_group_id_idx').on(t.groupId),
 }));
 
 export const userUsage = pgTable('user_usage', {
@@ -123,18 +137,21 @@ export const userUsage = pgTable('user_usage', {
   totalPrice: text('total_price'),
   currency: text('currency'),
   multiplier: doublePrecision('multiplier').notNull().default(1.0),
-  calculatedPoints: doublePrecision('calculated_points'), // 结算点数
+  calculatedPoints: decimal('calculated_points', { precision: 18, scale: 2 }), // 结算点数
   latency: text('latency'),
   timeToFirstToken: text('time_to_first_token'),
   timeToGenerate: text('time_to_generate'),
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (t) => ({
+  userIdIdx: index('user_usage_user_id_idx').on(t.userId),
+  createdAtIdx: index('user_usage_created_at_idx').on(t.createdAt),
+}));
 
 export const userEvents = pgTable('user_events', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventName: text('event_name').notNull(),
   userId: uuid('user_id').references(() => users.id), // 可为空
-  extraData: text('extra_data'), // 可为空，上报时附带的额外数据
+  extraData: jsonb('extra_data'), // 可为空，上报时附带的额外数据
   url: text('url'), // 当前上报时用户页面的url
   ip: text('ip'), // 来源 IP
   userAgent: text('user_agent'), // 用户代理
@@ -142,7 +159,9 @@ export const userEvents = pgTable('user_events', {
   os: text('os'), // 操作系统 os:version
   device: text('device'), // 设备 vendor:model
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (t) => ({
+  userIdIdx: index('user_events_user_id_idx').on(t.userId),
+}));
 
 // Relations
 

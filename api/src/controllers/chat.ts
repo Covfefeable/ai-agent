@@ -19,12 +19,13 @@ export const chatController = {
       const user = request.user as any;
       const body = chatSchema.parse(request.body);
 
+      const logStream = await chatService.chatMessage(user, body);
+
       reply.header('Content-Type', 'text/event-stream');
       reply.header('Cache-Control', 'no-cache');
       reply.header('Connection', 'keep-alive');
 
-      const logStream = await chatService.chatMessage(user, body);
-      return logStream;
+      return reply.send(logStream);
 
     } catch (error) {
       if (error instanceof z.ZodError) {

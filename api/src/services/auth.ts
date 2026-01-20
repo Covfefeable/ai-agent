@@ -32,7 +32,7 @@ export const authService = {
       email,
       password: hashedPassword,
       role,
-      balance: INITIAL_BALANCE,
+      balance: String(INITIAL_BALANCE),
     }).returning({ id: users.id, name: users.name, email: users.email, role: users.role, balance: users.balance, avatar: users.avatar });
 
     // Generate token

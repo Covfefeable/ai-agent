@@ -453,7 +453,7 @@ export const agentService = {
       const [dbUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       if (dbUser) {
         const role = dbUser.role;
-        if (role === 'member' && dbUser.balance <= 0) {
+        if (role === 'member' && Number(dbUser.balance) <= 0) {
           throw new Error('余额不足，请充值');
         }
       }

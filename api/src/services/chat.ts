@@ -17,7 +17,7 @@ export const chatService = {
     if (!dbUser) {
       throw new Error('用户不存在');
     }
-    if (dbUser.role === 'member' && dbUser.balance <= 0) {
+    if (dbUser.role === 'member' && Number(dbUser.balance) <= 0) {
       throw new Error('余额不足，请充值');
     }
 
