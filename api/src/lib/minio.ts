@@ -200,6 +200,11 @@ export const extractPathFromUrl = (url: string): string | null => {
           if (path.startsWith(filesPrefix)) {
              return path.substring(filesPrefix.length);
           }
+          
+          // Fallback: Check for /files/ prefix without bucket name
+          if (path.startsWith('/files/')) {
+             return path.substring('/files/'.length);
+          }
 
           const prefix = `/${BUCKET_NAME}/`;
           if (path.startsWith(prefix)) {
@@ -214,6 +219,11 @@ export const extractPathFromUrl = (url: string): string | null => {
           const filesPrefix = `/files/${BUCKET_NAME}/`;
           if (cleanUrl.startsWith(filesPrefix)) {
              return cleanUrl.substring(filesPrefix.length);
+          }
+
+          // Fallback: Check for /files/ prefix without bucket name
+          if (cleanUrl.startsWith('/files/')) {
+             return cleanUrl.substring('/files/'.length);
           }
 
           const prefix = `/${BUCKET_NAME}/`;
