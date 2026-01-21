@@ -1,0 +1,353 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Super Agent Utils
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openrouter:0.0.30@3c62cdd6d229fca4cab3bf046ed103ff30c3f9bb0199105cbca38c98990a6cf8
+    version: null
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 300
+        file_size_limit: 100
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 50
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 100
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: if-else
+      id: 1768966110863-source-1768977470965-target
+      selected: false
+      source: '1768966110863'
+      sourceHandle: source
+      target: '1768977470965'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: 1768977470965-true-1768966352414-target
+      selected: false
+      source: '1768977470965'
+      sourceHandle: 'true'
+      target: '1768966352414'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1768966352414-source-1768980632042-target
+      selected: false
+      source: '1768966352414'
+      sourceHandle: source
+      target: '1768980632042'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: 1768977470965-7272c86a-af88-48e5-a9fe-5cf5b2a5decc-1768984639460-target
+      selected: false
+      source: '1768977470965'
+      sourceHandle: 7272c86a-af88-48e5-a9fe-5cf5b2a5decc
+      target: '1768984639460'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1768984639460-source-1768984996300-target
+      selected: false
+      source: '1768984639460'
+      sourceHandle: source
+      target: '1768984996300'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 模式
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: mode
+        - default: ''
+          hint: ''
+          label: 输入数据
+          max_length: 65535
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: input
+      height: 135
+      id: '1768966110863'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            response_format: json_object
+            temperature: 0.7
+          mode: chat
+          name: google/gemini-2.5-flash-lite
+          provider: langgenius/openrouter/openrouter
+        prompt_template:
+        - id: 72998944-f174-4ad3-88bc-cebdef95738e
+          role: system
+          text: "你是一名对话AI的“长期记忆”提取器。请根据用户的多个历史会话内容，提炼可长期复用的关键信息，生成简短、清晰且稳定的长期记忆列表。输出要求与规则如下：\n\
+            \n目标：\n- 从历史对话中提取对未来多轮对话有持续价值的信息，避免冗余与短期信息。\n- 优先保留稳定、不易变化、可反复利用的内容。\n\
+            \n记忆分类（category）：\n- general：通用记忆。用户的背景概况、长期目标、沟通风格、工作/学习领域、重要的进行中项目等。\n\
+            - preference：用户偏好。格式、语气、语言、工具/平台偏好、输出风格要求、喜欢/不喜欢的内容、常用单位/时区等。\n- fact：事实记忆。明确的、可验证的具体事实（如公司名称、职位、固定日程、已确定的配置参数、常用账号别名等）。\n\
+            \n提取原则：\n- 简短清晰：每条 content 不超过 120 个字符。\n- 稳定可靠：排除临时、易变或已过期的信息（如一次性验证码、临时折扣、临时情绪）。\n\
+            - 去重合并：相似信息合并为一条，避免重复。\n- 不臆测：仅基于对话中明确表达的内容；不推断未明确说明的事实。\n- 隐私谨慎：若涉及敏感隐私（证件号、家庭住址、银行卡等），一律忽略，不写入记忆。\n\
+            - 时效检查：若信息带有明确过期时间且已过期，则不写入。\n- 上下文独立：每条记忆应自足、无需依赖原对话即可理解。\n\n输出格式：\n\
+            - 以 JSON 数组返回，每个元素为一个对象，包含：\n  - category: \"general\" | \"preference\"\
+            \ | \"fact\"\n  - content: string\n- 严格仅输出 JSON，不包含额外说明或注释。\n- 若未能提取任何长期记忆，返回空数组\
+            \ []。\n\n示例（示意，非固定）：\n[\n  { \"category\": \"general\", \"content\": \"\
+            从事产品管理与数据分析相关工作\" },\n  { \"category\": \"preference\", \"content\": \"\
+            偏好中文回答并给出要点式总结\" },\n  { \"category\": \"preference\", \"content\": \"\
+            表格输出需含列：名称、优先级、截止日期\" },\n  { \"category\": \"fact\", \"content\": \"\
+            常用时区为Asia/Shanghai\" },\n  { \"category\": \"general\", \"content\": \"\
+            长期目标是提升自动化报表与A/B测试能力\" }\n]\n\n用户输入的内容：\n{{#1768966110863.input#}}"
+        selected: false
+        title: 提取记忆
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768966352414'
+      position:
+        x: 710
+        y: 303
+      positionAbsolute:
+        x: 710
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 6c19f171-4d2d-479a-9fbf-16a07f4fd95b
+            value: generate_memory
+            varType: string
+            variable_selector:
+            - '1768966110863'
+            - mode
+          id: 'true'
+          logical_operator: and
+        - case_id: 7272c86a-af88-48e5-a9fe-5cf5b2a5decc
+          conditions:
+          - comparison_operator: is
+            id: 28c8bb78-d25a-44a0-8d32-d125a62e8bf0
+            value: compress_memory
+            varType: string
+            variable_selector:
+            - '1768966110863'
+            - mode
+          id: 7272c86a-af88-48e5-a9fe-5cf5b2a5decc
+          logical_operator: and
+        selected: false
+        title: 条件分支
+        type: if-else
+      height: 172
+      id: '1768977470965'
+      position:
+        x: 390
+        y: 303
+      positionAbsolute:
+        x: 390
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1768966352414'
+          - text
+          value_type: string
+          variable: output
+        selected: false
+        title: 输出
+        type: end
+      height: 88
+      id: '1768980632042'
+      position:
+        x: 1012
+        y: 303
+      positionAbsolute:
+        x: 1012
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            response_format: json_object
+            temperature: 0.7
+          mode: chat
+          name: google/gemini-2.5-flash-lite
+          provider: langgenius/openrouter/openrouter
+        prompt_template:
+        - id: f0b41b40-13c7-4d05-9023-73c183806dee
+          role: system
+          text: "你是一名“长期记忆压缩器”。输入是一段长字符串（memory 拼接文本），内容由多条记忆项顺序拼接而成，可能含多行与重复信息。你的任务是从该字符串中解析记忆项、语义去重与合并，压缩为高价值的长期记忆清单，避免上下文爆炸。\n\
+            \n输入格式：\n- 单个 string，可能包含：\n  - 多行文本、分隔符（逗号、分号、换行、破折号、项目符号等）\n  - 记忆类别提示词（如\
+            \ general/preference/fact）或自然语言描述\n  - 重复、冲突，无效或冗余信息\n\n目标：\n- 解析并标准化记忆项，最大限度压缩长度与数量，去除无效记忆，保留对后续对话最有价值且稳定的信息。\n\
+            - 压缩率大于 50%，即30条内容必须压缩到15条以内。\n\n处理步骤（按顺序）：\n1) 解析与标准化\n   - 从字符串中抽取候选记忆项；识别可能的类别标签或根据语义推断\
+            \ category：\n     - general：背景/长期目标/沟通风格/进行中长期项目\n     - preference：稳定偏好（语气、格式、语言、单位/时区、工具/平台、输出风格）\n\
+            \     - fact：可验证的具体事实（公司/职位/固定日程/配置参数/常用 ID 等）\n   - 去除标点装饰与无关字符，使每条成为独立短句。\n\
+            2) 过滤无效项\n   - 丢弃临时、一次性、已过期、无意义，含敏感隐私（证件号/住址/银行卡等）信息。\n   - 丢弃低置信、模糊或与未来低相关的细枝末节。\n\
+            3) 主题归并与去重\n   - 以语义相似度分组；合并同义/重复项为更短总结。\n   - 保持术语一致（单位、时区、工具名等）。\n4)\
+            \ 优先级与取舍\n   - 优先保留：稳定身份/背景、长期目标、固定偏好、固定配置（如时区、工具栈）、经常出现的约束。\n   - 次优先：进行中的长期项目、常见格式/语气要求。\n\
+            \   - 丢弃：一次性活动/已完成任务/临时情绪。\n5) 压缩表达\n   - 每条 content ≤ 120 个字符；能合并则合并，使用并列短语，避免赘述。\n\
+            6) 一致性检查\n   - 解决冲突（以更近、更频繁或更明确的表述为准），维持分类清晰。\n\n输出格式：\n- 严格输出 JSON 数组；每个元素：\n\
+            \  - category: \"general\" | \"preference\" | \"fact\"\n  - content: string\n\
+            - 仅输出 JSON，不含额外说明或注释。\n- 若无有效长期记忆，返回 []。\n\n示例输入（string，示意）：\n\"喜欢中文回答；回答用要点列表。常用时区：Asia/Shanghai。偏好简洁标题；不爱过度修饰...\"\
+            \n\n示例输出（JSON，示意）：\n[\n  {\"category\":\"preference\",\"content\":\"偏好中文与要点式回答，偏好简洁标题与精炼表述\"\
+            },\n  {\"category\":\"fact\",\"content\":\"常用时区为Asia/Shanghai\"}\n]\n\n\
+            输入的长期记忆内容：\n{{#1768966110863.input#}}"
+        selected: true
+        title: 压缩记忆
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768984639460'
+      position:
+        x: 710
+        y: 430
+      positionAbsolute:
+        x: 710
+        y: 430
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1768984639460'
+          - text
+          value_type: string
+          variable: output
+        selected: false
+        title: 输出 2
+        type: end
+      height: 88
+      id: '1768984996300'
+      position:
+        x: 1012
+        y: 430
+      positionAbsolute:
+        x: 1012
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -4
+      y: 129
+      zoom: 1
+  rag_pipeline_variables: []

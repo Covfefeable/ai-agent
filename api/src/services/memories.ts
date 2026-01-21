@@ -112,8 +112,8 @@ export class MemoryService {
 
       // 2. 调度延时任务 (Debounce 5分钟)
       // 使用 jobKey 实现防抖：相同的 jobKey 会更新任务的 runAt 时间
-      // const delay = 5 * 60 * 1000; // 5 minutes
-      const delay = 10 * 1000; // 10 seconds for testing
+      const delay = 5 * 60 * 1000; // 5 minutes
+      // const delay = 10 * 1000; // 10 seconds for testing
       
       await addBackgroundJob(
         'process_memory_buffer',
