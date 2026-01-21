@@ -3,6 +3,7 @@ import { db } from '../db';
 import { datasets, users, models } from '../db/schema';
 import { inArray, eq, and } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
+import { memoryService } from './memory';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_SUPER_AGENT_CHAT_API_KEY = process.env.DIFY_SUPER_AGENT_CHAT_API_KEY;
@@ -69,6 +70,17 @@ export const chatService = {
       // Clean up inputs to avoid sending internal fields to Dify
       delete inputs.knowledge_base_ids;
       delete inputs.top_k;
+    }
+
+    // 注入用户记忆
+    try {
+      const memories = await memoryService.getMemoriesAsString(user.id);
+      if (memories) {
+        inputs.memories = memories;
+      }
+    } catch (error) {
+      console.error('Failed to inject memories:', error);
+      // 记忆注入失败不应阻塞聊天
     }
 
     const response = await axios.post(

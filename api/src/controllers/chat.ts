@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { chatService } from '../services/chat';
+import { memoryService } from '../services/memory';
 
 const chatSchema = z.object({
   inputs: z.any().optional(),
@@ -18,6 +19,11 @@ export const chatController = {
     try {
       const user = request.user as any;
       const body = chatSchema.parse(request.body);
+
+      // 异步收集记忆，不阻塞主流程
+      memoryService.addToBuffer(user.id, body.query).catch((err) => {
+        request.log.error(`[Memory] Failed to add query to buffer: ${err.message}`);
+      });
 
       const logStream = await chatService.chatMessage(user, body);
 

@@ -11,15 +11,30 @@ import { MessageSquare, ChevronUp, User, Database, Users, Bot, Menu, X } from 'l
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { favoritesApi } from '@/api/favorites';
+import { userApi } from '@/api/user';
 import { type Agent } from '@/api/agents';
 import { routeTitles, profileMenuItems } from '@/constants/dashboard';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [favoriteAgents, setFavoriteAgents] = useState<(Agent & { favoritedAt: string })[]>([]);
+
+  useEffect(() => {
+    // Refresh user profile on mount to get latest avatar URL
+    const fetchProfile = async () => {
+      try {
+        const profile = await userApi.getProfile();
+        setUser(profile);
+        localStorage.setItem('user', JSON.stringify(profile));
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     // Close mobile menu on route change

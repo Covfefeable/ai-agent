@@ -1,33 +1,22 @@
 import { run, TaskList } from 'graphile-worker';
-import { deleteFile, deleteFiles } from '../lib/minio';
+import process_memory_buffer from './tasks/process_memory_buffer';
+import delete_minio_files from './tasks/delete_minio_files';
+import compress_user_memory from './tasks/compress_user_memory';
 import dotenv from 'dotenv';
 import path from 'path';
 
 // Ensure env vars are loaded
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
-interface DeleteFilePayload {
-  paths: string[];
-}
-
 const taskList: TaskList = {
   // Task: Delete files from MinIO
-  delete_minio_files: async (payload: unknown) => {
-    const { paths } = payload as DeleteFilePayload;
-    if (!paths || paths.length === 0) return;
+  delete_minio_files,
 
-    console.log(`[Worker] Deleting ${paths.length} files from MinIO:`, paths);
-    
-    // Use deleteFiles for bulk deletion
-    try {
-        await deleteFiles(paths);
-        console.log(`[Worker] Successfully deleted files.`);
-    } catch (error) {
-        console.error(`[Worker] Failed to delete files:`, error);
-        // Throwing error will cause the job to retry
-        throw error;
-    }
-  },
+  // Task: Process memory buffer
+  process_memory_buffer,
+
+  // Task: Compress user memory
+  compress_user_memory,
 };
 
 async function main() {

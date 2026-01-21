@@ -4,6 +4,11 @@ import { relations } from 'drizzle-orm';
 // Enums
 export const roleEnum = pgEnum('role', ['owner', 'admin', 'member']);
 export const visibilityEnum = pgEnum('visibility', ['public', 'selected_groups', 'private']);
+// - general : 通用记忆
+// - preference : 用户偏好
+// - fact : 事实记忆
+export const memoryCategoryEnum = pgEnum('memory_category', ['general', 'preference', 'fact']);
+export const memoryBufferStatusEnum = pgEnum('memory_buffer_status', ['pending', 'processing', 'failed']);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -180,6 +185,29 @@ export const userEvents = pgTable('user_events', {
   userIdIdx: index('user_events_user_id_idx').on(t.userId),
 }));
 
+export const memoryBuffers = pgTable('memory_buffers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  queries: jsonb('queries').notNull().default([]), // Array of query strings
+  lastQueryAt: timestamp('last_query_at').defaultNow(),
+  status: memoryBufferStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  userIdIdx: index('memory_buffers_user_id_idx').on(t.userId),
+}));
+
+export const memories = pgTable('memories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  category: memoryCategoryEnum('category').notNull().default('general'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  userIdIdx: index('memories_user_id_idx').on(t.userId),
+}));
+
 // Relations
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -189,6 +217,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   favoriteAgents: many(userFavoriteAgents),
   usage: many(userUsage),
   events: many(userEvents),
+  memories: many(memories),
+  memoryBuffers: many(memoryBuffers),
 }));
 
 export const userGroupMembersRelations = relations(userGroupMembers, ({ one }) => ({
@@ -279,6 +309,20 @@ export const userUsageRelations = relations(userUsage, ({ one }) => ({
 export const userEventsRelations = relations(userEvents, ({ one }) => ({
   user: one(users, {
     fields: [userEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const memoriesRelations = relations(memories, ({ one }) => ({
+  user: one(users, {
+    fields: [memories.userId],
+    references: [users.id],
+  }),
+}));
+
+export const memoryBuffersRelations = relations(memoryBuffers, ({ one }) => ({
+  user: one(users, {
+    fields: [memoryBuffers.userId],
     references: [users.id],
   }),
 }));
