@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Square, Globe, X, History, Plus, MoreHorizontal } from 'lucide-react';
+import { Paperclip, Loader2, File as FileIcon, User, Bot, Trash2, ArrowUp, Square, Globe, X, History, Plus, MoreHorizontal, Brain } from 'lucide-react';
 import { AppLogo } from '@/components/icons/app-logo';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -11,6 +11,8 @@ import { chatApi, type Message as ApiMessage } from '@/api/chat';
 import { knowledgeApi } from '@/api/knowledge';
 import { modelsApi, type Model } from '@/api/models';
 import { HistoryDrawer } from '@/components/history-drawer';
+import { MemoryDrawer } from '@/components/memory-drawer';
+import { memoriesApi, type Memory } from '@/api/memories';
 import { ModelSelector } from '@/components/chat/model-selector';
 import { KnowledgeBaseSelector } from '@/components/chat/knowledge-base-selector';
 import { MessageActionBar } from '@/components/chat/message-action-bar';
@@ -78,7 +80,42 @@ export function ChatPage() {
   const [saveKbText, setSaveKbText] = useState('');
   const [saveKbOpen, setSaveKbOpen] = useState(false);
 
+  // Memory related states
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [isMemoriesLoading, setIsMemoriesLoading] = useState(false);
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const fetchMemories = async () => {
+    try {
+      setIsMemoriesLoading(true);
+      const response = await memoriesApi.getMemories();
+      setMemories(response);
+    } catch (error) {
+      console.error('Failed to fetch memories:', error);
+    } finally {
+      setIsMemoriesLoading(false);
+    }
+  };
+
+  const handleDeleteMemory = async (id: string) => {
+    try {
+      await memoriesApi.deleteMemory(id);
+      setMemories(prev => prev.filter(m => m.id !== id));
+    } catch (error) {
+      console.error('Failed to delete memory:', error);
+    }
+  };
+
+  const handleUpdateMemory = async (id: string, content: string) => {
+    try {
+      await memoriesApi.updateMemory(id, content);
+      setMemories(prev => prev.map(m => m.id === id ? { ...m, content } : m));
+    } catch (error) {
+      console.error('Failed to update memory:', error);
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -474,6 +511,18 @@ export function ChatPage() {
             variant="ghost"
             size="icon"
             onClick={() => {
+              setIsMemoryOpen(true);
+              fetchMemories();
+            }}
+            className="text-slate-500 hover:text-slate-900"
+            title="我的记忆"
+          >
+            <Brain className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
               navigate('/');
               window.location.reload();
             }}
@@ -793,6 +842,16 @@ export function ChatPage() {
         onDelete={(id) => setDeleteId(id)}
         onScroll={handleScroll}
         isLoadingMore={isLoadingMore}
+      />
+
+      {/* Memory Drawer */}
+      <MemoryDrawer
+        isOpen={isMemoryOpen}
+        onClose={() => setIsMemoryOpen(false)}
+        memories={memories}
+        onDelete={handleDeleteMemory}
+        onUpdate={handleUpdateMemory}
+        isLoading={isMemoriesLoading}
       />
     </div>
   );

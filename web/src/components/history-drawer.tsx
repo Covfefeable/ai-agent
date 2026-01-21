@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
-import { X, MessageSquare, Trash2 } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 
 export interface Conversation {
   id: string;
@@ -66,10 +66,6 @@ export function HistoryDrawer({
                 onClick={() => onSelect(conv)}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <MessageSquare className={cn(
-                    "h-4 w-4 shrink-0 transition-colors",
-                    currentConversationId === conv.id ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"
-                  )} />
                   <span className="truncate">{conv.name || 'New Chat'}</span>
                 </div>
                 <button

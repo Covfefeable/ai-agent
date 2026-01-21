@@ -1,5 +1,5 @@
 import { Task } from 'graphile-worker';
-import { memoryService } from '../../services/memory';
+import { memoryService } from '../../services/memories';
 
 interface CompressUserMemoryPayload {
   userId: string;

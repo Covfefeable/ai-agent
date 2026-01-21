@@ -24,13 +24,37 @@ interface DifyWorkflowResponse {
 
 export class MemoryService {
   /**
-   * 获取用户的所有记忆，并拼接成字符串
+   * 获取用户的所有记忆，返回详细对象列表
    */
-  async getMemoriesAsString(userId: string): Promise<string> {
-    const userMemories = await db.query.memories.findMany({
+  async getMemories(userId: string) {
+    return await db.query.memories.findMany({
       where: eq(memories.userId, userId),
       orderBy: (memories, { desc }) => [desc(memories.createdAt)],
     });
+  }
+
+  /**
+   * 删除用户记忆
+   */
+  async deleteMemory(userId: string, memoryId: string) {
+    await db.delete(memories)
+      .where(and(eq(memories.id, memoryId), eq(memories.userId, userId)));
+  }
+
+  /**
+   * 更新用户记忆
+   */
+  async updateMemory(userId: string, memoryId: string, content: string) {
+    await db.update(memories)
+      .set({ content, updatedAt: new Date() })
+      .where(and(eq(memories.id, memoryId), eq(memories.userId, userId)));
+  }
+
+  /**
+   * 获取用户的所有记忆，并拼接成字符串
+   */
+  async getMemoriesAsString(userId: string): Promise<string> {
+    const userMemories = await this.getMemories(userId);
 
     if (!userMemories || userMemories.length === 0) {
       return '';
@@ -88,8 +112,8 @@ export class MemoryService {
 
       // 2. 调度延时任务 (Debounce 5分钟)
       // 使用 jobKey 实现防抖：相同的 jobKey 会更新任务的 runAt 时间
-      const delay = 5 * 60 * 1000; // 5 minutes
-      // const delay = 10 * 1000; // 10 seconds for testing
+      // const delay = 5 * 60 * 1000; // 5 minutes
+      const delay = 10 * 1000; // 10 seconds for testing
       
       await addBackgroundJob(
         'process_memory_buffer',
@@ -161,7 +185,7 @@ export class MemoryService {
       // 为了不让表无限膨胀，我们这里选择删除已处理的 buffer
       await db.delete(memoryBuffers).where(eq(memoryBuffers.id, bufferId));
 
-      // 6. 检查用户记忆数量，如果超过 30 条，触发压缩任务
+      // 6. 检查用户记忆数量，如果超过 50 条，触发压缩任务
       const [countResult] = await db
         .select({ count: sql<number>`count(*)` })
         .from(memories)
@@ -169,7 +193,7 @@ export class MemoryService {
       
       const memoryCount = Number(countResult?.count || 0);
       
-      if (memoryCount > 30) {
+      if (memoryCount > 50) {
         console.log(`[MemoryService] User ${buffer.userId} has ${memoryCount} memories, triggering compression`);
         await addBackgroundJob('compress_user_memory', { userId: buffer.userId });
       }

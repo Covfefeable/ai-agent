@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { chatService } from '../services/chat';
-import { memoryService } from '../services/memory';
+import { memoryService } from '../services/memories';
 
 const chatSchema = z.object({
   inputs: z.any().optional(),

@@ -19,6 +19,7 @@ import { userGroupsRoutes } from './routes/user-groups';
 import { eventsRoutes } from './routes/events';
 import { analyticsRoutes } from './routes/analytics';
 import { filesRoutes } from './routes/files';
+import { memoriesRoutes } from './routes/memories';
 import multipart from '@fastify/multipart';
 import jwt from 'jsonwebtoken';
 
@@ -72,6 +73,7 @@ fastify.register(async (instance) => {
   instance.register(modelsRoutes, { prefix: '/models' });
   instance.register(userGroupsRoutes, { prefix: '/user-groups' });
   instance.register(analyticsRoutes, { prefix: '/analytics' });
+  instance.register(memoriesRoutes, { prefix: '/memories' });
 });
 
 // Health check
