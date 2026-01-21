@@ -24,10 +24,10 @@ cp api/.env.example api/.env
 - 从 MinIO AIStor 控制台获取 license 文件
 - 保存到 `docker/minio.license`
 
-启动开发依赖服务（DB 会映射到本机 5432，MinIO 映射到 9000/9001，会自动创建默认 bucket）：
+启动开发依赖服务（DB 会映射到本机 5432，MinIO 映射到 9000/9001，会自动创建默认 bucket，Worker 后台服务）：
 ```bash
 cd docker
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db minio minio-init
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db minio minio-init worker
 ```
 
 停止（可选）：

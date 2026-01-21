@@ -2,7 +2,8 @@ import { db } from '../db';
 import { users, userUsage, agents } from '../db/schema';
 import { eq, desc, ilike, or, sql, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { uploadBuffer, deleteFile, extractPathFromUrl, getPublicUrl, transformToProxyUrl } from '../lib/minio';
+import { uploadBuffer, extractPathFromUrl, getPublicUrl, transformToProxyUrl } from '../lib/minio';
+import { addBackgroundJob } from '../lib/worker';
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -142,13 +143,13 @@ export const usersService = {
           
           finalAvatar = getPublicUrl(path);
 
-          // Delete old avatar if exists
+          // Delete old avatar if exists (Async)
           const [currentUser] = await db.select({ avatar: users.avatar }).from(users).where(eq(users.id, userId)).limit(1);
           if (currentUser && currentUser.avatar) {
               const oldPath = extractPathFromUrl(currentUser.avatar);
               if (oldPath) {
                   // Don't await deletion to not block response
-                  deleteFile(oldPath).catch(err => console.error('Background delete failed', err));
+                  await addBackgroundJob('delete_minio_files', { paths: [oldPath] });
               }
           }
         }

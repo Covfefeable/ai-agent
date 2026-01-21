@@ -107,30 +107,59 @@ export const transformToProxyUrl = async (url: string | null): Promise<string | 
     return null;
 };
 
-export const deleteFile = async (objectName: string) => {
-  try {
-    // Check if bucket exists first to avoid error if bucket is missing
-    const bucketExists = await minioClient.bucketExists(BUCKET_NAME);
-    if (!bucketExists) return;
-    
-    // Normalize path (remove leading slash if present for MinIO call)
-    const path = objectName.startsWith('/') ? objectName.slice(1) : objectName;
-    // However, MinIO client usually expects object name without bucket name if using putObject(bucket, objectName)
-    // But if our objectName stored includes bucket name (e.g. /bucket/path), we need to strip it?
-    // In uploadBuffer, we return `/${BUCKET_NAME}/${objectName}`.
-    // So if we pass that back here, we need to parse it.
-    
-    let finalObjectName = objectName;
-    if (objectName.startsWith(`/${BUCKET_NAME}/`)) {
-      finalObjectName = objectName.replace(`/${BUCKET_NAME}/`, '');
-    } else if (objectName.startsWith('/')) {
-        finalObjectName = objectName.slice(1);
-    }
 
-    await minioClient.removeObject(BUCKET_NAME, finalObjectName);
-  } catch (error) {
-    console.error('Error deleting file from MinIO:', error);
+// Helper to parse path into bucket and object name
+const parsePath = (path: string) => {
+  // Normalize path
+  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Split by first slash
+  const parts = normalizedPath.split('/');
+  
+  // If first part matches our bucket name, treat it as bucket
+  if (parts.length > 1 && parts[0] === BUCKET_NAME) {
+    return {
+      bucketName: parts[0],
+      objectName: parts.slice(1).join('/')
+    };
   }
+  
+  // Default to our bucket
+  return {
+    bucketName: BUCKET_NAME,
+    objectName: normalizedPath
+  };
+};
+
+export const deleteFile = async (path: string) => {
+  const { bucketName, objectName } = parsePath(path);
+  return minioClient.removeObject(bucketName, objectName);
+};
+
+export const deleteFiles = async (paths: string[]) => {
+  if (paths.length === 0) return;
+  // Group by bucket
+  const filesByBucket: Record<string, string[]> = {};
+  
+  paths.forEach(path => {
+    const { bucketName, objectName } = parsePath(path);
+    if (!filesByBucket[bucketName]) {
+      filesByBucket[bucketName] = [];
+    }
+    filesByBucket[bucketName].push(objectName);
+  });
+
+  // Execute deletes per bucket
+  await Promise.all(
+    Object.entries(filesByBucket).map(async ([bucket, objects]) => {
+      try {
+        await minioClient.removeObjects(bucket, objects);
+      } catch (error) {
+        console.error(`Error deleting files from bucket ${bucket}:`, error);
+        throw error;
+      }
+    })
+  );
 };
 
 export const deleteFolder = async (prefix: string) => {

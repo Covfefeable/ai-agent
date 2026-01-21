@@ -3,7 +3,8 @@ import { db } from '../db';
 import { agents, categories, users, agentUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, inArray } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
-import { uploadBuffer, deleteFile, extractPathFromUrl, transformToProxyUrl, getPublicUrl } from '../lib/minio';
+import { uploadBuffer, extractPathFromUrl, transformToProxyUrl, getPublicUrl } from '../lib/minio';
+import { addBackgroundJob } from '../lib/worker';
 
 async function fetchImageAndUpload(url: string | null, agentId: string): Promise<string | null> {
   if (!url) return null;
@@ -366,7 +367,7 @@ export const agentService = {
                      if (agent.iconUrl) {
                          const oldPath = extractPathFromUrl(agent.iconUrl);
                          if (oldPath) {
-                             deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+                             await addBackgroundJob('delete_minio_files', { paths: [oldPath] });
                          }
                      }
                  }
@@ -418,9 +419,11 @@ export const agentService = {
     if (row.iconUrl) {
         const oldPath = extractPathFromUrl(row.iconUrl);
         if (oldPath) {
-            deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+            await addBackgroundJob('delete_minio_files', { paths: [oldPath] });
         }
     }
+
+    return { message: '智能体已删除' };
   },
 
   // Dify Proxy Methods

@@ -4,7 +4,8 @@ import { db } from '../db';
 import { datasets, documents } from '../db/schema';
 import { eq, desc, and, ilike, or, sql, inArray } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
-import { uploadBuffer, deleteFile, getPublicUrl } from '../lib/minio';
+import { uploadBuffer, deleteFile, getPublicUrl, extractPathFromUrl } from '../lib/minio';
+import { addBackgroundJob } from '../lib/worker';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_KNOWLEDGE_API_KEY = process.env.DIFY_KNOWLEDGE_API_KEY;
@@ -106,10 +107,12 @@ export const knowledgeService = {
       throw new Error('知识库不存在');
     }
 
-    // 1. Clean up OSS files
+    // 1. Clean up OSS files (Async)
     const docs = await db.select().from(documents).where(eq(documents.datasetId, id));
-    for (const doc of docs) {
-      await deleteFile(doc.url);
+    const filePaths = docs.map(doc => extractPathFromUrl(doc.url)).filter((p): p is string => !!p);
+    
+    if (filePaths.length > 0) {
+      await addBackgroundJob('delete_minio_files', { paths: filePaths });
     }
 
     try {
@@ -367,7 +370,11 @@ export const knowledgeService = {
     
     // If doc exists locally, delete from OSS and DB
     if (doc) {
-        await deleteFile(doc.url);
+        // Async delete from OSS
+        const path = extractPathFromUrl(doc.url);
+        if (path) {
+            await addBackgroundJob('delete_minio_files', { paths: [path] });
+        }
         await db.delete(documents).where(eq(documents.id, documentId));
     }
 

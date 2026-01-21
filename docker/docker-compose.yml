@@ -84,6 +84,22 @@ services:
     networks:
       - app_network
 
+  worker:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    restart: always
+    command: npm run worker
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge

@@ -1,7 +1,8 @@
 import { db } from '../db';
 import { models, modelUserGroups, userGroupMembers } from '../db/schema';
 import { eq, desc, ilike, or, and, sql, asc, inArray } from 'drizzle-orm';
-import { uploadBase64, deleteFile, extractPathFromUrl, transformToProxyUrl } from '../lib/minio';
+import { uploadBase64, extractPathFromUrl, transformToProxyUrl } from '../lib/minio';
+import { addBackgroundJob } from '../lib/worker';
 
 export const modelsService = {
   async listModels(user: any, query: { keyword?: string; page?: number; limit?: number }) {
@@ -197,11 +198,11 @@ export const modelsService = {
         if (uploaded) {
             updateData.iconUrl = uploaded;
 
-            // Delete old icon
+            // Delete old icon async
             if (existing.iconUrl) {
                 const oldPath = extractPathFromUrl(existing.iconUrl);
                 if (oldPath) {
-                    deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+                    await addBackgroundJob('delete_minio_files', { paths: [oldPath] });
                 }
             }
         }
@@ -247,11 +248,11 @@ export const modelsService = {
 
     await db.delete(models).where(eq(models.id, id));
     
-    // Delete icon if exists
+    // Delete icon if exists (Async)
     if (existing.iconUrl) {
         const oldPath = extractPathFromUrl(existing.iconUrl);
         if (oldPath) {
-            deleteFile(oldPath).catch((err: any) => console.error('Background delete failed', err));
+            await addBackgroundJob('delete_minio_files', { paths: [oldPath] });
         }
     }
     
