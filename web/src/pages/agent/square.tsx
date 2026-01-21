@@ -8,6 +8,7 @@ import { agentCategoriesApi, type AgentCategory } from '@/api/agentCategories';
 import dayjs from 'dayjs';
 import { Tooltip } from 'antd';
 import { Pagination } from '@/components/ui/pagination';
+import { Loading } from '@/components/ui/loading';
 
 export function AgentsSquarePage() {
   const navigate = useNavigate();
@@ -92,9 +93,7 @@ export function AgentsSquarePage() {
           ))}
         </div>
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Bot className="h-8 w-8 text-slate-400 animate-pulse" />
-          </div>
+          <Loading />
         ) : items.length > 0 ? (
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">

@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Paperclip, Loader2, User, Bot, ArrowUp, Square, Trash2, File as FileIcon, Star, History, Plus, ArrowLeft } from 'lucide-react';
 import { cn, getFileType } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+import { Loading } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { HistoryDrawer } from '@/components/history-drawer';
 import { motion } from 'framer-motion';
@@ -728,9 +729,7 @@ export function AgentChatPage() {
       >
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10 space-y-6 md:space-y-10">
           {loading ? (
-            <div className="flex h-[40vh] items-center justify-center text-slate-400">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
+            <Loading className="h-[40vh]" />
           ) : (
             <>
               {messages.length === 0 ? (

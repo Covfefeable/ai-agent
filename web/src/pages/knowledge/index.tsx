@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Plus, Loader2, Calendar, Trash2, Pencil, Search } from 'lucide-react';
+import { Database, Plus, Calendar, Trash2, Pencil, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Loading } from '@/components/ui/loading';
 import { KnowledgeBaseModal } from '@/components/knowledge/knowledge-base-modal';
 import { Pagination } from '@/components/ui/pagination';
 import dayjs from 'dayjs';
@@ -110,9 +111,7 @@ export function KnowledgePage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
+          <Loading />
         ) : knowledgeBases.length > 0 ? (
           <div className="flex flex-col gap-6">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

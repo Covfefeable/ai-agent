@@ -6,6 +6,7 @@ import { Pencil, Trash2, Plus } from 'lucide-react';
 import { CategoryModal } from '@/components/admin/category-modal';
 
 import { Search } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
 
 export function CategoriesList({ className }: { className?: string }) {
   const [items, setItems] = useState<AgentCategory[]>([]);
@@ -89,7 +90,7 @@ export function CategoriesList({ className }: { className?: string }) {
           </div>
 
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center text-slate-500">加载中...</div>
+          <Loading />
         ) : (
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">
             <div className="overflow-x-auto">

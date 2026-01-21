@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { userGroupsApi, type UserGroup } from '@/api/user-groups';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, UserPlus, Users, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, UserPlus, Users, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { UserGroupModal } from '@/components/admin/user-group-modal';
 import { AddGroupUserModal } from '@/components/admin/add-group-user-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Loading } from '@/components/ui/loading';
 import dayjs from 'dayjs';
 
 export function UserGroupsList({ className }: { className?: string }) {
@@ -114,9 +115,7 @@ export function UserGroupsList({ className }: { className?: string }) {
         </div>
 
         {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-          </div>
+          <Loading />
         ) : (
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-left text-sm">

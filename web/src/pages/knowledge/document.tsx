@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlignLeft, Hash, Tag, Clock, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, AlignLeft, Hash, Tag, Clock, Pencil, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { knowledgeApi, type Segment } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Loading } from '@/components/ui/loading';
 import { EditSegmentModal } from '@/components/knowledge/edit-segment-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
@@ -73,9 +74,7 @@ export function DocumentDetailPage() {
 
       <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
+          <Loading />
         ) : segments.length > 0 ? (
           <>
             <div className="space-y-4">

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Loader2, HardDrive, Plus, Trash2, Search, Download } from 'lucide-react';
+import { ArrowLeft, FileText, HardDrive, Plus, Trash2, Search, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import { knowledgeApi, type Document } from '@/api/knowledge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Loading } from '@/components/ui/loading';
 import { UploadDocumentModal } from '@/components/knowledge/upload-document-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
@@ -107,9 +108,7 @@ export function KnowledgeDetailPage() {
 
       <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
+          <Loading />
         ) : documents.length > 0 ? (
           <>
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm">

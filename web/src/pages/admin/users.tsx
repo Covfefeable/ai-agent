@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usersApi, type User } from '@/api/users';
 import { toast } from 'sonner';
-import { Loader2, Shield, User as UserIcon, ShieldAlert, Search, Coins } from 'lucide-react';
+import { Shield, User as UserIcon, ShieldAlert, Search, Coins } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { RechargeModal } from '@/components/admin/recharge-modal';
 import dayjs from 'dayjs';
 import { UserGroupsDisplay } from '@/components/admin/user-groups-display';
 import { Tooltip } from 'antd';
+import { Loading } from '@/components/ui/loading';
 
 export function UsersList({ className }: { className?: string }) {
   const [users, setUsers] = useState<User[]>([]);
@@ -105,9 +106,7 @@ export function UsersList({ className }: { className?: string }) {
         </div>
 
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
+          <Loading />
         ) : (
           <>
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">

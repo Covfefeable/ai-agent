@@ -7,6 +7,7 @@ import { ModelModal } from '@/components/admin/model-modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Trash2, Plus, Search, Pencil } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Loading } from '@/components/ui/loading';
 import { Popover } from 'antd';
 
 
@@ -94,7 +95,7 @@ export function ModelsList({ className }: { className?: string }) {
           </div>
 
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center text-slate-500">加载中...</div>
+          <Loading />
         ) : (
           <>
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">

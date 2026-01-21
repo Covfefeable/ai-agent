@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { X, MessageSquare, Trash2, Loader2 } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { X, MessageSquare, Trash2 } from 'lucide-react';
 
 export interface Conversation {
   id: string;
@@ -89,9 +90,7 @@ export function HistoryDrawer({
               </div>
             )}
             {isLoadingMore && (
-              <div className="py-2 text-center text-xs text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-              </div>
+              <Loading className="h-auto py-2" iconClassName="h-4 w-4" />
             )}
           </div>
         </div>
