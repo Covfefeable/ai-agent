@@ -47,6 +47,12 @@ export const knowledgeController = {
       const query = request.query as any;
 
       const result = await knowledgeService.listDatasets(userId, userRole, query);
+      if (result && Array.isArray(result.data)) {
+        result.data = result.data.map((item: any) => {
+          const { difyId, ...rest } = item;
+          return rest;
+        });
+      }
       return result;
     } catch (error: any) {
       request.log.error(error);
@@ -103,6 +109,12 @@ export const knowledgeController = {
       const query = request.query as any;
 
       const result = await knowledgeService.listDocuments(id, userId, userRole, query);
+      if (result && Array.isArray(result.data)) {
+        result.data = result.data.map((item: any) => {
+          const { difyId, ...rest } = item;
+          return rest;
+        });
+      }
       return result;
     } catch (error: any) {
       request.log.error(error);

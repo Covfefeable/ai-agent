@@ -39,6 +39,13 @@ export const agentController = {
         limit: limit ? Number(limit) : undefined
       });
 
+      if (result && Array.isArray(result.data)) {
+        result.data = result.data.map((item: any) => {
+          const { apiKey, ...rest } = item;
+          return rest;
+        });
+      }
+
       return result;
     } catch (error: any) {
       request.log.error({ error }, 'Get public agents error');
