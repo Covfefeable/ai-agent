@@ -14,7 +14,7 @@ dependencies:
 - current_identifier: null
   type: marketplace
   value:
-    marketplace_plugin_unique_identifier: langgenius/openrouter:0.0.31@6d9f4aa9c5d2f7a0c5a7ca4870328fb8d93c5f8c04a0cf45a34976723ce4d502
+    marketplace_plugin_unique_identifier: langgenius/openrouter:0.0.30@3c62cdd6d229fca4cab3bf046ed103ff30c3f9bb0199105cbca38c98990a6cf8
     version: null
 kind: app
 version: 0.5.0
@@ -57,9 +57,11 @@ workflow:
       - local_file
       enabled: true
       fileUploadConfig:
+        attachment_image_file_size_limit: 2
         audio_file_size_limit: 50
         batch_count_limit: 300
         file_size_limit: 100
+        file_upload_limit: 20
         image_file_batch_limit: 10
         image_file_size_limit: 50
         single_chunk_attachment_limit: 10
@@ -148,17 +150,6 @@ workflow:
       zIndex: 0
     - data:
         isInLoop: false
-        sourceType: iteration
-        targetType: if-else
-      id: 1767690121621-source-1767860903148-target
-      source: '1767690121621'
-      sourceHandle: source
-      target: '1767860903148'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInLoop: false
         sourceType: if-else
         targetType: llm
       id: 1767860903148-true-llm-target
@@ -178,17 +169,6 @@ workflow:
       source: '17678608098930'
       sourceHandle: source
       target: '1767860973628'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInLoop: false
-        sourceType: if-else
-        targetType: llm
-      id: 1767860903148-8fda1a3d-26e3-4e08-a28f-731059f72ee6-17678608098930-target
-      source: '1767860903148'
-      sourceHandle: 8fda1a3d-26e3-4e08-a28f-731059f72ee6
-      target: '17678608098930'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -228,29 +208,6 @@ workflow:
       type: custom
       zIndex: 0
     - data:
-        isInIteration: false
-        isInLoop: false
-        sourceType: if-else
-        targetType: question-classifier
-      id: 1767701088615-false-1767949575486-target
-      source: '1767701088615'
-      sourceHandle: 'false'
-      target: '1767949575486'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInLoop: false
-        sourceType: question-classifier
-        targetType: template-transform
-      id: 1767949575486-1-1767701133565-target
-      source: '1767949575486'
-      sourceHandle: '1'
-      target: '1767701133565'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
         isInLoop: false
         sourceType: start
         targetType: iteration
@@ -269,18 +226,6 @@ workflow:
       source: '1767701148297'
       sourceHandle: source
       target: '1767860903148'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInIteration: false
-        isInLoop: false
-        sourceType: if-else
-        targetType: answer
-      id: 1767701088615-true-1767951193354-target
-      source: '1767701088615'
-      sourceHandle: 'true'
-      target: '1767951193354'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -306,6 +251,133 @@ workflow:
       targetHandle: target
       type: custom
       zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: question-classifier
+      id: 1767701088615-true-1767949575486-target
+      source: '1767701088615'
+      sourceHandle: 'true'
+      target: '1767949575486'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: template-transform
+      id: 1767701088615-false-1767701133565-target
+      source: '1767701088615'
+      sourceHandle: 'false'
+      target: '1767701133565'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: template-transform
+      id: 1767949575486-1-1767701133565-target
+      source: '1767949575486'
+      sourceHandle: '1'
+      target: '1767701133565'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: iteration
+        targetType: list-operator
+      id: 1767690121621-source-1768584786709-target
+      source: '1767690121621'
+      sourceHandle: source
+      target: '1768584786709'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: list-operator
+        targetType: if-else
+      id: 1768584786709-source-1767860903148-target
+      source: '1768584786709'
+      sourceHandle: source
+      target: '1767860903148'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: list-operator
+      id: 1767690121621-source-1768584851110-target
+      source: '1767690121621'
+      sourceHandle: source
+      target: '1768584851110'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: list-operator
+        targetType: if-else
+      id: 1768584851110-source-1767860903148-target
+      source: '1768584851110'
+      sourceHandle: source
+      target: '1767860903148'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: list-operator
+      id: 1767860903148-8fda1a3d-26e3-4e08-a28f-731059f72ee6-1768584958671-target
+      source: '1767860903148'
+      sourceHandle: 8fda1a3d-26e3-4e08-a28f-731059f72ee6
+      target: '1768584958671'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: list-operator
+        targetType: iteration
+      id: 1768584958671-source-1768584978571-target
+      source: '1768584958671'
+      sourceHandle: source
+      target: '1768584978571'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: llm
+      id: 1768584978571-source-17678608098930-target
+      source: '1768584978571'
+      sourceHandle: source
+      target: '17678608098930'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1768584978571'
+        sourceType: iteration-start
+        targetType: document-extractor
+      id: 1768584978571start-source-1768585012705-target
+      source: 1768584978571start
+      sourceHandle: source
+      target: '1768585012705'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
     nodes:
     - data:
         selected: false
@@ -338,7 +410,16 @@ workflow:
           required: false
           type: text-input
           variable: model
-      height: 161
+        - default: ''
+          hint: ''
+          label: 长期记忆
+          max_length: 65536
+          options: []
+          placeholder: ''
+          required: false
+          type: paragraph
+          variable: memories
+      height: 187
       id: '1767687954905'
       position:
         x: -428.94121957952416
@@ -364,7 +445,7 @@ workflow:
             assistant: ''
             user: ''
           window:
-            enabled: false
+            enabled: true
             size: 10
         model:
           completion_params:
@@ -390,7 +471,12 @@ workflow:
 
             知识库中检索到的内容：
 
-            {{#1767687954905.knowledge#}}'
+            {{#1767687954905.knowledge#}}
+
+
+            用户偏好/事实等长期记忆，必须优先遵守：
+
+            {{#1767687954905.memories#}}'
         selected: false
         title: moonshot-v1-32k
         type: llm
@@ -412,7 +498,7 @@ workflow:
     - data:
         answer: '{{#llm.text#}}'
         selected: false
-        title: 直接回复
+        title: Moonshot V1 回复
         type: answer
         variables: []
       height: 103
@@ -604,7 +690,14 @@ workflow:
 
               4. 总结时要确保提供的信息是最新、权威的，必要时参考多个来源。
 
-              '
+
+              ### 输出格式
+
+              1. 在进行全面的检索之后，整理结论并输出给用户
+
+              2. 避免长篇大论，结论必须包含关键点
+
+              3. 以”以下是联网搜索后得到的结论：“为开头进行输出'
           maximum_iterations:
             type: constant
             value: 10
@@ -3153,8 +3246,8 @@ workflow:
 
             {{#sys.files#}}'
           window:
-            enabled: false
-            size: 50
+            enabled: true
+            size: 3
         meta:
           minimum_dify_version: 1.7.0
           version: 0.0.2
@@ -3185,12 +3278,14 @@ workflow:
           query_prompt_template: '{{#sys.query#}}
 
 
-            {{#sys.files#}}'
+            {{#1768584786709.result#}}
+
+            {{#1768584851110.result#}}'
           role_prefix:
             assistant: ''
             user: ''
           window:
-            enabled: false
+            enabled: true
             size: 10
         model:
           completion_params:
@@ -3206,7 +3301,7 @@ workflow:
 
             用户上传的文件内容：
 
-            {{#1767690121621.output#}}
+            {{#1768584978571.output#}}
 
 
             联网搜索内容：
@@ -3216,7 +3311,12 @@ workflow:
 
             知识库中检索到的内容：
 
-            {{#1767687954905.knowledge#}}'
+            {{#1767687954905.knowledge#}}
+
+
+            用户偏好/事实等长期记忆，必须优先遵守：
+
+            {{#1767687954905.memories#}}'
         selected: false
         title: gemini-2.5-flash-lite
         type: llm
@@ -3225,12 +3325,12 @@ workflow:
       height: 88
       id: '17678608098930'
       position:
-        x: 1276.7619570708896
+        x: 2053.4084509410804
         y: 403.55130246532985
       positionAbsolute:
-        x: 1276.7619570708896
+        x: 2053.4084509410804
         y: 403.55130246532985
-      selected: false
+      selected: true
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -3295,10 +3395,10 @@ workflow:
       height: 103
       id: '1767860973628'
       position:
-        x: 1613.5634862476688
+        x: 2352.016143605386
         y: 403.55130246532985
       positionAbsolute:
-        x: 1613.5634862476688
+        x: 2352.016143605386
         y: 403.55130246532985
       selected: false
       sourcePosition: right
@@ -3313,12 +3413,12 @@ workflow:
           query_prompt_template: '{{#sys.query#}}
 
 
-            {{#sys.files#}}'
+            {{#1768584786709.result#}}'
           role_prefix:
             assistant: ''
             user: ''
           window:
-            enabled: false
+            enabled: true
             size: 10
         model:
           completion_params:
@@ -3344,8 +3444,13 @@ workflow:
 
             知识库中检索到的内容：
 
-            {{#1767687954905.knowledge#}}'
-        selected: false
+            {{#1767687954905.knowledge#}}
+
+
+            用户偏好/事实等长期记忆，必须优先遵守：
+
+            {{#1767687954905.memories#}}'
+        selected: true
         title: gpt-5-mini
         type: llm
         vision:
@@ -3354,10 +3459,10 @@ workflow:
       id: '17678610516260'
       position:
         x: 1276.7619570708896
-        y: 526.4701022735396
+        y: 612.2538717692894
       positionAbsolute:
         x: 1276.7619570708896
-        y: 526.4701022735396
+        y: 612.2538717692894
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -3373,10 +3478,10 @@ workflow:
       id: '1767861114898'
       position:
         x: 1613.5634862476688
-        y: 526.4701022735396
+        y: 612.2538717692894
       positionAbsolute:
         x: 1613.5634862476688
-        y: 526.4701022735396
+        y: 612.2538717692894
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -3392,10 +3497,10 @@ workflow:
       id: '1767861125826'
       position:
         x: 1276.7619570708896
-        y: 673.1700467972579
+        y: 736.1898770428393
       positionAbsolute:
         x: 1276.7619570708896
-        y: 673.1700467972579
+        y: 736.1898770428393
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -3414,8 +3519,8 @@ workflow:
 
             {{#sys.files#}}'
           window:
-            enabled: false
-            size: 50
+            enabled: true
+            size: 3
         model:
           completion_params:
             temperature: 0.7
@@ -3425,7 +3530,7 @@ workflow:
         query_variable_selector:
         - '1767687954905'
         - sys.query
-        selected: true
+        selected: false
         title: 问题分类器
         type: question-classifier
         vision:
@@ -3438,7 +3543,7 @@ workflow:
       positionAbsolute:
         x: -114.486674871211
         y: 418.2217183267453
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -3462,8 +3567,204 @@ workflow:
       targetPosition: left
       type: custom
       width: 242
+    - data:
+        extract_by:
+          enabled: false
+          serial: '1'
+        filter_by:
+          conditions:
+          - comparison_operator: in
+            key: type
+            value:
+            - image
+          enabled: true
+        item_var_type: file
+        limit:
+          enabled: false
+          size: 10
+        order_by:
+          enabled: false
+          key: ''
+          value: asc
+        selected: false
+        title: 图片文件
+        type: list-operator
+        var_type: array[file]
+        variable:
+        - sys
+        - files
+      height: 92
+      id: '1768584786709'
+      position:
+        x: 423.1297110171031
+        y: 627.5314063742788
+      positionAbsolute:
+        x: 423.1297110171031
+        y: 627.5314063742788
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        extract_by:
+          enabled: false
+          serial: '1'
+        filter_by:
+          conditions:
+          - comparison_operator: is
+            key: extension
+            value: .pdf
+          enabled: true
+        item_var_type: file
+        limit:
+          enabled: false
+          size: 10
+        order_by:
+          enabled: false
+          key: ''
+          value: asc
+        selected: false
+        title: PDF文件
+        type: list-operator
+        var_type: array[file]
+        variable:
+        - sys
+        - files
+      height: 92
+      id: '1768584851110'
+      position:
+        x: 423.1297110171031
+        y: 758.5314063742788
+      positionAbsolute:
+        x: 423.1297110171031
+        y: 758.5314063742788
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        extract_by:
+          enabled: false
+          serial: '1'
+        filter_by:
+          conditions:
+          - comparison_operator: is not
+            key: extension
+            value: .pdf
+          enabled: true
+        item_var_type: file
+        limit:
+          enabled: false
+          size: 10
+        order_by:
+          enabled: false
+          key: ''
+          value: asc
+        selected: false
+        title: 非PDF的文件
+        type: list-operator
+        var_type: array[file]
+        variable:
+        - sys
+        - files
+      height: 92
+      id: '1768584958671'
+      position:
+        x: 1276.7619570708896
+        y: 403.55130246532985
+      positionAbsolute:
+        x: 1276.7619570708896
+        y: 403.55130246532985
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        desc: gemini可以读取pdf文档，避免重复给出pdf内容
+        error_handle_mode: remove-abnormal-output
+        flatten_output: true
+        height: 192
+        is_parallel: false
+        iterator_input_type: array[file]
+        iterator_selector:
+        - '1768584958671'
+        - result
+        output_selector:
+        - '1768585012705'
+        - text
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1768584978571start
+        title: 单独提取
+        type: iteration
+        width: 386
+      height: 192
+      id: '1768584978571'
+      position:
+        x: 1613.5634862476688
+        y: 403.55130246532985
+      positionAbsolute:
+        x: 1613.5634862476688
+        y: 403.55130246532985
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 386
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1768584978571start
+      parentId: '1768584978571'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 1637.5634862476688
+        y: 471.55130246532985
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        isInIteration: true
+        isInLoop: false
+        is_array_file: false
+        iteration_id: '1768584978571'
+        selected: false
+        title: 文档提取
+        type: document-extractor
+        variable_selector:
+        - '1768584978571'
+        - item
+      height: 104
+      id: '1768585012705'
+      parentId: '1768584978571'
+      position:
+        x: 128
+        y: 65
+      positionAbsolute:
+        x: 1741.5634862476688
+        y: 468.55130246532985
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1002
     viewport:
-      x: 393.5131529222276
-      y: 22.456762492268354
-      zoom: 0.9238723149436091
+      x: -1295.0761933798365
+      y: -101.22772217678107
+      zoom: 1.0121576959929197
   rag_pipeline_variables: []
