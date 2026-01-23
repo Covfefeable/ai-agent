@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { db } from './db';
 import { users } from './db/schema';
 
@@ -40,6 +41,12 @@ fastify.register(multipart, {
 // Register CORS
 fastify.register(cors, {
   origin: true // Allow all origins for dev
+});
+
+// Register Rate Limit
+fastify.register(rateLimit, {
+  max: 150,
+  timeWindow: '1 minute'
 });
 
 // Authentication Middleware
