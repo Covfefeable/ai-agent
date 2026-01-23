@@ -515,7 +515,7 @@ export function ChatPage() {
               fetchMemories();
             }}
             className="text-slate-500 hover:text-slate-900"
-            title="我的记忆"
+            title="管理记忆"
           >
             <Brain className="h-5 w-5" />
           </Button>

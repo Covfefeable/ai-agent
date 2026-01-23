@@ -14,7 +14,6 @@ const KnowledgeDetailPage = lazy(() => import('./pages/knowledge/detail').then(m
 const DocumentDetailPage = lazy(() => import('./pages/knowledge/document').then(module => ({ default: module.DocumentDetailPage })));
 const UsersPage = lazy(() => import('./pages/admin/users').then(module => ({ default: module.UsersPage })));
 const AdminPage = lazy(() => import('./pages/admin').then(module => ({ default: module.AdminPage })));
-const AgentsPage = lazy(() => import('./pages/agent').then(module => ({ default: module.AgentsPage })));
 const AgentCategoriesPage = lazy(() => import('./pages/admin/categories').then(module => ({ default: module.AgentCategoriesPage })));
 const AgentsSquarePage = lazy(() => import('./pages/agent/square').then(module => ({ default: module.AgentsSquarePage })));
 const AgentChatPage = lazy(() => import('./pages/agent/chat').then(module => ({ default: module.AgentChatPage })));
@@ -78,7 +77,6 @@ function App() {
           />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/users" element={<UsersPage />} />
-          <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agent-categories" element={<AgentCategoriesPage />} />
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />

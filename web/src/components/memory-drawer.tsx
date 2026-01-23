@@ -55,7 +55,7 @@ export function MemoryDrawer({
       {/* Drawer Panel */}
       <div className="relative ml-auto flex h-full w-96 flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between border-b border-slate-100 p-4">
-          <h3 className="font-bold text-slate-800">我的记忆</h3>
+          <h3 className="font-bold text-slate-800">管理记忆</h3>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5 text-slate-500" />
           </Button>

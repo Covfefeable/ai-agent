@@ -1,6 +1,7 @@
 import { Segmented } from "antd"
 import { useState } from "react"
 import { ModelsList } from "./models"
+import { AgentsList } from "./agents"
 import { UsersList } from "./users"
 import { UserGroupsList } from "./user-groups"
 import { CategoriesList } from "./categories"
@@ -12,6 +13,8 @@ export function AdminPage() {
     switch (activeTab) {
       case 'models':
         return <ModelsList className="h-full" />;
+      case 'agents':
+        return <AgentsList className="h-full" />;
       case 'categories':
         return <CategoriesList className="h-full" />;
       case 'users':
@@ -35,6 +38,7 @@ export function AdminPage() {
             onChange={(value) => setActiveTab(value as string)}
             options={[
               { label: '模型管理', value: 'models' },
+              { label: '智能体管理', value: 'agents' },
               { label: '分类管理', value: 'categories' },
               { label: '用户管理', value: 'users' },
               { label: '用户组管理', value: 'user-groups' },
