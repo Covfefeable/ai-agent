@@ -15,19 +15,23 @@ export const userGroupsService = {
     }
 
     // Get groups with user count
-    const list = await db.query.userGroups.findMany({
-      where: conditions,
-      limit: limitNum,
-      offset: offset,
-      orderBy: desc(userGroups.createdAt),
-      extras: {
+    const list = await db
+      .select({
+        id: userGroups.id,
+        name: userGroups.name,
+        createdAt: userGroups.createdAt,
+        updatedAt: userGroups.updatedAt,
         userCount: sql<number>`(
           SELECT count(*) 
           FROM ${userGroupMembers} 
-          WHERE ${userGroupMembers.groupId} = ${userGroups.id}
-        )`.mapWith(Number).as('user_count')
-      }
-    });
+          WHERE ${userGroupMembers.groupId} = user_groups.id
+        )`.mapWith(Number)
+      })
+      .from(userGroups)
+      .where(conditions)
+      .limit(limitNum)
+      .offset(offset)
+      .orderBy(desc(userGroups.createdAt));
 
     const [countResult] = await db
       .select({ count: sql<number>`count(*)` })
