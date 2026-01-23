@@ -2,6 +2,7 @@ import { PassThrough } from 'stream';
 import { db } from '../db';
 import { userUsage, users } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
+import Decimal from 'decimal.js';
 
 export function createUsageLogStream(userId: string, userRole: string, source: string, multiplier: number = 1.0) {
   const logStream = new PassThrough();
@@ -18,7 +19,17 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
         if (data.event === 'message_end' && data.metadata?.usage) {
           const usage = data.metadata.usage;
           
-          const points = Number((((usage.prompt_tokens * 0.5) + usage.completion_tokens) * multiplier / 2000).toFixed(2));
+          // Calculate points using Decimal.js
+          // Formula: ((prompt_tokens * 0.5) + completion_tokens) * multiplier / 2000
+          const promptTokens = new Decimal(usage.prompt_tokens);
+          const completionTokens = new Decimal(usage.completion_tokens);
+          const mult = new Decimal(multiplier);
+          
+          const points = promptTokens.times(0.5)
+            .plus(completionTokens)
+            .times(mult)
+            .dividedBy(2000)
+            .toFixed(2);
 
           // Record usage
           await db.insert(userUsage).values({
@@ -39,7 +50,7 @@ export function createUsageLogStream(userId: string, userRole: string, source: s
             timeToFirstToken: String(usage.time_to_first_token),
             timeToGenerate: String(usage.time_to_generate),
             multiplier: multiplier,
-            calculatedPoints: String(points),
+            calculatedPoints: points,
           });
 
           // Deduct balance for regular members

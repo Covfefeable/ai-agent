@@ -4,6 +4,7 @@ import { eq, desc, ilike, or, sql, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { uploadBuffer, extractPathFromUrl, getPublicUrl, transformToProxyUrl } from '../lib/minio';
 import { addBackgroundJob } from '../lib/worker';
+import Decimal from 'decimal.js';
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -69,8 +70,15 @@ export const usersService = {
       let calculatedPoints = item.calculatedPoints;
 
       if (calculatedPoints === null || calculatedPoints === undefined) {
-        const multiplier = item.multiplier ?? 1.0;
-        calculatedPoints = (((item.promptTokens || 0) * 0.5 + (item.completionTokens || 0)) * multiplier / 2000).toFixed(2);
+        const multiplier = new Decimal(item.multiplier ?? 1.0);
+        const promptTokens = new Decimal(item.promptTokens || 0);
+        const completionTokens = new Decimal(item.completionTokens || 0);
+        
+        calculatedPoints = promptTokens.times(0.5)
+          .plus(completionTokens)
+          .times(multiplier)
+          .dividedBy(2000)
+          .toFixed(2);
       }
 
       return {

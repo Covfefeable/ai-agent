@@ -4,6 +4,7 @@ import { datasets, users, models } from '../db/schema';
 import { inArray, eq, and } from 'drizzle-orm';
 import { createUsageLogStream } from '../lib/usage';
 import { memoryService } from './memories';
+import Decimal from 'decimal.js';
 
 const DIFY_BASE_URL = process.env.DIFY_BASE_URL;
 const DIFY_SUPER_AGENT_CHAT_API_KEY = process.env.DIFY_SUPER_AGENT_CHAT_API_KEY;
@@ -18,7 +19,7 @@ export const chatService = {
     if (!dbUser) {
       throw new Error('用户不存在');
     }
-    if (dbUser.role === 'member' && Number(dbUser.balance) <= 0) {
+    if (dbUser.role === 'member' && new Decimal(dbUser.balance).lte(0)) {
       throw new Error('余额不足，请充值');
     }
 
