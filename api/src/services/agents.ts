@@ -11,8 +11,13 @@ async function fetchImageAndUpload(url: string | null, agentId: string): Promise
   try {
     const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
     const buffer = Buffer.from(response.data);
-    const mimeType = response.headers['content-type'] || 'image/png';
-    const ext = mimeType.split('/')[1] || 'png';
+    const contentType = response.headers['content-type'];
+    const mimeType = typeof contentType === 'string'
+      ? contentType
+      : Array.isArray(contentType)
+        ? contentType[0]
+        : 'image/png';
+    const ext = mimeType.split('/')[1]?.split(';')[0] || 'png';
     
     // Upload to MinIO: agents/<agentId>-<timestamp>.<ext>
     const filename = `agents/${agentId}-${Date.now()}.${ext}`;

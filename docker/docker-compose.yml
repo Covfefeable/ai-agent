@@ -51,7 +51,7 @@ services:
     volumes:
       - ./minio/init-minio.sh:/init-minio.sh
     entrypoint: /bin/sh
-    command: -c "/init-minio.sh"
+    command: -c "sh /init-minio.sh"
     networks:
       - app_network
 
